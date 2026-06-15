@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${person.lastNameKanji + ' ' + person.firstNameKanji + ' - 稼働管理簿'}">稼働管理簿詳細</title>
+    <style>
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; color: #333; font-size: 20px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; cursor: pointer; }
+        .back-btn { background: #2196F3; color: white; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        /* ヘッダーカード */
+        .person-card { background: white; padding: 20px 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .person-card .field label { font-size: 12px; color: #777; display: block; margin-bottom: 2px; }
+        .person-card .field span { font-size: 15px; color: #222; font-weight: bold; }
+        /* 稼働テーブル */
+        .ledger-section { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow-x: auto; }
+        .ledger-section h2 { color: #4CAF50; border-bottom: 2px solid #4CAF50; padding-bottom: 8px; margin-top: 0; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 900px; }
+        th { background: #4CAF50; color: white; padding: 10px 8px; text-align: center; white-space: nowrap; }
+        td { padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: center; vertical-align: top; }
+        tr:hover { background: #f9fbe7; }
+        .remarks-input { width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 12px; min-width: 80px; }
+        .save-btn { background: #FF9800; color: white; border: none; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 11px; }
+        .empty { text-align: center; padding: 40px; color: #999; }
+        .daily-cell { font-size: 12px; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>📊 稼働管理簿 ―
+        <span th:text="${person.lastNameKanji + ' ' + person.firstNameKanji}"></span>
+    </h1>
+    <div style="display:flex;gap:10px;">
+        <a href="/person/working-ledger" class="btn back-btn">← 一覧に戻る</a>
+    </div>
+</div>
+
+<!-- 求職者ヘッダー情報 -->
+<div class="person-card">
+    <div class="field">
+        <label>登録日</label>
+        <span th:text="${person.registeredDate}">-</span>
+    </div>
+    <div class="field">
+        <label>氏名</label>
+        <span th:text="${person.lastNameKanji + ' ' + person.firstNameKanji}">-</span>
+    </div>
+    <div class="field">
+        <label>生年月日</label>
+        <span th:text="${person.birthDate}">-</span>
+    </div>
+    <div class="field">
+        <label>住所</label>
+        <span th:text="${'〒' + (person.postalCode != null ? person.postalCode : '') + ' ' + (person.address1 != null ? person.address1 : '') + (person.address2 != null ? person.address2 : '') + (person.address3 != null ? person.address3 : '')}">-</span>
+    </div>
+    <div class="field">
+        <label>電話番号</label>
+        <span th:text="${person.mobilePhone}">-</span>
+    </div>
+    <div class="field">
+        <label>LINE WORKS</label>
+        <span th:text="${person.lineWorks ? '登録済' : '-'}">-</span>
+    </div>
+</div>
+
+<!-- 稼働テーブル -->
+<div class="container">
+    <div class="ledger-section">
+        <h2>稼働履歴（紹介年月日順）</h2>
+
+        <table th:if="${not #lists.isEmpty(rows)}">
+            <thead>
+                <tr>
+                    <th>紹介年月日</th>
+                    <th>求人者</th>
+                    <th>時給（日給）</th>
+                    <th>時給（残業）</th>
+                    <th>日給①</th>
+                    <th>日給②</th>
+                    <th>日給③</th>
+                    <th>日給④</th>
+                    <th>日給⑤</th>
+                    <th>受付料</th>
+                    <th>就労月日</th>
+                    <th>日数</th>
+                    <th>賃金総額</th>
+                    <th>手数料率</th>
+                    <th>領収月日</th>
+                    <th>領収書No</th>
+                    <th>備考</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="row : ${rows}">
+                    <td th:text="${row.detail.introductionDate}">-</td>
+                    <td th:text="${row.customerName}">-</td>
+                    <td th:text="${row.detail.hourlyWage != null ? '¥' + #numbers.formatInteger(row.detail.hourlyWage, 1, 'COMMA') : '-'}">-</td>
+                    <td th:text="${row.detail.hourlyWageOvertime != null ? '¥' + #numbers.formatInteger(row.detail.hourlyWageOvertime, 1, 'COMMA') : '-'}">-</td>
+
+                    <!-- 日給（最大5枠） -->
+                    <th:block th:with="wages=${row.detail.dailyWages != null ? row.detail.dailyWages.split(',') : new String[0]}">
+                        <td th:text="${wages.length > 0 and wages[0] != '' ? '¥' + wages[0] : '-'}" class="daily-cell">-</td>
+                        <td th:text="${wages.length > 1 ? '¥' + wages[1] : '-'}" class="daily-cell">-</td>
+                        <td th:text="${wages.length > 2 ? '¥' + wages[2] : '-'}" class="daily-cell">-</td>
+                        <td th:text="${wages.length > 3 ? '¥' + wages[3] : '-'}" class="daily-cell">-</td>
+                        <td th:text="${wages.length > 4 ? '¥' + wages[4] : '-'}" class="daily-cell">-</td>
+                    </th:block>
+
+                    <td th:text="${row.detail.receptionFee != null ? '¥' + #numbers.formatInteger(row.detail.receptionFee, 1, 'COMMA') : '-'}">-</td>
+
+                    <!-- 就労月日 -->
+                    <td>
+                        <span th:if="${row.detail.workStartDate != null}"
+                              th:text="${row.detail.workStartDate + ' ～ ' + row.detail.workEndDate}">-</span>
+                        <span th:unless="${row.detail.workStartDate != null}">-</span>
+                    </td>
+
+                    <td th:text="${row.workDays > 0 ? row.workDays + '日' : '-'}">-</td>
+                    <td th:text="${row.wageTotal > 0 ? '¥' + #numbers.formatInteger(row.wageTotal, 1, 'COMMA') : '-'}">-</td>
+                    <td th:text="${row.commissionRate}">15%</td>
+                    <td th:text="${row.receiptDate}">-</td>
+                    <td th:text="${row.detail.receiptNo}">-</td>
+
+                    <!-- 備考（編集可能） -->
+                    <td>
+                        <form th:action="@{/person/working-ledger/update-remarks}" method="post"
+                              style="display:flex;gap:4px;align-items:center;">
+                            <input type="hidden" name="detailId" th:value="${row.detail.id}">
+                            <input type="hidden" name="personId" th:value="${person.id}">
+                            <input type="text" class="remarks-input" name="remarks"
+                                   th:value="${row.detail.remarks}" placeholder="備考">
+                            <button type="submit" class="save-btn">保存</button>
+                        </form>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="empty" th:if="${#lists.isEmpty(rows)}">
+            売上データがまだ登録されていません
+        </div>
+    </div>
+</div>
+</body>
+</html>
