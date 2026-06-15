@@ -12,6 +12,6 @@ import jp.co.housekeeping.person_management.model.Sales;
 @Repository
 public interface SalesRepository extends CrudRepository<Sales, Long> {
 
-    @Query("SELECT * FROM sales WHERE person_id = :personId ORDER BY introduction_date")
+    @Query("SELECT * FROM sales WHERE person_id = :personId ORDER BY id")
     List<Sales> findByPersonId(@Param("personId") Long personId);
 }

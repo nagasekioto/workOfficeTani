@@ -39,10 +39,18 @@
 すべての実装・修正・リファクタリング完了後に必ず以下を実行すること。
 
 ```bash
-npm run lint
-npm test
+# Java構文チェック（波括弧バランス・クラス宣言）
+find src -name "*.java" | xargs -I{} python3 -c "..."
+
+# HTMLテンプレートチェック（タグバランス）
+find src/main/resources/templates -name "*.html" | xargs -I{} python3 -c "..."
+
+# Mavenビルド（ネットワーク接続時）
+./mvnw compile
+./mvnw test
 ```
 
+※このプロジェクトはJava/MavenプロジェクトのためnpmコマンドではなくMavenを使用する。
 エラーや警告が発生した場合は、その原因を調査し修正してから再度実行すること。
 すべて成功するまで作業完了として報告してはならない。
 

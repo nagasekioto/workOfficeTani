@@ -58,8 +58,8 @@
                 <td th:text="${p.mobilePhone}"></td>
                 <td th:text="${p.desiredJob}"></td>
                 <td>
-                    <span th:if="${p.lineWorks}" class="badge badge-yes">登録済</span>
-                    <span th:unless="${p.lineWorks}">-</span>
+                    <span th:if="${p.lineWorks != null && p.lineWorks}" class="badge badge-yes">登録済</span>
+                    <span th:unless="${p.lineWorks != null && p.lineWorks}">-</span>
                 </td>
                 <td th:text="${p.registeredDate}"></td>
             </tr>

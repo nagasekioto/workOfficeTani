@@ -61,7 +61,7 @@
     </div>
     <div class="field">
         <label>LINE WORKS</label>
-        <span th:text="${person.lineWorks ? '登録済' : '-'}">-</span>
+        <span th:text="${person.lineWorks != null && person.lineWorks ? '登録済' : '-'}">-</span>
     </div>
 </div>
 
