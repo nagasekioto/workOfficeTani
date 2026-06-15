@@ -15,7 +15,7 @@
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e0e0e0; }
         th { background: #4CAF50; color: white; }
-        tr:hover { background: #f1f8e9; cursor: pointer; }
+        tr:hover { background: #f1f8e9; }
         .person-link { color: #1565c0; text-decoration: none; font-weight: bold; }
         .person-link:hover { text-decoration: underline; }
         .empty { text-align: center; padding: 40px; color: #999; }
@@ -25,14 +25,14 @@
 </head>
 <body>
 <div class="header">
-    <h1>📊 稼働管理簿</h1>
-    <a href="/person-menu" class="back-btn">← 求職者管理に戻る</a>
+    <h1>&#128202; 稼働管理簿</h1>
+    <a href="/person-menu" class="back-btn">&#8592; 求職者管理に戻る</a>
 </div>
 
 <div class="container">
     <form method="get" action="/person/working-ledger" class="search-area">
         <input type="text" name="search" th:value="${search}" placeholder="名前で検索（漢字・カナ）">
-        <button type="submit">🔍 検索</button>
+        <button type="submit">&#128269; 検索</button>
     </form>
 
     <table th:if="${not #lists.isEmpty(persons)}">
@@ -48,18 +48,19 @@
             </tr>
         </thead>
         <tbody>
-            <tr th:each="p : ${persons}" th:onclick="'location.href=\"/person/working-ledger/' + ${p.id} + '\"'">
+            <tr th:each="p : ${persons}">
                 <td th:text="${p.no}"></td>
                 <td>
-                    <a th:href="@{/person/working-ledger/{id}(id=${p.id})}" class="person-link"
+                    <a th:href="@{/person/working-ledger/{id}(id=${p.id})}"
+                       class="person-link"
                        th:text="${p.lastNameKanji + ' ' + p.firstNameKanji}"></a>
                 </td>
                 <td th:text="${p.lastNameKana + ' ' + p.firstNameKana}"></td>
                 <td th:text="${p.mobilePhone}"></td>
                 <td th:text="${p.desiredJob}"></td>
                 <td>
-                    <span th:if="${p.lineWorks != null && p.lineWorks}" class="badge badge-yes">登録済</span>
-                    <span th:unless="${p.lineWorks != null && p.lineWorks}">-</span>
+                    <span th:if="${p.lineWorks != null and p.lineWorks}" class="badge badge-yes">登録済</span>
+                    <span th:unless="${p.lineWorks != null and p.lineWorks}">-</span>
                 </td>
                 <td th:text="${p.registeredDate}"></td>
             </tr>
@@ -67,8 +68,10 @@
     </table>
 
     <div class="empty" th:if="${#lists.isEmpty(persons)}">
-        <span th:if="${search != null and !search.isBlank()}">「<span th:text="${search}"></span>」に一致する求職者がいません</span>
-        <span th:unless="${search != null and !search.isBlank()}">登録された求職者がいません</span>
+        <span th:if="${search != null and !#strings.isEmpty(search)}">
+            「<span th:text="${search}"></span>」に一致する求職者がいません
+        </span>
+        <span th:unless="${search != null and !#strings.isEmpty(search)}">登録された求職者がいません</span>
     </div>
 </div>
 </body>

@@ -254,7 +254,7 @@
                 <label>LINE WORKS登録</label>
                 <div class="checkbox-group">
                     <div class="checkbox-item">
-                        <input type="checkbox" name="lineWorks" value="true" th:checked="${person.lineWorks != null && person.lineWorks}">
+                        <input type="checkbox" name="lineWorks" value="true" th:checked="${person.lineWorks != null and person.lineWorks}">
                         <label>登録済み</label>
                     </div>
                 </div>
@@ -297,8 +297,8 @@
                     <td th:text="${p.mobilePhone}"></td>
                     <td th:text="${p.desiredJob + '/' + p.desiredType}"></td>
                     <td>
-                        <span th:if="${p.lineWorks != null && p.lineWorks}" class="badge badge-yes">✓</span>
-                        <span th:unless="${p.lineWorks != null && p.lineWorks}" class="badge badge-no">-</span>
+                        <span th:if="${p.lineWorks != null and p.lineWorks}" class="badge badge-yes">✓</span>
+                        <span th:unless="${p.lineWorks != null and p.lineWorks}" class="badge badge-no">-</span>
                     </td>
                     <td th:text="${p.registeredDate}"></td>
                     <td>
