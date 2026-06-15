@@ -58,20 +58,26 @@
     <div class="person-select-area">
         <div class="form-group">
             <label>求職者（家政婦）を選択 <span class="required">*</span></label>
-            <select id="personSelect" onchange="selectPerson(this.value)" name="personId">
-                <option value="">-- 選択してください --</option>
-                <option th:each="p : ${persons}"
-                        th:value="${p.id}"
-                        th:text="${p.lastNameKanji + ' ' + p.firstNameKanji + '（' + p.lastNameKana + ' ' + p.firstNameKana + '）'}"
-                        th:selected="${selectedPerson != null && selectedPerson.id == p.id}">
-                </option>
-            </select>
+            <form method="get" action="/person/sales" id="personSelectForm" style="display:flex;gap:10px;align-items:center;">
+                <select name="personId" id="personSelect" style="flex:1;padding:9px;border:1px solid #ddd;border-radius:4px;">
+                    <option value="">-- 選択してください --</option>
+                    <option th:each="p : ${persons}"
+                            th:value="${p.id}"
+                            th:text="${p.lastNameKanji + ' ' + p.firstNameKanji + '（' + p.lastNameKana + ' ' + p.firstNameKana + '）'}"
+                            th:selected="${selectedPersonId != null && selectedPersonId == p.id}">
+                    </option>
+                </select>
+                <button type="submit" style="padding:9px 20px;background:#4CAF50;color:white;border:none;border-radius:4px;cursor:pointer;white-space:nowrap;">選択</button>
+            </form>
+        </div>
+        <div th:if="${selectedPerson != null}" style="background:#e8f5e9;padding:10px 15px;border-radius:5px;font-size:14px;margin-top:8px;">
+            ✅ 選択中：<strong th:text="${selectedPerson.lastNameKanji + ' ' + selectedPerson.firstNameKanji}"></strong>
         </div>
     </div>
 
     <!-- 保存フォーム -->
     <form id="salesForm" action="/person/sales/save" method="post">
-        <input type="hidden" name="personId" id="personIdHidden" th:value="${selectedPerson != null ? selectedPerson.id : ''}">
+        <input type="hidden" name="personId" id="personIdHidden" th:value="${selectedPersonId != null ? selectedPersonId : ''}">
 
         <!-- 勤務先1～5 -->
         <div th:each="i : ${#numbers.sequence(1, 5)}" th:id="'block' + ${i}" class="detail-block">
@@ -204,13 +210,6 @@
 <script>
 const dailyWageCounts = {1:0, 2:0, 3:0, 4:0, 5:0};
 
-// 求職者選択時
-function selectPerson(id) {
-    if (id) {
-        window.location.href = '/person/sales?personId=' + id;
-    }
-}
-
 // 求人者変更時：初回チェック
 function onCustomerChange(idx) {
     const custId = document.getElementById('customerId' + idx).value;
@@ -324,14 +323,7 @@ window.addEventListener('load', function() {
         document.getElementById('savedMsg').style.display = 'block';
         document.getElementById('printBtn').classList.add('visible');
         document.getElementById('printPersonId').value = savedId;
-        document.getElementById('personIdHidden').value = savedId;
-        // ページ上部にスクロール
         window.scrollTo(0, 0);
-    }
-    // 既選択の求職者
-    const personSelect = document.getElementById('personSelect');
-    if (personSelect.value) {
-        document.getElementById('personIdHidden').value = personSelect.value;
     }
 });
 
