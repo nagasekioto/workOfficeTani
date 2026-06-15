@@ -51,30 +51,25 @@ public class SalesController {
 
     // ─── 売上入力画面 ───────────────────────────────
     @GetMapping("/person/sales")
-    public String sales(HttpSession session, Model model) {
+    public String sales(@RequestParam(required = false) Long personId,
+                        HttpSession session, Model model) {
         if (session.getAttribute("authenticated") == null) return "redirect:/login";
+
         model.addAttribute("persons", personRepository.findAll());
         model.addAttribute("customers", customerRepository.findAll());
-        return "person-sales";
-    }
 
-    // 既存データ読み込み（求職者選択時のAjaxも兼用可）
-    @GetMapping("/person/sales/data")
-    public String salesData(@RequestParam Long personId, HttpSession session, Model model) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
-
-        Person person = personRepository.findById(personId).orElse(null);
-        List<Sales> salesList = salesRepository.findByPersonId(personId);
-        List<SalesDetail> allDetails = new ArrayList<>();
-        for (Sales s : salesList) {
-            allDetails.addAll(salesDetailRepository.findBySalesId(s.getId()));
+        if (personId != null) {
+            Person person = personRepository.findById(personId).orElse(null);
+            List<Sales> salesList = salesRepository.findByPersonId(personId);
+            List<SalesDetail> allDetails = new ArrayList<>();
+            for (Sales s : salesList) {
+                allDetails.addAll(salesDetailRepository.findBySalesId(s.getId()));
+            }
+            model.addAttribute("selectedPerson", person);
+            model.addAttribute("selectedPersonId", personId);
+            model.addAttribute("existingDetails", allDetails);
         }
 
-        model.addAttribute("persons", personRepository.findAll());
-        model.addAttribute("customers", customerRepository.findAll());
-        model.addAttribute("selectedPerson", person);
-        model.addAttribute("salesList", salesList);
-        model.addAttribute("existingDetails", allDetails);
         return "person-sales";
     }
 
