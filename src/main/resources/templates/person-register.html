@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>求職者管理名簿入力 - 家政婦紹介事務所</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Meiryo, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 {
+            margin: 0;
+            color: #333;
+        }
+        .back-btn {
+            background: #2196F3;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+        .back-btn:hover {
+            background: #1976D2;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .form-section, .list-section {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #4CAF50;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+            font-size: 14px;
+        }
+        label .required {
+            color: #f44336;
+        }
+        input[type="text"],
+        input[type="number"],
+        input[type="date"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 5px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+        }
+        .checkbox-item input[type="checkbox"],
+        .checkbox-item input[type="radio"] {
+            margin-right: 5px;
+        }
+        .postal-search {
+            display: inline-block;
+            margin-left: 5px;
+            padding: 5px 10px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .postal-search:hover {
+            background: #0b7dda;
+        }
+        button[type="submit"] {
+            width: 100%;
+            padding: 15px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button[type="submit"]:hover {
+            background: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #4CAF50;
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+        tr:hover {
+            background: #f5f5f5;
+        }
+        .list-section {
+            max-height: 800px;
+            overflow-y: auto;
+        }
+        .error-message {
+            color: #f44336;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+        .error-message.show {
+            display: block;
+        }
+        input.error {
+            border: 2px solid #f44336;
+            background: #ffebee;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📝 求職者管理名簿入力</h1>
+        <a href="/person-menu" class="back-btn">← 求職者管理に戻る</a>
+    </div>
+    
+    <div class="container">
+        <!-- 登録フォーム -->
+        <div class="form-section">
+            <h2>新規登録</h2>
+            
+            <form th:action="@{/person/register}" th:object="${person}" method="post" id="personForm">
+                
+                <!-- No -->
+                <div class="form-group">
+                    <label for="no">No <span class="required">*</span></label>
+                    <input type="number" th:field="*{no}" id="no" required>
+                    <div class="error-message" id="noError">Noを入力してください</div>
+                </div>
+                
+                <!-- 名前（カタカナ） -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="lastNameKana">姓（カタカナ）<span class="required">*</span></label>
+                        <input type="text" th:field="*{lastNameKana}" id="lastNameKana" 
+                               pattern="[\u30A0-\u30FF\s]+" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="firstNameKana">名（カタカナ）<span class="required">*</span></label>
+                        <input type="text" th:field="*{firstNameKana}" id="firstNameKana" 
+                               pattern="[\u30A0-\u30FF\s]+" required>
+                    </div>
+                </div>
+                
+                <!-- 名前（漢字） -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="lastNameKanji">姓（漢字）<span class="required">*</span></label>
+                        <input type="text" th:field="*{lastNameKanji}" id="lastNameKanji" 
+                               pattern="[\u4E00-\u9FFFぁ-ん]+" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="firstNameKanji">名（漢字）<span class="required">*</span></label>
+                        <input type="text" th:field="*{firstNameKanji}" id="firstNameKanji" 
+                               pattern="[\u4E00-\u9FFFぁ-ん]+" required>
+                    </div>
+                </div>
+                
+                <!-- 郵便番号・住所 -->
+                <div class="form-group">
+                    <label for="postalCode">郵便番号</label>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" th:field="*{postalCode}" id="postalCode" 
+                               pattern="\d{7}" placeholder="1040051" maxlength="7">
+                        <button type="button" class="postal-search" onclick="searchAddress()">
+                            住所検索
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="address1">都道府県・市区町村</label>
+                    <input type="text" th:field="*{address1}" id="address1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="address2">番地</label>
+                    <input type="text" th:field="*{address2}" id="address2">
+                </div>
+                
+                <div class="form-group">
+                    <label for="address3">マンション名・部屋番号</label>
+                    <input type="text" th:field="*{address3}" id="address3">
+                </div>
+                
+                <!-- 最寄り駅 -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nearestLine">最寄り駅（路線）</label>
+                        <input type="text" th:field="*{nearestLine}" id="nearestLine" 
+                               placeholder="例: 山手線">
+                    </div>
+                    <div class="form-group">
+                        <label for="nearestStation">最寄り駅（駅名）</label>
+                        <input type="text" th:field="*{nearestStation}" id="nearestStation" 
+                               placeholder="例: 東京駅">
+                    </div>
+                </div>
+                
+                <!-- 連絡先 -->
+                <div class="form-group">
+                    <label for="homePhone">自宅電話番号</label>
+                    <input type="text" th:field="*{homePhone}" id="homePhone">
+                </div>
+                
+                <div class="form-group">
+                    <label for="faxPhone">FAX番号</label>
+                    <input type="text" th:field="*{faxPhone}" id="faxPhone">
+                </div>
+                
+                <div class="form-group">
+                    <label for="mobilePhone">携帯電話番号 <span class="required">*</span></label>
+                    <input type="text" th:field="*{mobilePhone}" id="mobilePhone" required>
+                </div>
+                
+                <!-- 希望職種 -->
+                <div class="form-group">
+                    <label>希望職種 <span class="required">*</span></label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="radio" name="desiredJob" value="家事" required>
+                            <label>家事</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="radio" name="desiredJob" value="介護" required>
+                            <label>介護</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 希望形態 -->
+                <div class="form-group">
+                    <label>希望形態 <span class="required">*</span></label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="radio" name="desiredType" value="通勤" required>
+                            <label>通勤</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="radio" name="desiredType" value="パート" required>
+                            <label>パート</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="radio" name="desiredType" value="住込" required>
+                            <label>住込</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 紹介者 -->
+                <div class="form-group">
+                    <label for="introducer">紹介者</label>
+                    <input type="text" th:field="*{introducer}" id="introducer">
+                </div>
+                
+                <!-- 資格 -->
+                <div class="form-group">
+                    <label>資格（複数選択可）</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="qualNursery" value="true">
+                            <label>保育士</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="qualCook" value="true">
+                            <label>調理師</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="qualCareWorker" value="true">
+                            <label>介護福祉士</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="qualCareHelper" value="true">
+                            <label>介護ヘルパー</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 動物 -->
+                <div class="form-group">
+                    <label>動物（複数選択可）</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="animalDogOk" value="true">
+                            <label>犬OK</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="animalCatOk" value="true">
+                            <label>猫OK</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="animalDogAllergy" value="true">
+                            <label>犬アレルギー</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="animalCatAllergy" value="true">
+                            <label>猫アレルギー</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 料理 -->
+                <div class="form-group">
+                    <label>料理 <span class="required">*</span></label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="radio" name="cooking" value="好き" required>
+                            <label>好き</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="radio" name="cooking" value="普通" required>
+                            <label>普通</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="radio" name="cooking" value="嫌い" required>
+                            <label>嫌い</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- タバコ -->
+                <div class="form-group">
+                    <label>タバコ <span class="required">*</span></label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="radio" name="smoking" value="吸う" required>
+                            <label>吸う</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="radio" name="smoking" value="吸わない" required>
+                            <label>吸わない</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 子育て経験 -->
+                <div class="form-group">
+                    <label>子育て経験 <span class="required">*</span></label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="radio" name="childcareExp" value="有" required>
+                            <label>有</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="radio" name="childcareExp" value="無" required>
+                            <label>無</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 生年月日 -->
+                <div class="form-group">
+                    <label for="birthDate">生年月日</label>
+                    <input type="date" th:field="*{birthDate}" id="birthDate">
+                </div>
+                
+                <!-- 登録日 -->
+                <div class="form-group">
+                    <label for="registeredDate">登録日</label>
+                    <input type="date" th:field="*{registeredDate}" id="registeredDate">
+                </div>
+                
+                <button type="submit">登録</button>
+            </form>
+        </div>
+        
+        <!-- 一覧表示 -->
+        <div class="list-section">
+            <h2>登録済み求職者一覧</h2>
+            
+            <table th:if="${not #lists.isEmpty(persons)}">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>氏名</th>
+                        <th>電話番号</th>
+                        <th>希望職種</th>
+                        <th>希望形態</th>
+                        <th>登録日</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="p : ${persons}">
+                        <td th:text="${p.no}">1</td>
+                        <td th:text="${p.lastNameKanji + ' ' + p.firstNameKanji}">佐藤 あきら</td>
+                        <td th:text="${p.mobilePhone}">090-1111-1111</td>
+                        <td th:text="${p.desiredJob}">家事</td>
+                        <td th:text="${p.desiredType}">通勤</td>
+                        <td th:text="${p.registeredDate}">2026-01-25</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div style="text-align: center; padding: 20px; color: #999;" 
+                 th:if="${#lists.isEmpty(persons)}">
+                まだ登録されたデータがありません
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 郵便番号検索
+        function searchAddress() {
+            const postalCode = document.getElementById('postalCode').value;
+            
+            if (postalCode.length !== 7) {
+                alert('郵便番号は7桁で入力してください');
+                return;
+            }
+            
+            fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${postalCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 200 && data.results) {
+                        const result = data.results[0];
+                        document.getElementById('address1').value = 
+                            result.address1 + result.address2 + result.address3;
+                    } else {
+                        alert('該当する住所が見つかりませんでした');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('住所検索に失敗しました');
+                });
+        }
+    </script>
+</body>
+</html>

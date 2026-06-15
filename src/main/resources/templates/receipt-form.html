@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>領収書出力 - 家政婦紹介事務所</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Meiryo, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 {
+            margin: 0;
+            color: #333;
+        }
+        .back-btn {
+            background: #2196F3;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .back-btn:hover {
+            background: #1976D2;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #4CAF50;
+            border-bottom: 2px solid #4CAF50;
+            padding-bottom: 10px;
+            margin-top: 30px;
+        }
+        h2:first-of-type {
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        label .required {
+            color: #f44336;
+        }
+        input[type="text"],
+        input[type="date"],
+        input[type="number"],
+        input[type="month"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        input.error, select.error {
+            border: 2px solid #f44336;
+            background: #ffebee;
+        }
+        .error-message {
+            color: #f44336;
+            font-size: 13px;
+            margin-top: 5px;
+            display: none;
+        }
+        .error-message.show {
+            display: block;
+        }
+        .readonly {
+            background: #f9f9f9;
+        }
+        .calc-result {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .calc-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .calc-row.total {
+            font-weight: bold;
+            font-size: 20px;
+            color: #2e7d32;
+            padding-top: 10px;
+            border-top: 2px solid #4CAF50;
+        }
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        button {
+            padding: 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .btn-pdf {
+            background: #4CAF50;
+            color: white;
+        }
+        .btn-pdf:hover {
+            background: #45a049;
+        }
+        .btn-print {
+            background: #FF9800;
+            color: white;
+        }
+        .btn-print:hover {
+            background: #F57C00;
+        }
+        .btn-both {
+            background: #9C27B0;
+            color: white;
+            grid-column: span 2;
+        }
+        .btn-both:hover {
+            background: #7B1FA2;
+        }
+        .info-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .validation-summary {
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .validation-summary.show {
+            display: block;
+        }
+        .validation-summary h3 {
+            margin: 0 0 10px 0;
+            color: #c62828;
+        }
+        .validation-summary ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .validation-summary li {
+            color: #d32f2f;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧾 領収書出力</h1>
+        <a href="/menu" class="back-btn">← メニューに戻る</a>
+    </div>
+    
+    <div class="container">
+        <div class="info-box">
+            💡 家政婦を選択すると、登録情報が自動入力されます
+        </div>
+        
+        <div class="validation-summary" id="validationSummary">
+            <h3>⚠️ 以下の項目を入力してください</h3>
+            <ul id="validationList"></ul>
+        </div>
+        
+        <form th:action="@{/receipt/generate-pdf}" th:object="${receipt}" method="post" id="receiptForm">
+            
+            <h2>家政婦選択</h2>
+            <div class="form-group">
+                <label for="personSelect">登録済み家政婦から選択</label>
+                <select id="personSelect" onchange="fillPersonData()">
+                    <option value="">-- 選択してください --</option>
+                    <option th:each="p : ${persons}" 
+                            th:value="${p.id}"
+                            th:data-last-kana="${p.lastNameKana}"
+                            th:data-first-kana="${p.firstNameKana}"
+                            th:data-last-kanji="${p.lastNameKanji}"
+                            th:data-first-kanji="${p.firstNameKanji}"
+                            th:data-postal="${p.postalCode}"
+                            th:data-addr1="${p.address1}"
+                            th:data-addr2="${p.address2}"
+                            th:data-addr3="${p.address3}"
+                            th:data-birth="${p.birthDate}"
+                            th:text="${p.lastNameKanji + ' ' + p.firstNameKanji}">
+                    </option>
+                </select>
+            </div>
+            
+            <h2>基本情報</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>姓（カタカナ）</label>
+                    <input type="text" th:field="*{lastNameKana}" id="last_kana" class="readonly" readonly>
+                </div>
+                <div class="form-group">
+                    <label>名（カタカナ）</label>
+                    <input type="text" th:field="*{firstNameKana}" id="first_kana" class="readonly" readonly>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>姓（漢字）</label>
+                    <input type="text" th:field="*{lastNameKanji}" id="last_kanji" class="readonly" readonly>
+                </div>
+                <div class="form-group">
+                    <label>名（漢字）</label>
+                    <input type="text" th:field="*{firstNameKanji}" id="first_kanji" class="readonly" readonly>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>郵便番号</label>
+                <input type="text" th:field="*{postalCode}" id="postal" class="readonly" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label>住所1</label>
+                <input type="text" th:field="*{address1}" id="addr1" class="readonly" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label>住所2</label>
+                <input type="text" th:field="*{address2}" id="addr2" class="readonly" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label>住所3</label>
+                <input type="text" th:field="*{address3}" id="addr3" class="readonly" readonly>
+            </div>
+            
+            <h2>勤務情報</h2>
+            
+            <div class="form-group">
+                <label for="workPlace">働き先 <span class="required">*</span></label>
+                <input type="text" th:field="*{workPlace}" id="workPlace" 
+                       placeholder="例: 田中様邸" required>
+                <div class="error-message" id="workPlaceError">働き先を入力してください</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="workMonth">勤務月 <span class="required">*</span></label>
+                <input type="month" th:field="*{workMonth}" id="workMonth" required>
+                <div class="error-message" id="workMonthError">勤務月を選択してください</div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="hourlyWage">時給（円）<span class="required">*</span></label>
+                    <input type="number" th:field="*{hourlyWage}" id="hourlyWage" 
+                           placeholder="1500" min="0" required oninput="autoCalculate()">
+                    <div class="error-message" id="hourlyWageError">時給を入力してください</div>
+                </div>
+                <div class="form-group">
+                    <label for="workingHours">勤務時間（時間）<span class="required">*</span></label>
+                    <input type="number" step="0.5" th:field="*{workingHours}" id="workingHours" 
+                           placeholder="40.5" min="0" required oninput="autoCalculate()">
+                    <div class="error-message" id="workingHoursError">勤務時間を入力してください</div>
+                </div>
+            </div>
+            
+            <div class="calc-result" id="calcResult" style="display: none;">
+                <div class="calc-row">
+                    <span>給与額（時給 × 時間）:</span>
+                    <span id="totalAmount">¥0</span>
+                </div>
+                <div class="calc-row">
+                    <span>手数料（15%）:</span>
+                    <span id="commission">¥0</span>
+                </div>
+                <div class="calc-row">
+                    <span>消費税（10%）:</span>
+                    <span id="tax">¥0</span>
+                </div>
+                <div class="calc-row total">
+                    <span>合計金額:</span>
+                    <span id="grandTotal">¥0</span>
+                </div>
+            </div>
+            
+            <div class="btn-group">
+                <button type="button" class="btn-pdf" onclick="downloadPdf()">
+                    📥 PDFをダウンロード
+                </button>
+                <button type="button" class="btn-print" onclick="printPdf()">
+                    🖨️ 印刷
+                </button>
+                <button type="button" class="btn-both" onclick="downloadAndPrint()">
+                    📄🖨️ ダウンロード＋印刷
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        function fillPersonData() {
+            const select = document.getElementById('personSelect');
+            const option = select.options[select.selectedIndex];
+            
+            if (option.value) {
+                document.getElementById('last_kana').value = option.dataset.lastKana || '';
+                document.getElementById('first_kana').value = option.dataset.firstKana || '';
+                document.getElementById('last_kanji').value = option.dataset.lastKanji || '';
+                document.getElementById('first_kanji').value = option.dataset.firstKanji || '';
+                document.getElementById('postal').value = option.dataset.postal || '';
+                document.getElementById('addr1').value = option.dataset.addr1 || '';
+                document.getElementById('addr2').value = option.dataset.addr2 || '';
+                document.getElementById('addr3').value = option.dataset.addr3 || '';
+            }
+        }
+        
+        // 自動計算（入力時）
+        function autoCalculate() {
+            const hourlyWage = parseFloat(document.getElementById('hourlyWage').value) || 0;
+            const workingHours = parseFloat(document.getElementById('workingHours').value) || 0;
+            
+            if (hourlyWage > 0 && workingHours > 0) {
+                const totalAmount = Math.floor(hourlyWage * workingHours);
+                const commission = Math.floor(totalAmount * 0.15);
+                const tax = Math.floor(commission * 0.10);
+                const grandTotal = totalAmount + commission + tax;
+                
+                document.getElementById('totalAmount').textContent = 
+                    '¥' + totalAmount.toLocaleString();
+                document.getElementById('commission').textContent = 
+                    '¥' + commission.toLocaleString();
+                document.getElementById('tax').textContent = 
+                    '¥' + tax.toLocaleString();
+                document.getElementById('grandTotal').textContent = 
+                    '¥' + grandTotal.toLocaleString();
+                
+                document.getElementById('calcResult').style.display = 'block';
+            }
+        }
+        
+        // 詳細なバリデーション
+        function validateForm() {
+            const errors = [];
+            const validationList = document.getElementById('validationList');
+            const validationSummary = document.getElementById('validationSummary');
+            
+            // すべてのエラー表示をリセット
+            document.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
+            document.querySelectorAll('.error-message').forEach(el => el.classList.remove('show'));
+            validationList.innerHTML = '';
+            validationSummary.classList.remove('show');
+            
+            // 働き先チェック
+            const workPlace = document.getElementById('workPlace');
+            if (!workPlace.value.trim()) {
+                errors.push('働き先');
+                workPlace.classList.add('error');
+                document.getElementById('workPlaceError').classList.add('show');
+            }
+            
+            // 勤務月チェック
+            const workMonth = document.getElementById('workMonth');
+            if (!workMonth.value) {
+                errors.push('勤務月');
+                workMonth.classList.add('error');
+                document.getElementById('workMonthError').classList.add('show');
+            }
+            
+            // 時給チェック
+            const hourlyWage = document.getElementById('hourlyWage');
+            if (!hourlyWage.value || parseFloat(hourlyWage.value) <= 0) {
+                errors.push('時給');
+                hourlyWage.classList.add('error');
+                document.getElementById('hourlyWageError').classList.add('show');
+            }
+            
+            // 勤務時間チェック
+            const workingHours = document.getElementById('workingHours');
+            if (!workingHours.value || parseFloat(workingHours.value) <= 0) {
+                errors.push('勤務時間');
+                workingHours.classList.add('error');
+                document.getElementById('workingHoursError').classList.add('show');
+            }
+            
+            // エラーがあれば表示
+            if (errors.length > 0) {
+                errors.forEach(error => {
+                    const li = document.createElement('li');
+                    li.textContent = error;
+                    validationList.appendChild(li);
+                });
+                validationSummary.classList.add('show');
+                
+                // エラーがある最初の項目までスクロール
+                const firstError = document.querySelector('.error');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // PDFダウンロード
+        function downloadPdf() {
+            if (!validateForm()) return;
+            
+            const form = document.getElementById('receiptForm');
+            
+            // action属性があれば削除
+            const existingAction = form.querySelector('input[name="action"]');
+            if (existingAction) {
+                existingAction.remove();
+            }
+            
+            form.action = '/receipt/generate-pdf';
+            form.target = '_blank';
+            form.submit();
+        }
+        
+        // 印刷
+        function printPdf() {
+            if (!validateForm()) return;
+            
+            const form = document.getElementById('receiptForm');
+            
+            // 既存のactionパラメータを削除
+            const existingAction = form.querySelector('input[name="action"]');
+            if (existingAction) {
+                existingAction.remove();
+            }
+            
+            // actionパラメータを追加
+            const actionInput = document.createElement('input');
+            actionInput.type = 'hidden';
+            actionInput.name = 'action';
+            actionInput.value = 'print';
+            form.appendChild(actionInput);
+            
+            // 新しいウィンドウでPDFを開く
+            form.target = '_blank';
+            form.action = '/receipt/generate-pdf';
+            form.submit();
+            
+            // actionパラメータを削除
+            setTimeout(() => {
+                form.removeChild(actionInput);
+            }, 100);
+        }
+        
+        // ダウンロード＋印刷を同時実行
+        function downloadAndPrint() {
+            if (!validateForm()) return;
+            
+            const form = document.getElementById('receiptForm');
+            
+            // まずダウンロード
+            downloadPdf();
+            
+            // 500ms待ってから印刷ダイアログ表示
+            setTimeout(() => {
+                printPdf();
+            }, 500);
+        }
+        
+        // 入力時のエラー表示をクリア
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = ['workPlace', 'workMonth', 'hourlyWage', 'workingHours'];
+            inputs.forEach(id => {
+                const element = document.getElementById(id);
+                element.addEventListener('input', function() {
+                    this.classList.remove('error');
+                    document.getElementById(id + 'Error').classList.remove('show');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

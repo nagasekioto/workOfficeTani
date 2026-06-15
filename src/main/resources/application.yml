@@ -1,0 +1,10 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/person_management
+    username: postgres
+    password: 7136
+    driver-class-name: org.postgresql.Driver
+
+  sql:
+    init:
+      mode: never   # 既存DBを使うので自動DDLはしない

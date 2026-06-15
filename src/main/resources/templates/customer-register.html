@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>求人者管理名簿入力 - 家政婦紹介事務所</title>
+    <style>
+        /* person-register.htmlと同じCSS */
+        body {
+            font-family: 'Segoe UI', Meiryo, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        h1 {
+            margin: 0;
+            color: #333;
+        }
+        .back-btn {
+            background: #2196F3;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .form-section, .list-section {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #FF9800;
+            border-bottom: 2px solid #FF9800;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+            font-size: 14px;
+        }
+        label .required {
+            color: #f44336;
+        }
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 80px;
+        }
+        .postal-search {
+            display: inline-block;
+            margin-left: 5px;
+            padding: 5px 10px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        button[type="submit"] {
+            width: 100%;
+            padding: 15px;
+            background: #FF9800;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        button[type="submit"]:hover {
+            background: #F57C00;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #FF9800;
+            color: white;
+        }
+        tr:hover {
+            background: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📝 求人者管理名簿入力</h1>
+        <a href="/customer-menu" class="back-btn">← 求人者管理に戻る</a>
+    </div>
+    
+    <div class="container">
+        <div class="form-section">
+            <h2>新規登録</h2>
+            
+            <form th:action="@{/customer/register}" th:object="${customer}" method="post">
+                
+                <div class="form-group">
+                    <label for="no">No <span class="required">*</span></label>
+                    <input type="number" th:field="*{no}" id="no" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="lastNameKana">姓（カタカナ）<span class="required">*</span></label>
+                        <input type="text" th:field="*{lastNameKana}" pattern="[\u30A0-\u30FF\s]+" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="firstNameKana">名（カタカナ）<span class="required">*</span></label>
+                        <input type="text" th:field="*{firstNameKana}" pattern="[\u30A0-\u30FF\s]+" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="lastNameKanji">姓（漢字）<span class="required">*</span></label>
+                        <input type="text" th:field="*{lastNameKanji}" pattern="[\u4E00-\u9FFFぁ-ん]+" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="firstNameKanji">名（漢字）<span class="required">*</span></label>
+                        <input type="text" th:field="*{firstNameKanji}" pattern="[\u4E00-\u9FFFぁ-ん]+" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="postalCode">郵便番号</label>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="text" th:field="*{postalCode}" id="postalCode" pattern="\d{7}" maxlength="7">
+                        <button type="button" class="postal-search" onclick="searchAddress()">住所検索</button>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="address1">都道府県・市区町村</label>
+                    <input type="text" th:field="*{address1}" id="address1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="address2">番地</label>
+                    <input type="text" th:field="*{address2}" id="address2">
+                </div>
+                
+                <div class="form-group">
+                    <label for="address3">マンション名・部屋番号</label>
+                    <input type="text" th:field="*{address3}" id="address3">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nearestLine">最寄り駅（路線）</label>
+                        <input type="text" th:field="*{nearestLine}" id="nearestLine">
+                    </div>
+                    <div class="form-group">
+                        <label for="nearestStation">最寄り駅（駅名）</label>
+                        <input type="text" th:field="*{nearestStation}" id="nearestStation">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="homePhone">自宅電話番号</label>
+                    <input type="text" th:field="*{homePhone}" id="homePhone">
+                </div>
+                
+                <div class="form-group">
+                    <label for="faxPhone">FAX番号</label>
+                    <input type="text" th:field="*{faxPhone}" id="faxPhone">
+                </div>
+                
+                <div class="form-group">
+                    <label for="mobilePhone">携帯電話番号 <span class="required">*</span></label>
+                    <input type="text" th:field="*{mobilePhone}" id="mobilePhone" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="birthDate">生年月日</label>
+                    <input type="date" th:field="*{birthDate}" id="birthDate">
+                </div>
+                
+                <div class="form-group">
+                    <label for="notes">備考</label>
+                    <textarea th:field="*{notes}" id="notes"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="registeredDate">登録日</label>
+                    <input type="date" th:field="*{registeredDate}" id="registeredDate">
+                </div>
+                
+                <button type="submit">登録</button>
+            </form>
+        </div>
+        
+        <div class="list-section">
+            <h2>登録済み求人者一覧</h2>
+            
+            <table th:if="${not #lists.isEmpty(customers)}">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>氏名</th>
+                        <th>電話番号</th>
+                        <th>住所</th>
+                        <th>登録日</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="c : ${customers}">
+                        <td th:text="${c.no}">1</td>
+                        <td th:text="${c.lastNameKanji + ' ' + c.firstNameKanji}">山田 太郎</td>
+                        <td th:text="${c.mobilePhone}">090-3333-3333</td>
+                        <td th:text="${c.address1}">東京都渋谷区</td>
+                        <td th:text="${c.registeredDate}">2026-01-20</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        function searchAddress() {
+            const postalCode = document.getElementById('postalCode').value;
+            if (postalCode.length !== 7) {
+                alert('郵便番号は7桁で入力してください');
+                return;
+            }
+            fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${postalCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 200 && data.results) {
+                        const result = data.results[0];
+                        document.getElementById('address1').value = 
+                            result.address1 + result.address2 + result.address3;
+                    } else {
+                        alert('該当する住所が見つかりませんでした');
+                    }
+                });
+        }
+    </script>
+</body>
+</html>
