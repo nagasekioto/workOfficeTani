@@ -148,7 +148,7 @@
             <!-- 時給（日給）/ 時給（残業） -->
             <div class="form-row">
                 <div class="form-group">
-                    <label>時給（日給）円</label>
+                    <label>時給（円）</label>
                     <input type="number" th:name="'hourlyWages[' + (${i} - 1) + ']'" th:id="'wage' + ${i}"
                            min="0" th:oninput="'calcTotal(' + ${i} + ')'">
                 </div>

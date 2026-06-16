@@ -2,7 +2,6 @@ package jp.co.housekeeping.person_management.controller;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +38,8 @@ public class WorkingLedgerController {
 
     // ─── 1ページ目：求職者一覧 + 検索 ──────────────────
     @GetMapping
-    public String list(@RequestParam(required = false) String search, HttpSession session, Model model) {
+    public String list(@RequestParam(required = false) String search,
+                       HttpSession session, Model model) {
         if (session.getAttribute("authenticated") == null) return "redirect:/login";
 
         Iterable<Person> allPersons = personRepository.findAll();
@@ -60,12 +60,14 @@ public class WorkingLedgerController {
 
     // ─── 2ページ目：求職者詳細（稼働履歴）──────────────
     @GetMapping("/{personId}")
-    public String detail(@PathVariable Long personId, HttpSession session, Model model) {
+    public String detail(@PathVariable Long personId,
+                         HttpSession session, Model model) {
         if (session.getAttribute("authenticated") == null) return "redirect:/login";
 
         Person person = personRepository.findById(personId).orElse(null);
         if (person == null) return "redirect:/person/working-ledger";
 
+        // salesテーブルからperson_idで取得 → sales_detailsを取得
         List<Sales> salesList = salesRepository.findByPersonId(personId);
         List<LedgerRow> rows = new ArrayList<>();
 
@@ -74,29 +76,28 @@ public class WorkingLedgerController {
             for (SalesDetail d : details) {
                 LedgerRow row = new LedgerRow();
                 row.detail = d;
-                row.sales = s;
+                row.sales  = s;
 
                 // 求人者名
                 if (d.getCustomerId() != null) {
                     Optional<Customer> c = customerRepository.findById(d.getCustomerId());
-                    c.ifPresent(cu -> row.customerName = cu.getLastNameKanji() + " " + cu.getFirstNameKanji());
+                    c.ifPresent(cu -> row.customerName =
+                        cu.getLastNameKanji() + " " + cu.getFirstNameKanji());
                 }
 
                 // 日数計算
                 if (d.getWorkStartDate() != null && d.getWorkEndDate() != null) {
-                    row.workDays = (int) ChronoUnit.DAYS.between(d.getWorkStartDate(), d.getWorkEndDate()) + 1;
+                    row.workDays = (int) ChronoUnit.DAYS.between(
+                        d.getWorkStartDate(), d.getWorkEndDate()) + 1;
                 }
 
                 // 領収月日（就労終了月の月末）
                 if (d.getWorkEndDate() != null) {
-                    YearMonth ym = YearMonth.from(d.getWorkEndDate());
-                    row.receiptDate = ym.atEndOfMonth();
+                    row.receiptDate = YearMonth.from(d.getWorkEndDate()).atEndOfMonth();
                 }
 
                 // 賃金総額
-                int total = 0;
-                if (d.getMonthlyTotal() != null) total = d.getMonthlyTotal();
-                row.wageTotal = total;
+                row.wageTotal = d.getMonthlyTotal() != null ? d.getMonthlyTotal() : 0;
 
                 // 手数料率（固定15%）
                 row.commissionRate = "15%";
@@ -109,6 +110,7 @@ public class WorkingLedgerController {
         rows.sort((a, b) -> {
             LocalDate da = a.detail.getIntroductionDate();
             LocalDate db = b.detail.getIntroductionDate();
+            if (da == null && db == null) return 0;
             if (da == null) return 1;
             if (db == null) return -1;
             return da.compareTo(db);
@@ -119,10 +121,12 @@ public class WorkingLedgerController {
         return "working-ledger-detail";
     }
 
-    // 備考更新（稼働管理簿詳細ページから）
+    // 備考更新
     @PostMapping("/update-remarks")
-    public String updateRemarks(@RequestParam Long detailId, @RequestParam String remarks,
-            @RequestParam Long personId, HttpSession session) {
+    public String updateRemarks(@RequestParam Long detailId,
+                                @RequestParam String remarks,
+                                @RequestParam Long personId,
+                                HttpSession session) {
         if (session.getAttribute("authenticated") == null) return "redirect:/login";
         salesDetailRepository.findById(detailId).ifPresent(d -> {
             d.setRemarks(remarks);
@@ -139,11 +143,11 @@ public class WorkingLedgerController {
     // ─── 内部DTO ────────────────────────────────────────
     public static class LedgerRow {
         public SalesDetail detail;
-        public Sales sales;
-        public String customerName = "";
-        public int workDays = 0;
-        public LocalDate receiptDate;
-        public int wageTotal = 0;
-        public String commissionRate = "15%";
+        public Sales       sales;
+        public String      customerName   = "";
+        public int         workDays       = 0;
+        public LocalDate   receiptDate;
+        public int         wageTotal      = 0;
+        public String      commissionRate = "15%";
     }
 }
