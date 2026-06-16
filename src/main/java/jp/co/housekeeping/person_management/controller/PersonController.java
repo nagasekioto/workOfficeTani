@@ -1,6 +1,8 @@
 package jp.co.housekeeping.person_management.controller;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -15,14 +17,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import jp.co.housekeeping.person_management.model.Person;
+import jp.co.housekeeping.person_management.repository.CustomerRepository;
 import jp.co.housekeeping.person_management.repository.PersonRepository;
+import jp.co.housekeeping.person_management.repository.SalesDetailRepository;
+import jp.co.housekeeping.person_management.repository.SalesRepository;
 
 @Controller
 @RequestMapping("/person")
 public class PersonController {
 
-    @Autowired
-    private PersonRepository personRepository;
+    @Autowired private PersonRepository personRepository;
+    @Autowired private CustomerRepository customerRepository;
+    @Autowired private SalesRepository salesRepository;
+    @Autowired private SalesDetailRepository salesDetailRepository;
 
     private boolean checkAuth(HttpSession session) {
         return session.getAttribute("authenticated") != null;
@@ -114,10 +121,46 @@ public class PersonController {
         return "redirect:/person/register";
     }
 
-    // ─── 管理簿入力画面 ────────────────────────────────
-    @GetMapping("/report")
-    public String report(HttpSession session) {
+    // ─── 1-1-4 求職管理簿 ──────────────────────────────
+    @GetMapping("/shokuji-ledger")
+    public String shokujiLedger(@RequestParam(required = false) Long personId,
+                                HttpSession session, Model model) {
         if (!checkAuth(session)) return "redirect:/login";
-        return "person-report";
+
+        model.addAttribute("persons", personRepository.findAll());
+
+        if (personId != null) {
+            Person person = personRepository.findById(personId).orElse(null);
+            model.addAttribute("selectedPerson", person);
+
+            // 稼働データ取得
+            List<jp.co.housekeeping.person_management.model.Sales> salesList =
+                salesRepository.findByPersonId(personId);
+            List<WorkingLedgerController.LedgerRow> rows = new ArrayList<>();
+            for (jp.co.housekeeping.person_management.model.Sales s : salesList) {
+                List<jp.co.housekeeping.person_management.model.SalesDetail> details =
+                    salesDetailRepository.findBySalesId(s.getId());
+                for (jp.co.housekeeping.person_management.model.SalesDetail d : details) {
+                    WorkingLedgerController.LedgerRow row = new WorkingLedgerController.LedgerRow();
+                    row.detail = d;
+                    row.sales = s;
+                    customerRepository.findById(d.getCustomerId() != null ? d.getCustomerId() : 0L)
+                        .ifPresent(c -> row.customerName = c.getLastNameKanji() + " " + c.getFirstNameKanji());
+                    rows.add(row);
+                }
+            }
+            model.addAttribute("rows", rows);
+            model.addAttribute("emptyRows", Math.max(5, 10 - rows.size()));
+        }
+        return "person-shokuji-ledger";
+    }
+
+    // ─── 1-1-6 紹介状 ──────────────────────────────────
+    @GetMapping("/introduction")
+    public String introduction(HttpSession session, Model model) {
+        if (!checkAuth(session)) return "redirect:/login";
+        model.addAttribute("persons", personRepository.findAll());
+        model.addAttribute("customers", customerRepository.findAll());
+        return "person-introduction";
     }
 }

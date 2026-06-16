@@ -21,6 +21,8 @@ import jp.co.housekeeping.person_management.model.CustomerRequest;
 import jp.co.housekeeping.person_management.repository.CustomerRepository;
 import jp.co.housekeeping.person_management.repository.CustomerRequestRepository;
 import jp.co.housekeeping.person_management.repository.PersonRepository;
+import jp.co.housekeeping.person_management.repository.SalesDetailRepository;
+import jp.co.housekeeping.person_management.repository.SalesRepository;
 
 @Controller
 @RequestMapping("/customer")
@@ -29,6 +31,8 @@ public class CustomerController {
     @Autowired private CustomerRepository customerRepository;
     @Autowired private CustomerRequestRepository customerRequestRepository;
     @Autowired private PersonRepository personRepository;
+    @Autowired private SalesRepository salesRepository;
+    @Autowired private SalesDetailRepository salesDetailRepository;
 
     private boolean checkAuth(HttpSession session) {
         return session.getAttribute("authenticated") != null;
@@ -200,11 +204,52 @@ public class CustomerController {
 
     // ─── 1-2-2 管理簿入力 ─────────────────────────────
     @GetMapping("/report")
-    public String report(HttpSession session, Model model) {
+    public String report(@RequestParam(required = false) Long customerId,
+                         HttpSession session, Model model) {
         if (!checkAuth(session)) return "redirect:/login";
         model.addAttribute("customers", customerRepository.findAll());
         model.addAttribute("requests", customerRequestRepository.findAllOrdered());
         model.addAttribute("persons", personRepository.findAll());
+
+        if (customerId != null) {
+            customerRepository.findById(customerId).ifPresent(c -> {
+                model.addAttribute("selectedCustomer", c);
+                // この求人者に紐づく求人受付表を取得
+                java.util.List<jp.co.housekeeping.person_management.model.CustomerRequest> reqs =
+                    customerRequestRepository.findByCustomerId(customerId);
+                if (!reqs.isEmpty()) {
+                    model.addAttribute("request", reqs.get(0));
+                }
+            });
+
+            // 紹介履歴（sales_details経由）
+            java.util.List<KaijinRow> rows = new java.util.ArrayList<>();
+            salesRepository.findAll().forEach(s -> {
+                salesDetailRepository.findBySalesId(s.getId()).forEach(d -> {
+                    if (customerId.equals(d.getCustomerId())) {
+                        KaijinRow row = new KaijinRow();
+                        row.introductionDate = d.getIntroductionDate() != null ? d.getIntroductionDate().toString() : "";
+                        personRepository.findById(s.getPersonId() != null ? s.getPersonId() : 0L)
+                            .ifPresent(p -> row.personName = p.getLastNameKanji() + " " + p.getFirstNameKanji());
+                        row.detail = d;
+                        rows.add(row);
+                    }
+                });
+            });
+            model.addAttribute("rows", rows);
+            model.addAttribute("emptyRows", Math.max(5, 10 - rows.size()));
+
+            // 最新の時給取得
+            if (!rows.isEmpty()) {
+                model.addAttribute("latestDetail", rows.get(0).detail);
+            }
+        }
         return "customer-report";
+    }
+
+    public static class KaijinRow {
+        public String introductionDate = "";
+        public String personName = "";
+        public jp.co.housekeeping.person_management.model.SalesDetail detail;
     }
 }

@@ -2,66 +2,173 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>求人者管理簿入力 - 家政婦紹介事務所</title>
+    <title>求人管理簿 - 家政婦紹介事務所</title>
     <style>
-        /* 同じCSS */
-        body {
-            font-family: 'Segoe UI', Meiryo, sans-serif;
-            background: #f5f5f5;
-            margin: 0;
-            padding: 20px;
-        }
-        .header {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        h1 {
-            margin: 0;
-            color: #333;
-        }
-        .back-btn {
-            background: #2196F3;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            text-decoration: none;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        .icon {
-            font-size: 80px;
-            margin: 40px 0;
-        }
-        p {
-            font-size: 18px;
-            color: #666;
-        }
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; color: #333; font-size: 20px; }
+        .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .select-area { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display:flex; gap:10px; align-items:center; }
+        select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-width: 300px; }
+        .ledger-card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .ledger-title { text-align: center; font-size: 22px; font-weight: bold; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .info-item label { font-size: 12px; color: #777; display: block; margin-bottom: 3px; }
+        .info-item span { font-size: 15px; font-weight: bold; }
+        .section-title { font-weight: bold; background: #f0f0f0; padding: 6px 10px; margin: 15px 0 8px; border-left: 4px solid #FF9800; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { background: #555; color: white; padding: 7px 5px; text-align: center; white-space: nowrap; }
+        td { padding: 6px 5px; border: 1px solid #ddd; text-align: center; }
+        tr:nth-child(even) { background: #fafafa; }
+        .empty-row td { color: #eee; }
+        .job-type-box { background: #fff8e1; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 14px; }
+        .btn-print { background: #FF9800; color: white; border: none; border-radius: 5px; padding: 10px 24px; cursor: pointer; font-size: 15px; margin-top: 15px; }
+        .empty-msg { text-align: center; padding: 40px; color: #999; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>📋 求人者管理簿入力</h1>
-        <a href="/customer-menu" class="back-btn">← 求人者管理に戻る</a>
+<div class="header">
+    <h1>&#128203; 求人管理簿（1-2-2）</h1>
+    <a href="/customer-menu" class="back-btn">&#8592; 求人者管理に戻る</a>
+</div>
+
+<div class="container">
+    <!-- 求人者選択 -->
+    <div class="select-area">
+        <label style="font-weight:bold;">求人者を選択：</label>
+        <select onchange="location.href='/customer/report?customerId='+this.value">
+            <option value="">-- 選択してください --</option>
+            <option th:each="c : ${customers}"
+                    th:value="${c.id}"
+                    th:text="${c.lastNameKanji + ' ' + c.firstNameKanji}"
+                    th:selected="${selectedCustomer != null and selectedCustomer.id == c.id}">
+            </option>
+        </select>
     </div>
-    
-    <div class="container">
-        <div class="icon">🚧</div>
-        <h2>準備中</h2>
-        <p>この機能は現在開発中です</p>
+
+    <!-- 管理簿 -->
+    <div class="ledger-card" th:if="${selectedCustomer != null}">
+        <div class="ledger-title">求　人　管　理　簿</div>
+
+        <!-- ヘッダー -->
+        <div class="info-grid">
+            <div class="info-item">
+                <label>求人者 氏名</label>
+                <span th:text="${selectedCustomer.lastNameKanji + ' ' + selectedCustomer.firstNameKanji}"></span>
+            </div>
+            <div class="info-item">
+                <label>電話番号</label>
+                <span th:text="${selectedCustomer.homePhone != null ? selectedCustomer.homePhone : selectedCustomer.mobilePhone}"></span>
+            </div>
+            <div class="info-item">
+                <label>連絡担当者</label>
+                <span>-</span>
+            </div>
+            <div class="info-item" style="grid-column:span 2;">
+                <label>住所</label>
+                <span th:text="${'〒' + (selectedCustomer.postalCode != null ? selectedCustomer.postalCode : '') + ' ' + (selectedCustomer.address1 != null ? selectedCustomer.address1 : '') + (selectedCustomer.address2 != null ? selectedCustomer.address2 : '')}"></span>
+            </div>
+            <div class="info-item">
+                <label>登録日</label>
+                <span th:text="${selectedCustomer.registeredDate}"></span>
+            </div>
+        </div>
+
+        <!-- 求人希望職種 -->
+        <div class="job-type-box" th:if="${request != null}">
+            <strong>求人希望職種：</strong>
+            <span th:if="${request.jobCooking or request.jobLaundry or request.jobCleaning or request.jobIroning}">家事一般</span>
+            <span th:if="${request.jobBabysitting}">　ベビーシッター</span>
+            <span th:if="${request.jobNursing}">　介護</span>
+            <span th:if="${request.jobOther}" th:text="'　その他: ' + ${request.jobOtherText}"></span>
+            <span style="margin-left:20px;"><strong>求人数：</strong>1人</span>
+            <span style="margin-left:20px;"><strong>給与：</strong>
+                <span th:if="${latestDetail != null and latestDetail.hourlyWage != null}"
+                      th:text="'時給 ¥' + ${latestDetail.hourlyWage}"></span>
+                <span th:unless="${latestDetail != null and latestDetail.hourlyWage != null}">-</span>
+            </span>
+        </div>
+
+        <!-- 紹介履歴テーブル -->
+        <div class="section-title">紹介履歴</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>紹介年月日</th>
+                    <th>求職者氏名</th>
+                    <th>採否</th>
+                    <th>採用年月日</th>
+                    <th>契約</th>
+                    <th>６カ月以内<br>または不明</th>
+                    <th>返戻金</th>
+                    <th>離職状況</th>
+                    <th>転職勧奨<br>禁止期間</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="row : ${rows}" th:if="${not #lists.isEmpty(rows)}">
+                    <td th:text="${row.introductionDate}">-</td>
+                    <td th:text="${row.personName}">-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+                <tr th:each="i : ${#numbers.sequence(1, emptyRows)}" class="empty-row">
+                    <td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- 取扱状況 -->
+        <div class="section-title">取扱状況</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>受付年月日</th>
+                    <th>有効期間</th>
+                    <th>取扱状況</th>
+                    <th>備考</th>
+                    <th>就業場所</th>
+                    <th>雇用期間</th>
+                    <th>賃金</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td th:text="${selectedCustomer.registeredDate}"></td>
+                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+                </tr>
+                <tr th:each="i : ${#numbers.sequence(1, 3)}" class="empty-row">
+                    <td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- 無期雇用 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px;padding:10px;background:#f9f9f9;border-radius:5px;font-size:13px;">
+            <div><label style="font-size:11px;color:#777;">無期雇用就職者</label><br><span>-</span></div>
+            <div><label style="font-size:11px;color:#777;">取扱状況</label><br><span>-</span></div>
+        </div>
+
+        <button class="btn-print" onclick="window.print()">&#128438; 印刷</button>
     </div>
+
+    <div class="empty-msg" th:if="${selectedCustomer == null}">
+        求人者を選択してください
+    </div>
+</div>
+
+<style>
+@media print {
+    .header, .select-area, .btn-print { display: none; }
+    body { background: white; padding: 0; }
+    .ledger-card { box-shadow: none; }
+}
+</style>
 </body>
 </html>
