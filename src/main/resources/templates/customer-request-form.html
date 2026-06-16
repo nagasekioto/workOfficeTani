@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>求人受付表 - 家政婦紹介事務所</title>
+    <style>
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; color: #333; font-size: 20px; }
+        .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .section { margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #e0e0e0; }
+        .section h3 { color: #4CAF50; margin-top: 0; margin-bottom: 15px; }
+        .form-group { margin-bottom: 14px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        label { display: block; margin-bottom: 4px; font-weight: bold; color: #555; font-size: 14px; }
+        input[type=text], input[type=number], input[type=date], input[type=time], input[type=datetime-local], select, textarea {
+            width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-family: inherit;
+        }
+        textarea { min-height: 80px; resize: vertical; }
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 6px; }
+        .checkbox-item { display: flex; align-items: center; gap: 5px; }
+        .checkbox-item label { margin: 0; font-weight: normal; }
+        .postal-btn { padding: 6px 12px; background: #2196F3; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px; }
+        .contact-item { display: grid; grid-template-columns: 160px 1fr auto; gap: 8px; margin-bottom: 6px; align-items: center; }
+        .remove-btn { background: #f44336; color: white; border: none; border-radius: 3px; padding: 4px 8px; cursor: pointer; }
+        .add-btn { background: #4CAF50; color: white; border: none; border-radius: 4px; padding: 6px 14px; cursor: pointer; margin-top: 6px; }
+        .btn-save { width: 100%; padding: 16px; background: #4CAF50; color: white; border: none; border-radius: 6px; font-size: 18px; cursor: pointer; margin-top: 20px; }
+        .btn-print { width: 100%; padding: 14px; background: #FF9800; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; margin-top: 8px; }
+        .required { color: #f44336; }
+        .weekly-detail { display: none; margin-top: 8px; background: #f9f9f9; padding: 10px; border-radius: 4px; }
+        .temp-detail { display: none; margin-top: 8px; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>&#128221; 求人受付表（1-2-1）</h1>
+    <a href="/customer-menu" class="back-btn">&#8592; 求人者管理に戻る</a>
+</div>
+
+<div class="container">
+    <form action="/customer/request/save" method="post" id="requestForm">
+
+        <!-- 求人者選択 -->
+        <div class="section">
+            <h3>求人者情報</h3>
+            <div class="form-group">
+                <label>求人者 <span class="required">*</span></label>
+                <select name="customerId" id="customerSelect" required onchange="fillCustomerAddress(this.value)">
+                    <option value="">-- 選択してください --</option>
+                    <option th:each="c : ${customers}"
+                            th:value="${c.id}"
+                            th:text="${c.lastNameKanji + ' ' + c.firstNameKanji}"
+                            th:selected="${selectedCustomerId != null and selectedCustomerId == c.id}">
+                    </option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>氏名（読み取り専用）</label>
+                <input type="text" id="customerName" readonly style="background:#f5f5f5;">
+            </div>
+            <div class="form-group">
+                <label>電話番号（読み取り専用）</label>
+                <input type="text" id="customerPhone" readonly style="background:#f5f5f5;">
+            </div>
+            <div class="form-group">
+                <label>求人者住所</label>
+                <div style="display:flex;gap:6px;margin-bottom:6px;">
+                    <input type="text" name="postalCode" id="postalCode" placeholder="郵便番号（7桁）" style="max-width:150px;">
+                    <button type="button" class="postal-btn" onclick="searchAddress()">住所検索</button>
+                </div>
+                <input type="text" name="address" id="address" placeholder="住所">
+            </div>
+            <div class="form-group">
+                <label>労働先住所</label>
+                <input type="text" name="workAddress" id="workAddress" placeholder="求人者と異なる場合に入力">
+            </div>
+        </div>
+
+        <!-- 仕事内容 -->
+        <div class="section">
+            <h3>仕事内容（複数選択可）</h3>
+            <div class="checkbox-group">
+                <div class="checkbox-item"><input type="checkbox" name="jobCooking" value="true"><label>食事</label></div>
+                <div class="checkbox-item"><input type="checkbox" name="jobLaundry" value="true"><label>洗濯</label></div>
+                <div class="checkbox-item"><input type="checkbox" name="jobCleaning" value="true"><label>掃除</label></div>
+                <div class="checkbox-item"><input type="checkbox" name="jobIroning" value="true"><label>アイロン</label></div>
+                <div class="checkbox-item"><input type="checkbox" name="jobBabysitting" value="true"><label>ベビーシッター</label></div>
+                <div class="checkbox-item"><input type="checkbox" name="jobNursing" value="true"><label>介護</label></div>
+                <div class="checkbox-item">
+                    <input type="checkbox" name="jobOther" value="true" onchange="toggleOther('jobOtherArea',this)">
+                    <label>その他</label>
+                </div>
+            </div>
+            <div id="jobOtherArea" style="display:none;margin-top:8px;">
+                <input type="text" name="jobOtherText" placeholder="その他の仕事内容">
+            </div>
+        </div>
+
+        <!-- 頻度 -->
+        <div class="section">
+            <h3>求職者の頻度</h3>
+            <div class="checkbox-group">
+                <div class="checkbox-item">
+                    <input type="radio" name="freqType" value="temp" onchange="toggleFreq('temp')">
+                    <label>臨時</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="radio" name="freqType" value="weekly" onchange="toggleFreq('weekly')">
+                    <label>毎週</label>
+                </div>
+            </div>
+            <div id="freqTempArea" class="temp-detail">
+                <label>月日</label>
+                <input type="date" name="freqTempDate">
+            </div>
+            <div id="freqWeeklyArea" class="weekly-detail">
+                <div class="form-group">
+                    <label>曜日（複数選択可）</label>
+                    <div class="checkbox-group">
+                        <div th:each="day : ${ {'月','火','水','木','金','土','日'} }" class="checkbox-item">
+                            <input type="checkbox" th:name="'freqDay_' + ${day}" th:value="${day}"
+                                   th:onchange="'collectDays()'">
+                            <label th:text="${day}"></label>
+                        </div>
+                    </div>
+                    <input type="hidden" name="freqWeeklyDays" id="freqWeeklyDays">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>開始時刻</label>
+                        <input type="time" name="freqWeeklyStart">
+                    </div>
+                    <div class="form-group">
+                        <label>終了時刻</label>
+                        <input type="time" name="freqWeeklyEnd">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 家族構成 -->
+        <div class="section">
+            <h3>家族構成</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>大人（人数）</label>
+                    <input type="number" name="familyAdults" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label>子ども（人数）</label>
+                    <input type="number" name="familyChildren" min="0" value="0">
+                </div>
+            </div>
+        </div>
+
+        <!-- 紹介先 -->
+        <div class="section">
+            <h3>紹介先</h3>
+            <div class="form-group">
+                <label>紹介者名</label>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <input type="text" name="introducerName" placeholder="紹介者の名前" style="flex:1;">
+                    <span style="white-space:nowrap;">様</span>
+                </div>
+            </div>
+            <div class="checkbox-group">
+                <div class="checkbox-item"><input type="checkbox" name="introInternet" value="true"><label>インターネット</label></div>
+                <div class="checkbox-item"><input type="checkbox" name="introTownpage" value="true"><label>タウンページ</label></div>
+                <div class="checkbox-item">
+                    <input type="checkbox" name="introOther" value="true" onchange="toggleOther('introOtherArea',this)">
+                    <label>その他</label>
+                </div>
+            </div>
+            <div id="introOtherArea" style="display:none;margin-top:8px;">
+                <input type="text" name="introOtherText" placeholder="その他の紹介経路">
+            </div>
+        </div>
+
+        <!-- ペット -->
+        <div class="section">
+            <h3>ペット</h3>
+            <div class="checkbox-group">
+                <div class="checkbox-item"><input type="radio" name="petType" value="none" checked onchange="togglePet('none')"><label>なし</label></div>
+                <div class="checkbox-item"><input type="radio" name="petType" value="dog" onchange="togglePet('dog')"><label>犬</label></div>
+                <div class="checkbox-item"><input type="radio" name="petType" value="cat" onchange="togglePet('cat')"><label>猫</label></div>
+                <div class="checkbox-item"><input type="radio" name="petType" value="other" onchange="togglePet('other')"><label>その他</label></div>
+            </div>
+            <input type="hidden" name="petNone" id="petNone" value="true">
+            <input type="hidden" name="petDog" id="petDog" value="false">
+            <input type="hidden" name="petCat" id="petCat" value="false">
+            <input type="hidden" name="petOther" id="petOther" value="false">
+            <div id="petOtherArea" style="display:none;margin-top:8px;">
+                <input type="text" name="petOtherText" placeholder="その他のペット">
+            </div>
+        </div>
+
+        <!-- 備考 -->
+        <div class="section">
+            <h3>備考</h3>
+            <textarea name="remarks" style="min-height:120px;" placeholder="備考を入力してください"></textarea>
+        </div>
+
+        <!-- 面接 -->
+        <div class="section">
+            <h3>面接</h3>
+            <div class="checkbox-group">
+                <div class="checkbox-item">
+                    <input type="radio" name="interviewType" value="none" checked onchange="toggleInterview(false)">
+                    <label>なし</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="radio" name="interviewType" value="yes" onchange="toggleInterview(true)">
+                    <label>あり</label>
+                </div>
+            </div>
+            <input type="hidden" name="interviewNone" id="interviewNone" value="true">
+            <div id="interviewArea" style="display:none;margin-top:10px;">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>希望日時①</label>
+                        <input type="datetime-local" name="interviewDate1">
+                    </div>
+                    <div class="form-group">
+                        <label>希望日時②</label>
+                        <input type="datetime-local" name="interviewDate2">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 連絡履歴 -->
+        <div class="section">
+            <h3>連絡履歴</h3>
+            <div id="contactHistoryArea"></div>
+            <button type="button" class="add-btn" onclick="addContact()">+ 連絡履歴を追加</button>
+            <input type="hidden" name="contactHistory" id="contactHistoryJson">
+        </div>
+
+        <!-- 候補者 -->
+        <div class="section">
+            <h3>候補者</h3>
+            <div class="form-group">
+                <label>求職者（家政婦）</label>
+                <select name="candidatePersonId">
+                    <option value="">-- 選択してください --</option>
+                    <option th:each="p : ${persons}"
+                            th:value="${p.id}"
+                            th:text="${p.lastNameKanji + ' ' + p.firstNameKanji}">
+                    </option>
+                </select>
+            </div>
+        </div>
+
+        <!-- ボタン -->
+        <button type="submit" class="btn-save">&#128190; 保存する</button>
+    </form>
+</div>
+
+<script>
+// 顧客情報を非同期で埋める（ページロード時にも実行）
+const customerData = {
+    th:each="${customers}"
+};
+
+// Thymeleafでデータを埋め込む
+const customers = /*[[${customers}]]*/ [];
+
+function fillCustomerAddress(id) {
+    // ページリロードで対応（シンプル化）
+    if (id) window.location.href = '/customer/request/new?customerId=' + id;
+}
+
+// 選択済み顧客の情報をフォームに設定
+window.addEventListener('load', function() {
+    const sel = document.getElementById('customerSelect');
+    if (sel && sel.value) {
+        // 顧客情報はサーバー側で設定済み
+    }
+});
+
+// 住所検索
+function searchAddress() {
+    const code = document.getElementById('postalCode').value;
+    if (code.length !== 7) { alert('郵便番号は7桁で入力してください'); return; }
+    fetch('https://zipcloud.ibsnet.co.jp/api/search?zipcode=' + code)
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 200 && data.results) {
+                const r = data.results[0];
+                document.getElementById('address').value = r.address1 + r.address2 + r.address3;
+            } else { alert('該当する住所が見つかりませんでした'); }
+        });
+}
+
+// その他チェックボックス
+function toggleOther(areaId, cb) {
+    document.getElementById(areaId).style.display = cb.checked ? 'block' : 'none';
+}
+
+// 頻度切替
+function toggleFreq(type) {
+    document.getElementById('freqTempArea').style.display = type === 'temp' ? 'block' : 'none';
+    document.getElementById('freqWeeklyArea').style.display = type === 'weekly' ? 'block' : 'none';
+}
+
+// 曜日収集
+function collectDays() {
+    const days = [];
+    ['月','火','水','木','金','土','日'].forEach(d => {
+        const cb = document.querySelector('input[name="freqDay_' + d + '"]');
+        if (cb && cb.checked) days.push(d);
+    });
+    document.getElementById('freqWeeklyDays').value = days.join(',');
+}
+
+// ペット切替
+function togglePet(type) {
+    document.getElementById('petNone').value  = type === 'none'  ? 'true' : 'false';
+    document.getElementById('petDog').value   = type === 'dog'   ? 'true' : 'false';
+    document.getElementById('petCat').value   = type === 'cat'   ? 'true' : 'false';
+    document.getElementById('petOther').value = type === 'other' ? 'true' : 'false';
+    document.getElementById('petOtherArea').style.display = type === 'other' ? 'block' : 'none';
+}
+
+// 面接切替
+function toggleInterview(show) {
+    document.getElementById('interviewArea').style.display = show ? 'block' : 'none';
+    document.getElementById('interviewNone').value = show ? 'false' : 'true';
+}
+
+// 連絡履歴
+let contacts = [];
+function addContact() {
+    const idx = contacts.length;
+    contacts.push({ date: '', note: '' });
+    renderContacts();
+}
+function removeContact(idx) {
+    contacts.splice(idx, 1);
+    renderContacts();
+}
+function renderContacts() {
+    const area = document.getElementById('contactHistoryArea');
+    area.innerHTML = contacts.map((c, i) => `
+        <div class="contact-item">
+            <input type="date" value="${c.date}" onchange="contacts[${i}].date=this.value;updateJson()">
+            <input type="text" value="${c.note}" placeholder="備考" onchange="contacts[${i}].note=this.value;updateJson()">
+            <button type="button" class="remove-btn" onclick="removeContact(${i})">削除</button>
+        </div>
+    `).join('');
+    updateJson();
+}
+function updateJson() {
+    document.getElementById('contactHistoryJson').value = JSON.stringify(contacts);
+}
+</script>
+</body>
+</html>

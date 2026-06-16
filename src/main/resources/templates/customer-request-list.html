@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>求人受付表一覧 - 家政婦紹介事務所</title>
+    <style>
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; color: #333; }
+        .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
+        .new-btn { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; margin-right: 10px; }
+        .container { max-width: 1100px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { background: #4CAF50; color: white; padding: 10px; text-align: left; }
+        td { padding: 10px; border-bottom: 1px solid #e0e0e0; }
+        tr:hover { background: #f9fbe7; }
+        .saved-msg { background: #e8f5e9; padding: 12px; border-radius: 5px; color: #2e7d32; margin-bottom: 15px; }
+        .badge { padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+        .badge-done { background: #e8f5e9; color: #2e7d32; }
+        .badge-pending { background: #fff8e1; color: #f57f17; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>&#128221; 求人受付表一覧</h1>
+    <div>
+        <a href="/customer/request/new" class="new-btn">+ 新規作成</a>
+        <a href="/customer-menu" class="back-btn">&#8592; 求人者管理に戻る</a>
+    </div>
+</div>
+<div class="container">
+    <div class="saved-msg" th:if="${param.saved}">&#10003; 保存しました</div>
+    <table>
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>求人者</th>
+                <th>仕事内容</th>
+                <th>候補者</th>
+                <th>登録日</th>
+                <th>印刷</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="req, i : ${requests}">
+                <td th:text="${i.count}"></td>
+                <td>
+                    <span th:each="c : ${customers}" th:if="${c.id == req.customerId}"
+                          th:text="${c.lastNameKanji + ' ' + c.firstNameKanji}"></span>
+                </td>
+                <td>
+                    <span th:if="${req.jobCooking}">食事 </span>
+                    <span th:if="${req.jobLaundry}">洗濯 </span>
+                    <span th:if="${req.jobCleaning}">掃除 </span>
+                    <span th:if="${req.jobIroning}">アイロン </span>
+                    <span th:if="${req.jobBabysitting}">ベビーシッター </span>
+                    <span th:if="${req.jobNursing}">介護 </span>
+                    <span th:if="${req.jobOther}" th:text="'その他:' + ${req.jobOtherText}"></span>
+                </td>
+                <td>
+                    <span th:each="p : ${persons}" th:if="${p.id == req.candidatePersonId}"
+                          th:text="${p.lastNameKanji + ' ' + p.firstNameKanji}"></span>
+                </td>
+                <td th:text="${req.createdAt != null ? #temporals.format(req.createdAt, 'yyyy/MM/dd') : '-'}"></td>
+                <td>
+                    <span th:if="${req.printed != null and req.printed}" class="badge badge-done">発行済</span>
+                    <span th:unless="${req.printed != null and req.printed}" class="badge badge-pending">未発行</span>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <div style="text-align:center;padding:30px;color:#999;" th:if="${#lists.isEmpty(requests)}">
+        まだ受付表がありません
+    </div>
+</div>
+</body>
+</html>
