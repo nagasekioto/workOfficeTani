@@ -107,7 +107,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr th:each="row : ${rows}" th:if="${not #lists.isEmpty(rows)}">
+                <tr th:each="row : ${rows}" th:if="${rows != null and not #lists.isEmpty(rows)}">
                     <td th:text="${row.introductionDate}">-</td>
                     <td th:text="${row.personName}">-</td>
                     <td>-</td>
@@ -118,7 +118,7 @@
                     <td>-</td>
                     <td>-</td>
                 </tr>
-                <tr th:each="i : ${#numbers.sequence(1, emptyRows)}" class="empty-row">
+                <tr th:each="i : ${emptyRows != null ? #numbers.sequence(1, emptyRows) : #numbers.sequence(1, 10)}" class="empty-row">
                     <td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td>
                 </tr>
             </tbody>

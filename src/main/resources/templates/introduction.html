@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>紹介状 - 家政婦紹介事務所</title>
+    <style>
+        /* ─── 画面スタイル ─── */
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; color: #333; font-size: 20px; }
+        .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
+        .input-area { max-width: 860px; margin: 0 auto; background: white; padding: 28px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .section { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .section h3 { color: #4CAF50; margin-top: 0; margin-bottom: 12px; font-size: 15px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .form-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 3px; font-weight: bold; color: #555; font-size: 13px; }
+        input[type=text], input[type=date], input[type=number], select, textarea {
+            width: 100%; padding: 7px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 14px;
+        }
+        textarea { min-height: 70px; resize: vertical; }
+        .btn-area { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-print { background: #FF9800; color: white; border: none; border-radius: 5px; padding: 13px 35px; cursor: pointer; font-size: 16px; flex: 1; }
+        .btn-preview { background: #4CAF50; color: white; border: none; border-radius: 5px; padding: 13px 35px; cursor: pointer; font-size: 16px; flex: 1; }
+        .info-box { background: #e8f5e9; padding: 10px 14px; border-radius: 5px; margin-bottom: 16px; font-size: 13px; color: #2e7d32; }
+
+        /* ─── 印刷ドキュメントスタイル ─── */
+        .print-area { max-width: 860px; margin: 0 auto; }
+        .doc-page { background: white; padding: 30px 35px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .doc-corner { font-size: 13px; font-weight: bold; margin-bottom: 5px; }
+        .doc-title { text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 6px; margin: 12px 0 20px; border-bottom: 2px solid #000; padding-bottom: 8px; }
+        .doc-date { text-align: right; font-size: 13px; margin-bottom: 15px; }
+        .doc-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .doc-table th { background: #f5f5f5; padding: 8px 10px; text-align: left; border: 1px solid #999; width: 32%; font-weight: bold; }
+        .doc-table td { padding: 8px 10px; border: 1px solid #999; }
+        .doc-footer { margin-top: 25px; text-align: right; font-size: 13px; border-top: 1px solid #ccc; padding-top: 10px; }
+        .doc-stamp { display: inline-block; border: 2px solid #333; padding: 8px 20px; border-radius: 50%; font-size: 11px; margin-top: 10px; }
+
+        /* ─── 印刷時 ─── */
+        @media print {
+            body { background: white; padding: 0; margin: 0; font-size: 12px; }
+            .header, .input-area, .no-print { display: none !important; }
+            .print-area { max-width: 100%; margin: 0; }
+            .doc-page { box-shadow: none; border-radius: 0; padding: 15mm 20mm; page-break-after: always; margin: 0; }
+            .doc-page:last-child { page-break-after: avoid; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header no-print">
+    <h1>&#128196; 紹介状（1-6）</h1>
+    <a href="/menu" class="back-btn">&#8592; 初期画面に戻る</a>
+</div>
+
+<!-- 入力フォーム -->
+<div class="input-area no-print">
+    <div class="info-box">
+        &#9432; 内容を入力して「印刷」を押すと、①労働条件明示書（求職者控）②紹介状（求人者控）③雇用契約書（求人者控）の3枚を印刷できます。
+    </div>
+
+    <div class="section">
+        <h3>基本情報</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label>求職者（家政婦）</label>
+                <select id="personSelect" onchange="fillPerson()">
+                    <option value="">-- 選択してください --</option>
+                    <option th:each="p : ${persons}"
+                            th:value="${p.id}"
+                            th:data-name="${p.lastNameKanji + ' ' + p.firstNameKanji}"
+                            th:data-kana="${p.lastNameKana + ' ' + p.firstNameKana}"
+                            th:data-phone="${p.mobilePhone}"
+                            th:data-birth="${p.birthDate}"
+                            th:data-postal="${p.postalCode}"
+                            th:data-addr="${(p.address1 != null ? p.address1 : '') + (p.address2 != null ? p.address2 : '') + (p.address3 != null ? p.address3 : '')}"
+                            th:text="${p.lastNameKanji + ' ' + p.firstNameKanji}">
+                    </option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>求人者</label>
+                <select id="customerSelect" onchange="fillCustomer()">
+                    <option value="">-- 選択してください --</option>
+                    <option th:each="c : ${customers}"
+                            th:value="${c.id}"
+                            th:data-name="${c.lastNameKanji + ' ' + c.firstNameKanji}"
+                            th:data-phone="${c.homePhone != null ? c.homePhone : (c.mobilePhone != null ? c.mobilePhone : '')}"
+                            th:data-postal="${c.postalCode}"
+                            th:data-addr="${(c.address1 != null ? c.address1 : '') + (c.address2 != null ? c.address2 : '')}"
+                            th:text="${c.lastNameKanji + ' ' + c.firstNameKanji}">
+                    </option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>紹介年月日</label>
+                <input type="date" id="introDate" oninput="update()">
+            </div>
+            <div class="form-group">
+                <label>就業開始予定日</label>
+                <input type="date" id="startDate" oninput="update()">
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>労働条件（求職管理簿の内容に基づく）</h3>
+        <div class="form-row">
+            <div class="form-group">
+                <label>就業場所（労働先住所）</label>
+                <input type="text" id="workPlace" placeholder="例：東京都渋谷区○○" oninput="update()">
+            </div>
+            <div class="form-group">
+                <label>仕事内容</label>
+                <input type="text" id="jobContent" placeholder="例：家事一般（食事・洗濯・掃除）" oninput="update()">
+            </div>
+        </div>
+        <div class="form-row3">
+            <div class="form-group">
+                <label>雇用形態</label>
+                <select id="employType" onchange="update()">
+                    <option>通勤</option>
+                    <option>パート</option>
+                    <option>住込</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>時給（円）</label>
+                <input type="number" id="hourlyWage" min="0" oninput="update()">
+            </div>
+            <div class="form-group">
+                <label>時給（残業）円</label>
+                <input type="number" id="overtimeWage" min="0" oninput="update()">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>勤務時間</label>
+                <input type="text" id="workHours" placeholder="例：9:00〜17:00" oninput="update()">
+            </div>
+            <div class="form-group">
+                <label>休日</label>
+                <input type="text" id="holidays" placeholder="例：土・日・祝" oninput="update()">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>雇用期間</label>
+                <input type="text" id="contractPeriod" placeholder="例：期間の定めなし" oninput="update()">
+            </div>
+            <div class="form-group">
+                <label>紹介手数料</label>
+                <input type="text" id="introFee" value="賃金の15%" oninput="update()">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>備考</label>
+            <textarea id="remarksField" oninput="update()"></textarea>
+        </div>
+    </div>
+
+    <div class="btn-area">
+        <button class="btn-preview" onclick="update()">&#128065; プレビュー更新</button>
+        <button class="btn-print" onclick="window.print()">&#128438; 3枚まとめて印刷</button>
+    </div>
+</div>
+
+<!-- 印刷エリア（3枚） -->
+<div class="print-area">
+
+    <!-- ① 労働条件明示書（求職者控） -->
+    <div class="doc-page">
+        <div class="doc-corner">求職者控</div>
+        <div class="doc-title">労 働 条 件 明 示 書</div>
+        <div class="doc-date">紹介年月日：<span class="d-date"></span></div>
+        <table class="doc-table">
+            <tr><th>求職者 氏名</th><td class="d-person"></td></tr>
+            <tr><th>求職者 住所</th><td class="d-person-addr"></td></tr>
+            <tr><th>求職者 電話番号</th><td class="d-person-phone"></td></tr>
+            <tr><th>求人者 氏名</th><td class="d-customer"></td></tr>
+            <tr><th>求人者 住所</th><td class="d-customer-addr"></td></tr>
+            <tr><th>就業場所</th><td class="d-workplace"></td></tr>
+            <tr><th>仕事内容</th><td class="d-job"></td></tr>
+            <tr><th>雇用形態</th><td class="d-emptype"></td></tr>
+            <tr><th>時給</th><td class="d-wage"></td></tr>
+            <tr><th>時給（残業）</th><td class="d-overtime"></td></tr>
+            <tr><th>勤務時間</th><td class="d-hours"></td></tr>
+            <tr><th>休日</th><td class="d-holiday"></td></tr>
+            <tr><th>雇用期間</th><td class="d-period"></td></tr>
+            <tr><th>紹介手数料</th><td class="d-fee"></td></tr>
+            <tr><th>就業開始予定日</th><td class="d-start"></td></tr>
+            <tr><th>備考</th><td class="d-remarks"></td></tr>
+        </table>
+        <div class="doc-footer">
+            ワークオフィス谷　家政婦紹介事務所<br>
+            <span class="doc-stamp">事務所印</span>
+        </div>
+    </div>
+
+    <!-- ② 紹介状（求人者控） -->
+    <div class="doc-page">
+        <div class="doc-corner">求人者控</div>
+        <div class="doc-title">紹 介 状</div>
+        <div class="doc-date">紹介年月日：<span class="d-date"></span></div>
+        <table class="doc-table">
+            <tr><th>求職者 氏名</th><td class="d-person"></td></tr>
+            <tr><th>求職者 住所</th><td class="d-person-addr"></td></tr>
+            <tr><th>求職者 電話番号</th><td class="d-person-phone"></td></tr>
+            <tr><th>求人者 氏名</th><td class="d-customer"></td></tr>
+            <tr><th>求人者 住所</th><td class="d-customer-addr"></td></tr>
+            <tr><th>就業場所</th><td class="d-workplace"></td></tr>
+            <tr><th>仕事内容</th><td class="d-job"></td></tr>
+            <tr><th>雇用形態</th><td class="d-emptype"></td></tr>
+            <tr><th>時給</th><td class="d-wage"></td></tr>
+            <tr><th>時給（残業）</th><td class="d-overtime"></td></tr>
+            <tr><th>勤務時間</th><td class="d-hours"></td></tr>
+            <tr><th>休日</th><td class="d-holiday"></td></tr>
+            <tr><th>雇用期間</th><td class="d-period"></td></tr>
+            <tr><th>紹介手数料</th><td class="d-fee"></td></tr>
+            <tr><th>就業開始予定日</th><td class="d-start"></td></tr>
+            <tr><th>備考</th><td class="d-remarks"></td></tr>
+        </table>
+        <div class="doc-footer">
+            ワークオフィス谷　家政婦紹介事務所<br>
+            <span class="doc-stamp">事務所印</span>
+        </div>
+    </div>
+
+    <!-- ③ 雇用契約書（求人者控） -->
+    <div class="doc-page">
+        <div class="doc-corner">求人者控</div>
+        <div class="doc-title">雇 用 契 約 書</div>
+        <div class="doc-date">紹介年月日：<span class="d-date"></span></div>
+        <table class="doc-table">
+            <tr><th>求職者 氏名</th><td class="d-person"></td></tr>
+            <tr><th>求職者 住所</th><td class="d-person-addr"></td></tr>
+            <tr><th>求職者 電話番号</th><td class="d-person-phone"></td></tr>
+            <tr><th>求人者 氏名</th><td class="d-customer"></td></tr>
+            <tr><th>求人者 住所</th><td class="d-customer-addr"></td></tr>
+            <tr><th>就業場所</th><td class="d-workplace"></td></tr>
+            <tr><th>仕事内容</th><td class="d-job"></td></tr>
+            <tr><th>雇用形態</th><td class="d-emptype"></td></tr>
+            <tr><th>時給</th><td class="d-wage"></td></tr>
+            <tr><th>時給（残業）</th><td class="d-overtime"></td></tr>
+            <tr><th>勤務時間</th><td class="d-hours"></td></tr>
+            <tr><th>休日</th><td class="d-holiday"></td></tr>
+            <tr><th>雇用期間</th><td class="d-period"></td></tr>
+            <tr><th>紹介手数料</th><td class="d-fee"></td></tr>
+            <tr><th>就業開始予定日</th><td class="d-start"></td></tr>
+            <tr><th>備考</th><td class="d-remarks"></td></tr>
+        </table>
+        <div class="doc-footer">
+            ワークオフィス谷　家政婦紹介事務所<br>
+            <span class="doc-stamp">事務所印</span>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function opt(sel) {
+    return sel.options[sel.selectedIndex] || {};
+}
+
+function fillPerson() {
+    const o = opt(document.getElementById('personSelect'));
+    document.getElementById('workPlace').value = (o.dataset?.postal ? '〒' + o.dataset.postal + ' ' : '') + (o.dataset?.addr || '');
+    update();
+}
+
+function fillCustomer() {
+    update();
+}
+
+function setAll(cls, val) {
+    document.querySelectorAll('.' + cls).forEach(el => el.textContent = val || '');
+}
+
+function update() {
+    const pSel = document.getElementById('personSelect');
+    const cSel = document.getElementById('customerSelect');
+    const pOpt = opt(pSel);
+    const cOpt = opt(cSel);
+
+    const pName   = pOpt.text && pOpt.value ? pOpt.text : '';
+    const pAddr   = pOpt.dataset ? ((pOpt.dataset.postal ? '〒' + pOpt.dataset.postal + ' ' : '') + (pOpt.dataset.addr || '')) : '';
+    const pPhone  = pOpt.dataset?.phone || '';
+    const cName   = cOpt.text && cOpt.value ? cOpt.text : '';
+    const cAddr   = cOpt.dataset ? ((cOpt.dataset.postal ? '〒' + cOpt.dataset.postal + ' ' : '') + (cOpt.dataset.addr || '')) : '';
+    const wage    = document.getElementById('hourlyWage').value;
+    const overtime = document.getElementById('overtimeWage').value;
+
+    setAll('d-date',         document.getElementById('introDate').value);
+    setAll('d-person',       pName);
+    setAll('d-person-addr',  pAddr);
+    setAll('d-person-phone', pPhone);
+    setAll('d-customer',     cName);
+    setAll('d-customer-addr', cAddr);
+    setAll('d-workplace',    document.getElementById('workPlace').value);
+    setAll('d-job',          document.getElementById('jobContent').value);
+    setAll('d-emptype',      document.getElementById('employType').value);
+    setAll('d-wage',         wage ? '¥' + parseInt(wage).toLocaleString() + ' / 時' : '');
+    setAll('d-overtime',     overtime ? '¥' + parseInt(overtime).toLocaleString() + ' / 時' : '');
+    setAll('d-hours',        document.getElementById('workHours').value);
+    setAll('d-holiday',      document.getElementById('holidays').value);
+    setAll('d-period',       document.getElementById('contractPeriod').value);
+    setAll('d-fee',          document.getElementById('introFee').value);
+    setAll('d-start',        document.getElementById('startDate').value);
+    setAll('d-remarks',      document.getElementById('remarksField').value);
+}
+
+// 初期化
+window.addEventListener('load', () => {
+    document.getElementById('introDate').value = new Date().toISOString().split('T')[0];
+    update();
+});
+</script>
+</body>
+</html>
