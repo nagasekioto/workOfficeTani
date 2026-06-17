@@ -39,7 +39,8 @@
             <tr>
                 <th onclick="location.href='/customer/list?sort=no'">No</th>
                 <th onclick="location.href='/customer/list?sort=name'">氏名</th>
-                <th>電話番号</th>
+                <th>自宅電話</th>
+                <th>携帯電話</th>
                 <th>住所</th>
                 <th onclick="location.href='/customer/list?sort=date'">登録日</th>
                 <th>操作</th>
@@ -49,8 +50,9 @@
             <tr th:each="c : ${customers}">
                 <td th:text="${c.no}"></td>
                 <td th:text="${c.lastNameKanji + ' ' + c.firstNameKanji}"></td>
-                <td th:text="${c.homePhone != null ? c.homePhone : c.mobilePhone}"></td>
-                <td th:text="${(c.address1 != null ? c.address1 : '') + (c.address2 != null ? c.address2 : '')}"></td>
+                <td th:text="${c.homePhone != null ? c.homePhone : '-'}"></td>
+                <td th:text="${c.mobilePhone != null ? c.mobilePhone : '-'}"></td>
+                <td th:text="${(c.address1 != null ? c.address1 : '') + (c.address2 != null ? c.address2 : '') + (c.address3 != null ? ' ' + c.address3 : '')}"></td>
                 <td th:text="${c.registeredDate}"></td>
                 <td>
                     <a th:href="@{/customer/edit/{id}(id=${c.id})}" class="edit-link">修正</a>

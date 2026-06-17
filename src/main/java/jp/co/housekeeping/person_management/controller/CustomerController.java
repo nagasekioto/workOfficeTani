@@ -38,8 +38,67 @@ public class CustomerController {
         return session.getAttribute("authenticated") != null;
     }
 
-    // ─── 1-2-3 求人者一覧 ──────────────────────────────
-    @GetMapping("/list")
+    // ─── 1-2 求人者新規登録フォーム ───────────────────
+    @GetMapping("/register")
+    public String registerForm(HttpSession session, Model model) {
+        if (!checkAuth(session)) return "redirect:/login";
+        model.addAttribute("customers", customerRepository.findAll());
+        model.addAttribute("persons", personRepository.findAll());
+        model.addAttribute("customer", new Customer());
+        model.addAttribute("editMode", false);
+        return "customer-register";
+    }
+
+    // ─── 求人者新規登録処理 ────────────────────────────
+    @PostMapping("/register")
+    public String register(@ModelAttribute Customer customer, HttpSession session) {
+        if (!checkAuth(session)) return "redirect:/login";
+        if (customer.getRegisteredDate() == null) customer.setRegisteredDate(LocalDate.now());
+        // Noは自動採番（最大値+1）
+        if (customer.getNo() == null) {
+            int maxNo = 0;
+            for (Customer c : customerRepository.findAll()) {
+                if (c.getNo() != null && c.getNo() > maxNo) maxNo = c.getNo();
+            }
+            customer.setNo(maxNo + 1);
+        }
+        customerRepository.save(customer);
+        return "redirect:/customer/register";
+    }
+
+    // ─── 求人者編集フォーム ────────────────────────────
+    @GetMapping("/edit/{id}")
+    public String editForm(@PathVariable Long id, HttpSession session, Model model) {
+        if (!checkAuth(session)) return "redirect:/login";
+        Customer c = customerRepository.findById(id).orElse(null);
+        if (c == null) return "redirect:/customer/list";
+        model.addAttribute("customers", customerRepository.findAll());
+        model.addAttribute("persons", personRepository.findAll());
+        model.addAttribute("customer", c);
+        model.addAttribute("editMode", true);
+        return "customer-register";
+    }
+
+    // ─── 求人者更新処理 ────────────────────────────────
+    @PostMapping("/update")
+    public String update(@ModelAttribute Customer customer, HttpSession session) {
+        if (!checkAuth(session)) return "redirect:/login";
+        // 既存データを取得してからマージ（null上書き防止）
+        customerRepository.findById(customer.getId()).ifPresent(existing -> {
+            if (customer.getLastNameKana() == null || customer.getLastNameKana().isBlank())
+                customer.setLastNameKana(existing.getLastNameKana());
+            if (customer.getFirstNameKana() == null || customer.getFirstNameKana().isBlank())
+                customer.setFirstNameKana(existing.getFirstNameKana());
+            if (customer.getLastNameKanji() == null || customer.getLastNameKanji().isBlank())
+                customer.setLastNameKanji(existing.getLastNameKanji());
+            if (customer.getFirstNameKanji() == null || customer.getFirstNameKanji().isBlank())
+                customer.setFirstNameKanji(existing.getFirstNameKanji());
+            if (customer.getNo() == null) customer.setNo(existing.getNo());
+            if (customer.getRegisteredDate() == null) customer.setRegisteredDate(existing.getRegisteredDate());
+        });
+        customerRepository.save(customer);
+        return "redirect:/customer/list";
+    }
     public String list(@RequestParam(required = false) String sort,
                        HttpSession session, Model model) {
         if (!checkAuth(session)) return "redirect:/login";
