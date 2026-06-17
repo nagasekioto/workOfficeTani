@@ -3,6 +3,8 @@ package jp.co.housekeeping.person_management.controller;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import jp.co.housekeeping.person_management.model.Customer;
 import jp.co.housekeeping.person_management.model.CustomerRequest;
+import jp.co.housekeeping.person_management.model.SalesDetail;
 import jp.co.housekeeping.person_management.repository.CustomerRepository;
 import jp.co.housekeeping.person_management.repository.CustomerRequestRepository;
 import jp.co.housekeeping.person_management.repository.PersonRepository;
@@ -54,7 +57,6 @@ public class CustomerController {
     public String register(@ModelAttribute Customer customer, HttpSession session) {
         if (!checkAuth(session)) return "redirect:/login";
         if (customer.getRegisteredDate() == null) customer.setRegisteredDate(LocalDate.now());
-        // Noは自動採番（最大値+1）
         if (customer.getNo() == null) {
             int maxNo = 0;
             for (Customer c : customerRepository.findAll()) {
@@ -83,7 +85,6 @@ public class CustomerController {
     @PostMapping("/update")
     public String update(@ModelAttribute Customer customer, HttpSession session) {
         if (!checkAuth(session)) return "redirect:/login";
-        // 既存データを取得してからマージ（null上書き防止）
         customerRepository.findById(customer.getId()).ifPresent(existing -> {
             if (customer.getLastNameKana() == null || customer.getLastNameKana().isBlank())
                 customer.setLastNameKana(existing.getLastNameKana());
@@ -99,6 +100,9 @@ public class CustomerController {
         customerRepository.save(customer);
         return "redirect:/customer/list";
     }
+
+    // ─── 1-2-3 求人者一覧 ──────────────────────────────
+    @GetMapping("/list")
     public String list(@RequestParam(required = false) String sort,
                        HttpSession session, Model model) {
         if (!checkAuth(session)) return "redirect:/login";
@@ -108,46 +112,6 @@ public class CustomerController {
     }
 
     // ─── 1-2-1 求人受付表（新規）──────────────────────
-    @GetMapping("/register")
-    public String registerForm(HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
-        model.addAttribute("customers", customerRepository.findAll());
-        model.addAttribute("persons", personRepository.findAll());
-        model.addAttribute("customer", new Customer());
-        model.addAttribute("editMode", false);
-        return "customer-register";
-    }
-
-    // ─── 求人者新規登録 ────────────────────────────────
-    @PostMapping("/register")
-    public String register(@ModelAttribute Customer customer, HttpSession session) {
-        if (!checkAuth(session)) return "redirect:/login";
-        if (customer.getRegisteredDate() == null) customer.setRegisteredDate(LocalDate.now());
-        customerRepository.save(customer);
-        return "redirect:/customer/register";
-    }
-
-    // ─── 求人者編集 ────────────────────────────────────
-    @GetMapping("/edit/{id}")
-    public String editForm(@PathVariable Long id, HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
-        Customer c = customerRepository.findById(id).orElse(null);
-        if (c == null) return "redirect:/customer/list";
-        model.addAttribute("customers", customerRepository.findAll());
-        model.addAttribute("persons", personRepository.findAll());
-        model.addAttribute("customer", c);
-        model.addAttribute("editMode", true);
-        return "customer-register";
-    }
-
-    @PostMapping("/update")
-    public String update(@ModelAttribute Customer customer, HttpSession session) {
-        if (!checkAuth(session)) return "redirect:/login";
-        customerRepository.save(customer);
-        return "redirect:/customer/list";
-    }
-
-    // ─── 1-2-1 求人受付表 ─────────────────────────────
     @GetMapping("/request/new")
     public String requestForm(@RequestParam(required = false) Long customerId,
                               HttpSession session, Model model) {
@@ -156,16 +120,14 @@ public class CustomerController {
         model.addAttribute("persons", personRepository.findAll());
         model.addAttribute("selectedCustomerId", customerId);
         model.addAttribute("request", new CustomerRequest());
-
-        // 求人者が選択されている場合、住所を自動設定
         if (customerId != null) {
-            customerRepository.findById(customerId).ifPresent(c -> {
-                model.addAttribute("selectedCustomer", c);
-            });
+            customerRepository.findById(customerId).ifPresent(c ->
+                model.addAttribute("selectedCustomer", c));
         }
         return "customer-request-form";
     }
 
+    // ─── 1-2-1 求人受付表保存 ─────────────────────────
     @PostMapping("/request/save")
     public String requestSave(
             @RequestParam Long customerId,
@@ -246,12 +208,11 @@ public class CustomerController {
         if (interviewDate2 != null && !interviewDate2.isBlank())
             req.setInterviewDate2(LocalDateTime.parse(interviewDate2));
         req.setCandidatePersonId(candidatePersonId);
-
         customerRequestRepository.save(req);
         return "redirect:/customer/request/list?saved=true";
     }
 
-    // 求人受付表一覧
+    // ─── 求人受付表一覧 ────────────────────────────────
     @GetMapping("/request/list")
     public String requestList(HttpSession session, Model model) {
         if (!checkAuth(session)) return "redirect:/login";
@@ -271,19 +232,14 @@ public class CustomerController {
         model.addAttribute("persons", personRepository.findAll());
 
         if (customerId != null) {
-            customerRepository.findById(customerId).ifPresent(c -> {
-                model.addAttribute("selectedCustomer", c);
-                // この求人者に紐づく求人受付表を取得
-                java.util.List<jp.co.housekeeping.person_management.model.CustomerRequest> reqs =
-                    customerRequestRepository.findByCustomerId(customerId);
-                if (!reqs.isEmpty()) {
-                    model.addAttribute("request", reqs.get(0));
-                }
-            });
+            customerRepository.findById(customerId).ifPresent(c ->
+                model.addAttribute("selectedCustomer", c));
 
-            // 紹介履歴（sales_details経由）
-            java.util.List<KaijinRow> rows = new java.util.ArrayList<>();
-            salesRepository.findAll().forEach(s -> {
+            List<CustomerRequest> reqs = customerRequestRepository.findByCustomerId(customerId);
+            if (!reqs.isEmpty()) model.addAttribute("request", reqs.get(0));
+
+            List<KaijinRow> rows = new ArrayList<>();
+            salesRepository.findAll().forEach(s ->
                 salesDetailRepository.findBySalesId(s.getId()).forEach(d -> {
                     if (customerId.equals(d.getCustomerId())) {
                         KaijinRow row = new KaijinRow();
@@ -293,15 +249,10 @@ public class CustomerController {
                         row.detail = d;
                         rows.add(row);
                     }
-                });
-            });
+                }));
             model.addAttribute("rows", rows);
             model.addAttribute("emptyRows", Math.max(5, 10 - rows.size()));
-
-            // 最新の時給取得
-            if (!rows.isEmpty()) {
-                model.addAttribute("latestDetail", rows.get(0).detail);
-            }
+            if (!rows.isEmpty()) model.addAttribute("latestDetail", rows.get(0).detail);
         }
         return "customer-report";
     }
@@ -309,6 +260,6 @@ public class CustomerController {
     public static class KaijinRow {
         public String introductionDate = "";
         public String personName = "";
-        public jp.co.housekeeping.person_management.model.SalesDetail detail;
+        public SalesDetail detail;
     }
 }

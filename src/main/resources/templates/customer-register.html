@@ -100,11 +100,13 @@
                        placeholder="例：1-2-3">
                 <div class="addr-note">※マンション名・部屋番号がある場合は下の欄に入力してください</div>
             </div>
+            <!-- マンション名・部屋番号 -->
             <div class="form-group">
                 <label>マンション名・部屋番号</label>
                 <input type="text" th:field="*{address3}" id="address3"
-                       placeholder="例：恵比寿マンション101号室（番地と分けて入力）">
-                <div class="addr-note">※マンション名がなく部屋番号のみの場合も「101号室」のように入力してください</div>
+                       placeholder="例：恵比寿マンション101号室 / 数字のみなら自動で-を付与"
+                       oninput="autoHyphenRoom(this)">
+                <div class="addr-note">※マンション名がなく部屋番号のみの場合も「101号室」のように入力してください。数字のみ（例：101）で入力すると「-101」と自動補完されます。</div>
             </div>
 
             <!-- 最寄り駅 -->
@@ -190,6 +192,23 @@
 </div>
 
 <script>
+// マンション名・部屋番号：数字のみなら-を自動付与（フォーカスアウト時）
+function autoHyphenRoom(input) {
+    // 入力中はまだ変換しない（フォーカスアウト時に処理）
+}
+document.addEventListener('DOMContentLoaded', function() {
+    const addr3 = document.getElementById('address3');
+    if (addr3) {
+        addr3.addEventListener('blur', function() {
+            const val = this.value.trim();
+            // 数字のみ（半角・全角）の場合、先頭に-を付与
+            if (/^[0-9０-９]+$/.test(val)) {
+                this.value = '-' + val.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+            }
+        });
+    }
+});
+
 // 住所自動入力
 function searchAddress() {
     const code = document.getElementById('postalCode').value.replace(/-/g, '');
