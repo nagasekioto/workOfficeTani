@@ -101,6 +101,14 @@ public class CustomerController {
         return "redirect:/customer/list";
     }
 
+    // ─── 求人者削除 ────────────────────────────────────
+    @PostMapping("/delete/{id}")
+    public String delete(@PathVariable Long id, HttpSession session) {
+        if (!checkAuth(session)) return "redirect:/login";
+        customerRepository.deleteById(id);
+        return "redirect:/customer/list";
+    }
+
     // ─── 1-2-3 求人者一覧 ──────────────────────────────
     @GetMapping("/list")
     public String list(@RequestParam(required = false) String sort,

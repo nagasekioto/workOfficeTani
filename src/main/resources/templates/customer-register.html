@@ -94,19 +94,20 @@
                 <input type="text" th:field="*{address1}" id="address1"
                        placeholder="例：東京都渋谷区恵比寿">
             </div>
+            <!-- 番地 -->
             <div class="form-group">
                 <label>番地</label>
                 <input type="text" th:field="*{address2}" id="address2"
-                       placeholder="例：1-2-3">
-                <div class="addr-note">※マンション名・部屋番号がある場合は下の欄に入力してください</div>
+                       placeholder="例：2-2-11">
             </div>
-            <!-- マンション名・部屋番号 -->
             <div class="form-group">
-                <label>マンション名・部屋番号</label>
-                <input type="text" th:field="*{address3}" id="address3"
-                       placeholder="例：恵比寿マンション101号室 / 数字のみなら自動で-を付与"
-                       oninput="autoHyphenRoom(this)">
-                <div class="addr-note">※マンション名がなく部屋番号のみの場合も「101号室」のように入力してください。数字のみ（例：101）で入力すると「-101」と自動補完されます。</div>
+                <label>部屋番号（マンション名がある場合はマンション名も）</label>
+                <input type="text" id="address3Input"
+                       th:value="*{address3}"
+                       placeholder="例：3101　または　恵比寿マンション3101"
+                       oninput="updateAddress3()">
+                <input type="hidden" th:field="*{address3}" id="address3">
+                <div class="addr-note">※部屋番号のみ入力すると番地と自動結合されます（例：2-2-11 と 3101 → 2-2-11-3101）</div>
             </div>
 
             <!-- 最寄り駅 -->
@@ -179,7 +180,7 @@
                     <td th:text="${c.lastNameKanji + ' ' + c.firstNameKanji}"></td>
                     <td th:text="${c.homePhone != null ? c.homePhone : '-'}"></td>
                     <td th:text="${c.mobilePhone != null ? c.mobilePhone : '-'}"></td>
-                    <td th:text="${(c.address1 != null ? c.address1 : '') + (c.address2 != null ? c.address2 : '') + (c.address3 != null ? ' ' + c.address3 : '')}"></td>
+                    <td th:text="${(c.address1 != null ? c.address1 : '') + (c.address3 != null and !c.address3.isBlank() ? c.address3 : (c.address2 != null ? c.address2 : ''))}"></td>
                     <td th:text="${c.registeredDate}"></td>
                     <td><a th:href="@{/customer/edit/{id}(id=${c.id})}" class="edit-link">修正</a></td>
                 </tr>
@@ -192,21 +193,56 @@
 </div>
 
 <script>
-// マンション名・部屋番号：数字のみなら-を自動付与（フォーカスアウト時）
-function autoHyphenRoom(input) {
-    // 入力中はまだ変換しない（フォーカスアウト時に処理）
-}
+// ─── Enterキーでフォーム送信しない ───────────────────
 document.addEventListener('DOMContentLoaded', function() {
-    const addr3 = document.getElementById('address3');
-    if (addr3) {
-        addr3.addEventListener('blur', function() {
-            const val = this.value.trim();
-            // 数字のみ（半角・全角）の場合、先頭に-を付与
-            if (/^[0-9０-９]+$/.test(val)) {
-                this.value = '-' + val.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+    document.querySelectorAll('form input').forEach(function(input) {
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                return false;
             }
         });
+    });
+
+    // 編集時：address3の初期値を分解して表示
+    const addr2 = document.getElementById('address2');
+    const addr3Hidden = document.getElementById('address3');
+    const addr3Input = document.getElementById('address3Input');
+    if (addr3Hidden && addr3Input && addr2) {
+        const stored = addr3Hidden.value || '';
+        const a2val = addr2.value || '';
+        // stored が "a2val-xxxx" 形式なら部屋番号部分だけ表示
+        if (stored && a2val && stored.startsWith(a2val + '-')) {
+            addr3Input.value = stored.slice(a2val.length + 1);
+        } else {
+            addr3Input.value = stored;
+        }
     }
+});
+
+// 番地＋部屋番号を結合してhiddenに保存
+function updateAddress3() {
+    const addr2 = document.getElementById('address2').value.trim();
+    const roomRaw = document.getElementById('address3Input').value.trim();
+    const hidden = document.getElementById('address3');
+    if (!roomRaw) {
+        hidden.value = '';
+        return;
+    }
+    // 部屋番号が数字のみ（半角・全角）→ 番地と結合
+    const roomNum = roomRaw.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+    if (/^[0-9]+$/.test(roomNum) && addr2) {
+        hidden.value = addr2 + '-' + roomNum;
+    } else {
+        // マンション名ありの場合はそのまま
+        hidden.value = roomRaw;
+    }
+}
+
+// 番地が変わったら部屋番号も再計算
+document.addEventListener('DOMContentLoaded', function() {
+    const addr2 = document.getElementById('address2');
+    if (addr2) addr2.addEventListener('input', updateAddress3);
 });
 
 // 住所自動入力
@@ -230,6 +266,86 @@ function searchAddress() {
 
 // 駅名から路線を自動補完
 const STATION_LINES = {
+    '東京':'JR山手線・JR東海道線・JR中央線ほか','新宿':'JR山手線・JR中央線・小田急線・京王線ほか',
+    '渋谷':'JR山手線・東急東横線・東京メトロ銀座線ほか','池袋':'JR山手線・西武池袋線・東武東上線ほか',
+    '品川':'JR山手線・JR東海道線・京急本線','上野':'JR山手線・JR上野東京ライン・東京メトロ銀座線ほか',
+    '秋葉原':'JR山手線・JR総武線・東京メトロ日比谷線','有楽町':'JR山手線・東京メトロ有楽町線',
+    '新橋':'JR山手線・東京メトロ銀座線・都営浅草線ほか','浜松町':'JR山手線・東京モノレール',
+    '田町':'JR山手線・JR東海道線','恵比寿':'JR山手線・東京メトロ日比谷線',
+    '目黒':'JR山手線・東急目黒線・東京メトロ南北線ほか','五反田':'JR山手線・東急池上線',
+    '大崎':'JR山手線・りんかい線','大井町':'JR京浜東北線・東急大井町線',
+    '大塚':'JR山手線・都電荒川線','巣鴨':'JR山手線・都営三田線',
+    '駒込':'JR山手線・東京メトロ南北線','田端':'JR山手線・JR京浜東北線',
+    '西日暮里':'JR山手線・東京メトロ千代田線','日暮里':'JR山手線・京成本線・舎人ライナー',
+    '鶯谷':'JR山手線','御徒町':'JR山手線・東京メトロ銀座線',
+    '神田':'JR山手線・東京メトロ銀座線','原宿':'JR山手線・東京メトロ千代田線',
+    '代々木':'JR山手線・JR中央線・都営大江戸線','新大久保':'JR山手線',
+    '高田馬場':'JR山手線・西武新宿線・東京メトロ東西線',
+    '吉祥寺':'JR中央線・京王井の頭線','三鷹':'JR中央線','国分寺':'JR中央線・西武国分寺線',
+    '立川':'JR中央線・JR南武線・多摩モノレール','八王子':'JR中央線・JR横浜線・京王線ほか',
+    '横浜':'JR東海道線・JR横浜線・東急東横線ほか','川崎':'JR東海道線・JR南武線・京急本線',
+    '武蔵小杉':'JR横須賀線・JR南武線・東急東横線・東急目黒線',
+    '自由が丘':'東急東横線・東急大井町線','二子玉川':'東急田園都市線・東急大井町線',
+    '溝の口':'東急田園都市線・JR南武線','長津田':'東急田園都市線・JR横浜線',
+    '中目黒':'東急東横線・東京メトロ日比谷線','代官山':'東急東横線',
+    '中野':'JR中央線・東京メトロ東西線','荻窪':'JR中央線・東京メトロ丸ノ内線',
+    '下北沢':'小田急線・京王井の頭線','成城学園前':'小田急線',
+    '登戸':'小田急線・JR南武線','向ヶ丘遊園':'小田急線',
+    '町田':'小田急線・JR横浜線','海老名':'小田急線・相鉄本線・JR相模線',
+    '本厚木':'小田急線','新百合ヶ丘':'小田急線',
+    '調布':'京王線・京王相模原線','府中':'京王線・JR武蔵野線',
+    '聖蹟桜ヶ丘':'京王線','多摩センター':'京王相模原線・小田急多摩線・多摩モノレール',
+    '北千住':'JR常磐線・東京メトロ千代田線・東京メトロ日比谷線ほか',
+    '亀有':'JR常磐線','柏':'JR常磐線・東武アーバンパークライン',
+    '松戸':'JR常磐線・新京成線','取手':'JR常磐線',
+    '千葉':'JR総武線・JR内房線・JR外房線ほか','津田沼':'JR総武線',
+    '船橋':'JR総武線・東武野田線・京成本線','市川':'JR総武線・JR武蔵野線',
+    '浦安':'東京メトロ東西線','西船橋':'JR総武線・東京メトロ東西線・東葉高速線ほか',
+    '大宮':'JR京浜東北線・JR東北本線・東武野田線ほか',
+    '浦和':'JR京浜東北線・JR宇都宮線','川口':'JR京浜東北線',
+    '赤羽':'JR京浜東北線・JR東北本線・埼京線ほか',
+    '王子':'JR京浜東北線・東京メトロ南北線・都電荒川線',
+    '三軒茶屋':'東急田園都市線・東急世田谷線',
+    '表参道':'東京メトロ千代田線・東京メトロ銀座線・東京メトロ半蔵門線',
+    '六本木':'東京メトロ日比谷線・都営大江戸線',
+    '麻布十番':'東京メトロ南北線・都営大江戸線',
+    '広尾':'東京メトロ日比谷線','白金高輪':'東京メトロ南北線・都営三田線',
+    '三田':'都営浅草線・都営三田線',
+    '新宿三丁目':'東京メトロ丸ノ内線・東京メトロ副都心線・都営新宿線',
+    '四ツ谷':'JR中央線・東京メトロ丸ノ内線・東京メトロ南北線',
+    '市ヶ谷':'JR中央線・東京メトロ有楽町線・東京メトロ南北線・都営新宿線',
+    '飯田橋':'JR中央線・東京メトロ東西線・有楽町線・南北線・都営大江戸線',
+    '水道橋':'JR中央線・都営三田線','御茶ノ水':'JR中央線・東京メトロ丸ノ内線・千代田線',
+    '人形町':'東京メトロ日比谷線・都営浅草線','浅草':'東京メトロ銀座線・都営浅草線・東武伊勢崎線',
+    '錦糸町':'JR総武線・東京メトロ半蔵門線',
+    '押上':'東京メトロ半蔵門線・都営浅草線・京成押上線・東武伊勢崎線',
+    '門前仲町':'東京メトロ東西線・都営大江戸線','豊洲':'東京メトロ有楽町線・ゆりかもめ',
+    '辰巳':'東京メトロ有楽町線','新木場':'JR京葉線・東京メトロ有楽町線・りんかい線',
+    '国際展示場':'りんかい線','お台場海浜公園':'ゆりかもめ',
+};
+
+function lookupLines(stationName) {
+    const hint = document.getElementById('stationHint');
+    const lineInput = document.getElementById('nearestLine');
+    const name = stationName.trim().replace(/駅$/, '');
+    if (!name) { hint.textContent = ''; return; }
+    if (STATION_LINES[name]) {
+        lineInput.value = STATION_LINES[name];
+        hint.textContent = '✓ 路線を自動入力しました';
+        hint.style.color = '#4CAF50';
+        return;
+    }
+    const match = Object.keys(STATION_LINES).find(k => k.includes(name) || name.includes(k));
+    if (match) {
+        lineInput.value = STATION_LINES[match];
+        hint.textContent = '✓ 路線を自動入力しました（' + match + '駅）';
+        hint.style.color = '#4CAF50';
+    } else {
+        hint.textContent = '路線情報が見つかりませんでした。手動で入力してください。';
+        hint.style.color = '#FF9800';
+    }
+}
+</script>
     // 山手線
     '東京':'JR山手線・JR東海道線・JR中央線ほか','新宿':'JR山手線・JR中央線・小田急線・京王線ほか',
     '渋谷':'JR山手線・東急東横線・東京メトロ銀座線ほか','池袋':'JR山手線・西武池袋線・東武東上線ほか',

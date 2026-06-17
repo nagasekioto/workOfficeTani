@@ -18,6 +18,8 @@
         tr:hover { background: #fff8e1; }
         .edit-link { color: #FF9800; text-decoration: none; font-weight: bold; padding: 3px 8px; border: 1px solid #FF9800; border-radius: 3px; font-size: 12px; }
         .edit-link:hover { background: #FF9800; color: white; }
+        .delete-btn { background: #f44336; color: white; border: none; border-radius: 3px; padding: 4px 10px; cursor: pointer; font-size: 12px; margin-left: 5px; }
+        .delete-btn:hover { background: #d32f2f; }
     </style>
 </head>
 <body>
@@ -52,10 +54,14 @@
                 <td th:text="${c.lastNameKanji + ' ' + c.firstNameKanji}"></td>
                 <td th:text="${c.homePhone != null ? c.homePhone : '-'}"></td>
                 <td th:text="${c.mobilePhone != null ? c.mobilePhone : '-'}"></td>
-                <td th:text="${(c.address1 != null ? c.address1 : '') + (c.address2 != null ? c.address2 : '') + (c.address3 != null ? ' ' + c.address3 : '')}"></td>
+                <td th:text="${(c.address1 != null ? c.address1 : '') + (c.address3 != null and !c.address3.isBlank() ? c.address3 : (c.address2 != null ? c.address2 : ''))}"></td>
                 <td th:text="${c.registeredDate}"></td>
                 <td>
                     <a th:href="@{/customer/edit/{id}(id=${c.id})}" class="edit-link">修正</a>
+                    <form th:action="@{/customer/delete/{id}(id=${c.id})}" method="post"
+                          style="display:inline;" onsubmit="return confirmDelete(this)">
+                        <button type="submit" class="delete-btn">削除</button>
+                    </form>
                 </td>
             </tr>
         </tbody>
@@ -64,5 +70,12 @@
         登録された求人者がいません
     </div>
 </div>
+<script>
+function confirmDelete(form) {
+    const row = form.closest('tr');
+    const name = row.querySelector('td:nth-child(2)').textContent.trim();
+    return confirm('「' + name + '」を削除してもいいですか？\nこの操作は元に戻せません。');
+}
+</script>
 </body>
 </html>
