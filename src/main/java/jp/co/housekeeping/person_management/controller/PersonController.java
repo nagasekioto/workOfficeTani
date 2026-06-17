@@ -74,6 +74,14 @@ public class PersonController {
         if (person.getRegisteredDate() == null) {
             person.setRegisteredDate(LocalDate.now());
         }
+        // No自動採番
+        if (person.getNo() == null) {
+            int maxNo = 0;
+            for (Person p : personRepository.findAll()) {
+                if (p.getNo() != null && p.getNo() > maxNo) maxNo = p.getNo();
+            }
+            person.setNo(maxNo + 1);
+        }
 
         personRepository.save(person);
         return "redirect:/person/register";
@@ -119,6 +127,14 @@ public class PersonController {
 
         personRepository.save(person);
         return "redirect:/person/register";
+    }
+
+    // ─── 1-1-6 求職者情報一覧 ──────────────────────────
+    @GetMapping("/list")
+    public String list(HttpSession session, Model model) {
+        if (!checkAuth(session)) return "redirect:/login";
+        model.addAttribute("persons", personRepository.findAll());
+        return "person-list";
     }
 
     // ─── 求職者削除 ────────────────────────────────────

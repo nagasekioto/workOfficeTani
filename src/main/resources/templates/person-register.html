@@ -35,8 +35,8 @@
         .list-section { max-height: 820px; overflow-y: auto; }
         .edit-link { color: #FF9800; text-decoration: none; font-weight: bold; padding: 3px 8px; border: 1px solid #FF9800; border-radius: 3px; font-size: 12px; }
         .edit-link:hover { background: #FF9800; color: white; }
-        .delete-btn { background: #f44336; color: white; border: none; border-radius: 3px; padding: 4px 8px; cursor: pointer; font-size: 12px; margin-left: 4px; }
-        .delete-btn:hover { background: #d32f2f; }
+        .delete-btn { background: #f44336; color: white; border: 1px solid #f44336; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 12px; margin-left: 4px; font-weight: bold; }
+        .delete-btn:hover { background: #d32f2f; border-color: #d32f2f; }
         .badge { display: inline-block; padding: 2px 6px; border-radius: 10px; font-size: 11px; }
         .badge-yes { background: #e8f5e9; color: #2e7d32; }
         .badge-no  { background: #fafafa; color: #999; }
@@ -254,7 +254,21 @@
 
             <div class="form-group">
                 <label>生年月日</label>
-                <input type="date" th:field="*{birthDate}">
+                <div style="display:flex;gap:6px;align-items:center;">
+                    <select id="birthYear" onchange="updateBirthDate()" style="padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+                        <option value="">年</option>
+                    </select>
+                    <span>年</span>
+                    <select id="birthMonth" onchange="updateBirthDate()" style="padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+                        <option value="">月</option>
+                    </select>
+                    <span>月</span>
+                    <select id="birthDay" onchange="updateBirthDate()" style="padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+                        <option value="">日</option>
+                    </select>
+                    <span>日</span>
+                    <input type="hidden" th:field="*{birthDate}" id="birthDateHidden">
+                </div>
             </div>
             <div class="form-group">
                 <label>登録日</label>
@@ -314,6 +328,47 @@
 document.getElementById('personForm').addEventListener('keydown', function(e) {
     if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') e.preventDefault();
 });
+
+// フォーム送信前にbirthDateをセット
+document.getElementById('personForm').addEventListener('submit', function() {
+    updateBirthDate();
+});
+
+// ─── 生年月日セレクト初期化 ──────────────────────────
+(function() {
+    var yearSel  = document.getElementById('birthYear');
+    var monthSel = document.getElementById('birthMonth');
+    var daySel   = document.getElementById('birthDay');
+    var hidden   = document.getElementById('birthDateHidden');
+    var existingBirth = hidden.value || '';
+
+    var cy = new Date().getFullYear();
+    for (var y = cy; y >= 1920; y--) {
+        var o = document.createElement('option');
+        o.value = y; o.textContent = y; yearSel.appendChild(o);
+    }
+    for (var m = 1; m <= 12; m++) {
+        var o2 = document.createElement('option');
+        o2.value = String(m).padStart(2,'0'); o2.textContent = m; monthSel.appendChild(o2);
+    }
+    for (var d = 1; d <= 31; d++) {
+        var o3 = document.createElement('option');
+        o3.value = String(d).padStart(2,'0'); o3.textContent = d; daySel.appendChild(o3);
+    }
+    if (existingBirth && existingBirth.length >= 8) {
+        var parts = existingBirth.substring(0,10).split('-');
+        if (parts.length === 3) {
+            yearSel.value = parts[0]; monthSel.value = parts[1]; daySel.value = parts[2];
+        }
+    }
+})();
+
+function updateBirthDate() {
+    var y = document.getElementById('birthYear').value;
+    var m = document.getElementById('birthMonth').value;
+    var d = document.getElementById('birthDay').value;
+    document.getElementById('birthDateHidden').value = (y && m && d) ? y + '-' + m + '-' + d : '';
+}
 
 // 電話番号ハイフン自動付与
 function formatPhone(input) {

@@ -67,3 +67,6 @@ ALTER TABLE persons ADD COLUMN IF NOT EXISTS dispatch_customer_id BIGINT;
 
 -- 連絡履歴（JSON形式でcustomer_requestsに格納のため別テーブル不要）
 -- 候補者はcustomer_requests.candidate_person_idで対応
+
+-- customers テーブルに accessInfo 追加
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS access_info TEXT;
