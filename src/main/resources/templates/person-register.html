@@ -33,11 +33,10 @@
         th { background: #4CAF50; color: white; position: sticky; top: 0; }
         tr:hover { background: #f9f9f9; }
         .list-section { max-height: 820px; overflow-y: auto; }
-        .edit-link { color: #FF9800; text-decoration: none; font-weight: bold; padding: 3px 8px; border: 1px solid #FF9800; border-radius: 3px; font-size: 12px; display: inline-block; }
+        .edit-link { color: #FF9800; text-decoration: none; font-weight: bold; padding: 3px 8px; border: 1px solid #FF9800; border-radius: 3px; font-size: 12px; display: inline-block; vertical-align: middle; }
         .edit-link:hover { background: #FF9800; color: white; }
-        .delete-form { display: inline; margin: 0; padding: 0; }
-        .delete-btn { color: #f44336; background: transparent; font-weight: bold; border: 1px solid #f44336; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 12px; margin: 0 0 0 4px; line-height: normal; vertical-align: middle; display: inline-block; }
-        .delete-btn:hover { background: #f44336; color: white; }
+        .delete-link { color: #f44336; text-decoration: none; font-weight: bold; padding: 3px 8px; border: 1px solid #f44336; border-radius: 3px; font-size: 12px; display: inline-block; vertical-align: middle; margin-left: 4px; cursor: pointer; }
+        .delete-link:hover { background: #f44336; color: white; }
         .badge { display: inline-block; padding: 2px 6px; border-radius: 10px; font-size: 11px; }
         .badge-yes { background: #e8f5e9; color: #2e7d32; }
         .badge-no  { background: #fafafa; color: #999; }
@@ -324,10 +323,8 @@
                     <td th:text="${p.registeredDate}"></td>
                     <td>
                         <a th:href="@{/person/edit/{id}(id=${p.id})}" class="edit-link">修正</a>
-                        <form th:action="@{/person/delete/{id}(id=${p.id})}" method="post"
-                              class="delete-form" onsubmit="return confirmDelete(this)">
-                            <button type="submit" class="delete-btn">削除</button>
-                        </form>
+                        <a href="#" class="delete-link"
+                           th:attr="onclick='confirmDelete(' + ${p.id} + ', this)'">削除</a>
                     </td>
                 </tr>
             </tbody>
@@ -461,10 +458,17 @@ function searchAddress() {
 }
 
 // 削除確認
-function confirmDelete(form) {
-    var row = form.closest('tr');
+function confirmDelete(id, el) {
+    var row = el.closest('tr');
     var name = row.cells[1].textContent.trim();
-    return confirm('「' + name + '」を削除してもいいですか？\nこの操作は元に戻せません。');
+    if (confirm('「' + name + '」を削除してもいいですか？\nこの操作は元に戻せません。')) {
+        var form = document.createElement('form');
+        form.method = 'post';
+        form.action = '/person/delete/' + id;
+        document.body.appendChild(form);
+        form.submit();
+    }
+    return false;
 }
 
 // 駅名→路線自動補完（求人者と同じデータ）
