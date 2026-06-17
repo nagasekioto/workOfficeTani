@@ -121,6 +121,14 @@ public class PersonController {
         return "redirect:/person/register";
     }
 
+    // ─── 求職者削除 ────────────────────────────────────
+    @PostMapping("/delete/{id}")
+    public String delete(@PathVariable Long id, HttpSession session) {
+        if (!checkAuth(session)) return "redirect:/login";
+        personRepository.deleteById(id);
+        return "redirect:/person/register";
+    }
+
     // ─── 1-1-4 求職管理簿 ──────────────────────────────
     @GetMapping("/shokuji-ledger")
     public String shokujiLedger(@RequestParam(required = false) Long personId,
