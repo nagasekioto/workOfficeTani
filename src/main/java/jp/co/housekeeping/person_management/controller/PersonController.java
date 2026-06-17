@@ -125,6 +125,16 @@ public class PersonController {
         person.setAnimalCatAllergy(animalCatAllergy != null && animalCatAllergy);
         person.setLineWorks(lineWorks != null && lineWorks);
 
+        // null保護：既存データを保持
+        personRepository.findById(person.getId()).ifPresent(existing -> {
+            if (person.getRegisteredDate() == null) person.setRegisteredDate(existing.getRegisteredDate());
+            if (person.getBirthDate() == null) person.setBirthDate(existing.getBirthDate());
+            if (person.getHomePhone() == null) person.setHomePhone(existing.getHomePhone());
+            if (person.getMobilePhone() == null) person.setMobilePhone(existing.getMobilePhone());
+            if (person.getFaxPhone() == null) person.setFaxPhone(existing.getFaxPhone());
+            if (person.getNo() == null) person.setNo(existing.getNo());
+        });
+
         personRepository.save(person);
         return "redirect:/person/register";
     }

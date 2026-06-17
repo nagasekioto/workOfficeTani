@@ -120,8 +120,8 @@ public class CustomerController {
                 customer.setNearestLine(existing.getNearestLine());
             if (customer.getNotes() == null)
                 customer.setNotes(existing.getNotes());
-            if (customer.getAccessInfo() == null)
-                customer.setAccessInfo(existing.getAccessInfo());
+            if (customer.getAccessTime() == null)
+                customer.setAccessTime(existing.getAccessTime());
         });
         customerRepository.save(customer);
         return "redirect:/customer/list";

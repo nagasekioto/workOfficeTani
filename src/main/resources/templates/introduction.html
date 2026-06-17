@@ -86,7 +86,7 @@
                             th:data-phone="${c.homePhone != null ? c.homePhone : (c.mobilePhone != null ? c.mobilePhone : '')}"
                             th:data-postal="${c.postalCode != null ? c.postalCode : ''}"
                             th:data-addr="${(c.address1 != null ? c.address1 : '') + (c.address3 != null and !c.address3.isBlank() ? c.address3 : (c.address2 != null ? c.address2 : ''))}"
-                            th:data-access="${c.accessInfo != null ? c.accessInfo : ''}"
+                            th:data-access="${c.accessTime != null ? c.accessTime : ''}"
                             th:text="${c.lastNameKanji + ' ' + c.firstNameKanji}">
                     </option>
                 </select>

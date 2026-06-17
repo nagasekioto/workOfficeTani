@@ -42,7 +42,7 @@ public class Customer {
     private LocalDate birthDate;
     private LocalDate registeredDate;
     private String notes;
-    private String accessInfo;  // 駅からの所要時間（例：徒歩5分・バス10分）
+    private String accessTime;  // 駅からの所要時間（schema-update-3.sqlで追加）
     
     // コンストラクタ
     public Customer() {
@@ -192,6 +192,6 @@ public class Customer {
     public void setNotes(String notes) {
         this.notes = notes;
     }
-    public String getAccessInfo() { return accessInfo; }
-    public void setAccessInfo(String accessInfo) { this.accessInfo = accessInfo; }
+    public String getAccessTime() { return accessTime; }
+    public void setAccessTime(String accessTime) { this.accessTime = accessTime; }
 }
