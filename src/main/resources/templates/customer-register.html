@@ -162,7 +162,7 @@
             <!-- 登録日 -->
             <div class="form-group">
                 <label>登録日</label>
-                <input type="date" th:field="*{registeredDate}" id="registeredDate">
+                <input type="date" th:field="*{registeredDate}" th:value="${customer.registeredDate}" id="registeredDate">
             </div>
 
             <!-- 備考 -->
@@ -218,41 +218,49 @@
     });
 
     // ─── 生年月日セレクト初期化 ──────────────────────
-    const yearSel  = document.getElementById('birthYear');
-    const monthSel = document.getElementById('birthMonth');
-    const daySel   = document.getElementById('birthDay');
-    const hidden   = document.getElementById('birthDateHidden');
+    var yearSel  = document.getElementById('birthYear');
+    var monthSel = document.getElementById('birthMonth');
+    var daySel   = document.getElementById('birthDay');
+    var birthHidden = document.getElementById('birthDateHidden');
+
+    // 既存値を先に保存（option生成前に読む）
+    var existingBirth = birthHidden.value || '';
 
     // 年（1920〜現在）
-    const currentYear = new Date().getFullYear();
-    for (let y = currentYear; y >= 1920; y--) {
-        const opt = document.createElement('option');
+    var currentYear = new Date().getFullYear();
+    for (var y = currentYear; y >= 1920; y--) {
+        var opt = document.createElement('option');
         opt.value = y; opt.textContent = y;
         yearSel.appendChild(opt);
     }
     // 月
-    for (let m = 1; m <= 12; m++) {
-        const opt = document.createElement('option');
-        opt.value = String(m).padStart(2,'0'); opt.textContent = m;
-        monthSel.appendChild(opt);
+    for (var m = 1; m <= 12; m++) {
+        var opt2 = document.createElement('option');
+        opt2.value = String(m).padStart(2,'0'); opt2.textContent = m;
+        monthSel.appendChild(opt2);
     }
     // 日
-    for (let d = 1; d <= 31; d++) {
-        const opt = document.createElement('option');
-        opt.value = String(d).padStart(2,'0'); opt.textContent = d;
-        daySel.appendChild(opt);
+    for (var d = 1; d <= 31; d++) {
+        var opt3 = document.createElement('option');
+        opt3.value = String(d).padStart(2,'0'); opt3.textContent = d;
+        daySel.appendChild(opt3);
     }
 
-    // 既存値をセレクトに反映
-    const existingDate = hidden.value;
-    if (existingDate && existingDate.length === 10) {
-        const parts = existingDate.split('-');
-        yearSel.value  = parts[0];
-        monthSel.value = parts[1];
-        daySel.value   = parts[2];
+    // option生成完了後に値をセット
+    if (existingBirth && existingBirth.length >= 8) {
+        var parts = existingBirth.substring(0, 10).split('-');
+        if (parts.length === 3) {
+            yearSel.value  = parts[0];
+            monthSel.value = parts[1];
+            daySel.value   = parts[2];
+        }
     }
 
-    // ─── address3の表示値を初期化 ────────────────────
+    // ─── フォーム送信前にbirthDateをセット ────────────
+    document.getElementById('mainForm').addEventListener('submit', function() {
+        updateBirthDate();
+        syncAddress3();
+    });
     const addr2El    = document.getElementById('address2');
     const addr3Disp  = document.getElementById('address3Display');
     const addr3Hid   = document.getElementById('address3Hidden');
