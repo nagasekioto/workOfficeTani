@@ -61,6 +61,7 @@
                 <th>自宅電話</th>
                 <th>携帯電話</th>
                 <th class="sortable" onclick="sortTable('addr','toggle')" data-col="addr">住所 <span class="sort-icon">&#8597;</span></th>
+                <th class="sortable" onclick="sortTable('birth','toggle')" data-col="birth">誕生日 <span class="sort-icon">&#8597;</span></th>
                 <th class="sortable" onclick="sortTable('date','toggle')" data-col="date">登録日 <span class="sort-icon">&#8597;</span></th>
                 <th>操作</th>
             </tr>
@@ -70,12 +71,14 @@
                 th:attr="data-no=${c.no != null ? c.no : 0},
                          data-name=${c.lastNameKanji + c.firstNameKanji},
                          data-addr=${(c.address1 != null ? c.address1 : '') + (c.address3 != null and !c.address3.isBlank() ? c.address3 : (c.address2 != null ? c.address2 : ''))},
+                         data-birth=${c.birthDate != null ? c.birthDate : ''},
                          data-date=${c.registeredDate != null ? c.registeredDate : ''}">
                 <td th:text="${c.no}">-</td>
                 <td th:text="${c.lastNameKanji + ' ' + c.firstNameKanji}"></td>
                 <td th:text="${c.homePhone != null ? c.homePhone : '-'}"></td>
                 <td th:text="${c.mobilePhone != null ? c.mobilePhone : '-'}"></td>
                 <td th:text="${(c.address1 != null ? c.address1 : '') + (c.address3 != null and !c.address3.isBlank() ? c.address3 : (c.address2 != null ? c.address2 : ''))}"></td>
+                <td th:text="${c.birthDate != null ? c.birthDate : '-'}"></td>
                 <td th:text="${c.registeredDate}"></td>
                 <td>
                     <a th:href="@{/customer/edit/{id}(id=${c.id})}" class="edit-link">修正</a>
@@ -144,6 +147,9 @@ function sortTable(col, dir) {
         } else if (col === 'addr') {
             va = a.dataset.addr || '';
             vb = b.dataset.addr || '';
+        } else if (col === 'birth') {
+            va = a.dataset.birth || '';
+            vb = b.dataset.birth || '';
         } else if (col === 'date') {
             va = a.dataset.date || '';
             vb = b.dataset.date || '';
