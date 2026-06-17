@@ -8,18 +8,27 @@
         .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         h1 { margin: 0; color: #333; }
         .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
-        .container { max-width: 1100px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .toolbar { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; }
-        .toolbar select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        th { background: #FF9800; color: white; padding: 10px; text-align: left; cursor: pointer; }
-        th:hover { background: #F57C00; }
-        td { padding: 10px; border-bottom: 1px solid #e0e0e0; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .toolbar { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; flex-wrap: wrap; }
+        .toolbar input[type=text] { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; min-width: 180px; }
+        .toolbar button { padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .toolbar .clear-btn { background: #9e9e9e; }
+        .sort-area { display: flex; gap: 8px; align-items: center; margin-left: auto; }
+        .sort-area label { font-size: 13px; color: #555; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #FF9800; color: white; padding: 10px; text-align: left; white-space: nowrap; }
+        th.sortable { cursor: pointer; user-select: none; }
+        th.sortable:hover { background: #F57C00; }
+        th .sort-icon { margin-left: 4px; font-size: 11px; }
+        td { padding: 9px 10px; border-bottom: 1px solid #e0e0e0; }
         tr:hover { background: #fff8e1; }
-        .edit-link { color: #FF9800; text-decoration: none; font-weight: bold; padding: 3px 8px; border: 1px solid #FF9800; border-radius: 3px; font-size: 12px; }
-        .edit-link:hover { background: #FF9800; color: white; }
+        .edit-link { color: #2196F3; text-decoration: none; font-weight: bold; padding: 3px 8px; border: 1px solid #2196F3; border-radius: 3px; font-size: 12px; }
+        .edit-link:hover { background: #2196F3; color: white; }
         .delete-btn { background: #f44336; color: white; border: none; border-radius: 3px; padding: 4px 10px; cursor: pointer; font-size: 12px; margin-left: 5px; }
         .delete-btn:hover { background: #d32f2f; }
+        .empty { text-align: center; padding: 30px; color: #999; }
+        .count-label { font-size: 13px; color: #777; margin-left: 5px; }
+        .highlight { background: #fff9c4; }
     </style>
 </head>
 <body>
@@ -28,29 +37,41 @@
     <a href="/customer-menu" class="back-btn">&#8592; 求人者管理に戻る</a>
 </div>
 <div class="container">
+    <!-- 検索・ソートツールバー -->
     <div class="toolbar">
-        <span>ソート：</span>
-        <select onchange="location.href='/customer/list?sort='+this.value">
-            <option value="name" th:selected="${sort == 'name'}">氏名順</option>
-            <option value="date" th:selected="${sort == 'date'}">登録日順</option>
-            <option value="no"   th:selected="${sort == 'no'}">No順</option>
-        </select>
+        <input type="text" id="searchName" placeholder="&#128269; 氏名で検索" oninput="filterTable()">
+        <input type="text" id="searchAddr" placeholder="&#128269; 住所で検索" oninput="filterTable()">
+        <button onclick="clearSearch()">クリア</button>
+        <span class="count-label" id="countLabel"></span>
+
+        <div class="sort-area">
+            <label>ソート：</label>
+            <button onclick="sortTable('no','asc')" title="No昇順">No &#8593;</button>
+            <button onclick="sortTable('no','desc')" title="No降順">No &#8595;</button>
+            <button onclick="sortTable('name','asc')" title="氏名昇順">氏名 &#8593;</button>
+            <button onclick="sortTable('date','desc')" title="登録日新しい順">登録日 &#8595;</button>
+        </div>
     </div>
-    <table>
+
+    <table id="customerTable">
         <thead>
             <tr>
-                <th onclick="location.href='/customer/list?sort=no'">No</th>
-                <th onclick="location.href='/customer/list?sort=name'">氏名</th>
+                <th class="sortable" onclick="sortTable('no','toggle')" data-col="no">No <span class="sort-icon">&#8597;</span></th>
+                <th class="sortable" onclick="sortTable('name','toggle')" data-col="name">氏名 <span class="sort-icon">&#8597;</span></th>
                 <th>自宅電話</th>
                 <th>携帯電話</th>
-                <th>住所</th>
-                <th onclick="location.href='/customer/list?sort=date'">登録日</th>
+                <th class="sortable" onclick="sortTable('addr','toggle')" data-col="addr">住所 <span class="sort-icon">&#8597;</span></th>
+                <th class="sortable" onclick="sortTable('date','toggle')" data-col="date">登録日 <span class="sort-icon">&#8597;</span></th>
                 <th>操作</th>
             </tr>
         </thead>
-        <tbody>
-            <tr th:each="c : ${customers}">
-                <td th:text="${c.no}"></td>
+        <tbody id="tableBody">
+            <tr th:each="c : ${customers}"
+                th:attr="data-no=${c.no != null ? c.no : 0},
+                         data-name=${c.lastNameKanji + c.firstNameKanji},
+                         data-addr=${(c.address1 != null ? c.address1 : '') + (c.address3 != null and !c.address3.isBlank() ? c.address3 : (c.address2 != null ? c.address2 : ''))},
+                         data-date=${c.registeredDate != null ? c.registeredDate : ''}">
+                <td th:text="${c.no}">-</td>
                 <td th:text="${c.lastNameKanji + ' ' + c.firstNameKanji}"></td>
                 <td th:text="${c.homePhone != null ? c.homePhone : '-'}"></td>
                 <td th:text="${c.mobilePhone != null ? c.mobilePhone : '-'}"></td>
@@ -66,16 +87,95 @@
             </tr>
         </tbody>
     </table>
-    <div style="text-align:center;padding:30px;color:#999;" th:if="${#lists.isEmpty(customers)}">
-        登録された求人者がいません
-    </div>
+    <div class="empty" id="emptyMsg" style="display:none;">該当する求人者がいません</div>
 </div>
+
 <script>
+var sortState = {};
+
+function filterTable() {
+    var nameQ = document.getElementById('searchName').value.toLowerCase();
+    var addrQ = document.getElementById('searchAddr').value.toLowerCase();
+    var rows = document.querySelectorAll('#tableBody tr');
+    var count = 0;
+    rows.forEach(function(row) {
+        var name = (row.dataset.name || '').toLowerCase();
+        var addr = (row.dataset.addr || '').toLowerCase();
+        var show = name.includes(nameQ) && addr.includes(addrQ);
+        row.style.display = show ? '' : 'none';
+        if (show) count++;
+
+        // ハイライト
+        row.querySelectorAll('td').forEach(function(td) {
+            td.classList.remove('highlight');
+        });
+        if (show && (nameQ || addrQ)) {
+            if (nameQ && name.includes(nameQ)) row.cells[1].classList.add('highlight');
+            if (addrQ && addr.includes(addrQ)) row.cells[4].classList.add('highlight');
+        }
+    });
+    document.getElementById('countLabel').textContent = count + '件';
+    document.getElementById('emptyMsg').style.display = count === 0 ? 'block' : 'none';
+}
+
+function clearSearch() {
+    document.getElementById('searchName').value = '';
+    document.getElementById('searchAddr').value = '';
+    filterTable();
+}
+
+function sortTable(col, dir) {
+    if (dir === 'toggle') {
+        dir = sortState[col] === 'asc' ? 'desc' : 'asc';
+    }
+    sortState[col] = dir;
+
+    var tbody = document.getElementById('tableBody');
+    var rows = Array.from(tbody.querySelectorAll('tr'));
+    rows.sort(function(a, b) {
+        var va, vb;
+        if (col === 'no') {
+            va = parseInt(a.dataset.no) || 0;
+            vb = parseInt(b.dataset.no) || 0;
+            return dir === 'asc' ? va - vb : vb - va;
+        } else if (col === 'name') {
+            va = a.dataset.name || '';
+            vb = b.dataset.name || '';
+        } else if (col === 'addr') {
+            va = a.dataset.addr || '';
+            vb = b.dataset.addr || '';
+        } else if (col === 'date') {
+            va = a.dataset.date || '';
+            vb = b.dataset.date || '';
+        }
+        if (va < vb) return dir === 'asc' ? -1 : 1;
+        if (va > vb) return dir === 'asc' ? 1 : -1;
+        return 0;
+    });
+    rows.forEach(function(row) { tbody.appendChild(row); });
+
+    // ソートアイコン更新
+    document.querySelectorAll('th[data-col]').forEach(function(th) {
+        var icon = th.querySelector('.sort-icon');
+        if (th.dataset.col === col) {
+            icon.textContent = dir === 'asc' ? '▲' : '▼';
+        } else {
+            icon.textContent = '⇅';
+        }
+    });
+}
+
 function confirmDelete(form) {
-    const row = form.closest('tr');
-    const name = row.querySelector('td:nth-child(2)').textContent.trim();
+    var row = form.closest('tr');
+    var name = row.cells[1].textContent.trim();
     return confirm('「' + name + '」を削除してもいいですか？\nこの操作は元に戻せません。');
 }
+
+// 初期カウント表示
+window.addEventListener('load', function() {
+    var count = document.querySelectorAll('#tableBody tr').length;
+    document.getElementById('countLabel').textContent = count + '件';
+});
 </script>
 </body>
 </html>

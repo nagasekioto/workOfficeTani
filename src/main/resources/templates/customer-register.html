@@ -16,7 +16,7 @@
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         label { display: block; margin-bottom: 4px; font-weight: bold; color: #555; font-size: 13px; }
         label .req { color: #f44336; }
-        input[type=text], input[type=date], textarea, datalist {
+        input[type=text], input[type=date], textarea {
             width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 14px;
         }
         input::placeholder { color: #bbb; font-size: 13px; }
@@ -36,7 +36,10 @@
         .list-section { max-height: 860px; overflow-y: auto; }
         .edit-link { color: #2196F3; text-decoration: none; font-weight: bold; padding: 3px 8px; border: 1px solid #2196F3; border-radius: 3px; font-size: 12px; }
         .edit-link:hover { background: #2196F3; color: white; }
-        .station-hint { font-size: 11px; color: #4CAF50; margin-top: 2px; }
+        .station-hint { font-size: 11px; color: #4CAF50; margin-top: 2px; min-height: 16px; }
+        .date-group { display: flex; gap: 6px; align-items: center; }
+        .date-group select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .date-group span { color: #555; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -46,12 +49,12 @@
 </div>
 
 <div class="container">
-    <!-- フォーム -->
     <div class="form-section">
         <h2 th:classappend="${editMode} ? 'edit' : ''"
             th:text="${editMode} ? '情報修正' : '新規登録'">新規登録</h2>
 
-        <form th:action="${editMode} ? '/customer/update' : '/customer/register'"
+        <form id="mainForm"
+              th:action="${editMode} ? '/customer/update' : '/customer/register'"
               th:object="${customer}" method="post">
 
             <input th:if="${editMode}" type="hidden" th:field="*{id}">
@@ -83,7 +86,7 @@
                 <label>郵便番号（ハイフンなし7桁）</label>
                 <div class="postal-row">
                     <input type="text" th:field="*{postalCode}" id="postalCode"
-                           placeholder="例：1500013（ハイフンなし7桁）" maxlength="7">
+                           placeholder="例：1040051（ハイフンなし7桁）" maxlength="7">
                     <button type="button" class="postal-btn" onclick="searchAddress()">住所を自動入力</button>
                 </div>
             </div>
@@ -92,9 +95,8 @@
             <div class="form-group">
                 <label>都道府県・市区町村</label>
                 <input type="text" th:field="*{address1}" id="address1"
-                       placeholder="例：東京都渋谷区恵比寿">
+                       placeholder="例：東京都中央区月島">
             </div>
-            <!-- 番地 -->
             <div class="form-group">
                 <label>番地</label>
                 <input type="text" th:field="*{address2}" id="address2"
@@ -102,24 +104,24 @@
             </div>
             <div class="form-group">
                 <label>部屋番号（マンション名がある場合はマンション名も）</label>
-                <input type="text" id="address3Input"
-                       th:value="*{address3}"
-                       placeholder="例：3101　または　恵比寿マンション3101"
-                       oninput="updateAddress3()">
-                <input type="hidden" th:field="*{address3}" id="address3">
-                <div class="addr-note">※部屋番号のみ入力すると番地と自動結合されます（例：2-2-11 と 3101 → 2-2-11-3101）</div>
+                <input type="text" id="address3Display"
+                       placeholder="例：3101　または　月島マンション3101"
+                       th:value="${customer.address3 != null and customer.address2 != null and customer.address3.startsWith(customer.address2 + '-') ? customer.address3.substring(customer.address2.length() + 1) : customer.address3}">
+                <input type="hidden" th:field="*{address3}" id="address3Hidden">
+                <div class="addr-note">※数字のみ入力すると番地と自動結合されます（例：2-2-11 と 3101 → 2-2-11-3101）</div>
             </div>
 
             <!-- 最寄り駅 -->
             <div class="form-group">
                 <label>最寄り駅名</label>
                 <input type="text" th:field="*{nearestStation}" id="nearestStation"
-                       placeholder="例：恵比寿" oninput="lookupLines(this.value)" autocomplete="off">
+                       placeholder="例：月島" autocomplete="off"
+                       oninput="lookupLines(this.value)">
             </div>
             <div class="form-group">
                 <label>最寄り路線（駅名入力で自動補完）</label>
                 <input type="text" th:field="*{nearestLine}" id="nearestLine"
-                       placeholder="例：JR山手線、東京メトロ日比谷線">
+                       placeholder="例：東京メトロ有楽町線・都営大江戸線">
                 <div class="station-hint" id="stationHint"></div>
             </div>
 
@@ -137,16 +139,30 @@
                 <input type="text" th:field="*{faxPhone}" placeholder="例：03-1234-5679">
             </div>
 
-            <!-- 生年月日・登録日 -->
-            <div class="form-row">
-                <div class="form-group">
-                    <label>生年月日</label>
-                    <input type="date" th:field="*{birthDate}">
+            <!-- 生年月日（年4桁セレクト） -->
+            <div class="form-group">
+                <label>生年月日</label>
+                <div class="date-group">
+                    <select id="birthYear" onchange="updateBirthDate()">
+                        <option value="">年</option>
+                    </select>
+                    <span>年</span>
+                    <select id="birthMonth" onchange="updateBirthDate()">
+                        <option value="">月</option>
+                    </select>
+                    <span>月</span>
+                    <select id="birthDay" onchange="updateBirthDate()">
+                        <option value="">日</option>
+                    </span>
+                    <span>日</span>
+                    <input type="hidden" th:field="*{birthDate}" id="birthDateHidden">
                 </div>
-                <div class="form-group">
-                    <label>登録日</label>
-                    <input type="date" th:field="*{registeredDate}">
-                </div>
+            </div>
+
+            <!-- 登録日 -->
+            <div class="form-group">
+                <label>登録日</label>
+                <input type="date" th:field="*{registeredDate}" id="registeredDate">
             </div>
 
             <!-- 備考 -->
@@ -193,63 +209,89 @@
 </div>
 
 <script>
-// ─── Enterキーでフォーム送信しない ───────────────────
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('form input').forEach(function(input) {
-        input.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                return false;
-            }
-        });
+(function() {
+    // ─── Enterキー無効 ───────────────────────────────
+    document.getElementById('mainForm').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+        }
     });
 
-    // 編集時：address3の初期値を分解して表示
-    const addr2 = document.getElementById('address2');
-    const addr3Hidden = document.getElementById('address3');
-    const addr3Input = document.getElementById('address3Input');
-    if (addr3Hidden && addr3Input && addr2) {
-        const stored = addr3Hidden.value || '';
-        const a2val = addr2.value || '';
-        // stored が "a2val-xxxx" 形式なら部屋番号部分だけ表示
-        if (stored && a2val && stored.startsWith(a2val + '-')) {
-            addr3Input.value = stored.slice(a2val.length + 1);
+    // ─── 生年月日セレクト初期化 ──────────────────────
+    const yearSel  = document.getElementById('birthYear');
+    const monthSel = document.getElementById('birthMonth');
+    const daySel   = document.getElementById('birthDay');
+    const hidden   = document.getElementById('birthDateHidden');
+
+    // 年（1920〜現在）
+    const currentYear = new Date().getFullYear();
+    for (let y = currentYear; y >= 1920; y--) {
+        const opt = document.createElement('option');
+        opt.value = y; opt.textContent = y;
+        yearSel.appendChild(opt);
+    }
+    // 月
+    for (let m = 1; m <= 12; m++) {
+        const opt = document.createElement('option');
+        opt.value = String(m).padStart(2,'0'); opt.textContent = m;
+        monthSel.appendChild(opt);
+    }
+    // 日
+    for (let d = 1; d <= 31; d++) {
+        const opt = document.createElement('option');
+        opt.value = String(d).padStart(2,'0'); opt.textContent = d;
+        daySel.appendChild(opt);
+    }
+
+    // 既存値をセレクトに反映
+    const existingDate = hidden.value;
+    if (existingDate && existingDate.length === 10) {
+        const parts = existingDate.split('-');
+        yearSel.value  = parts[0];
+        monthSel.value = parts[1];
+        daySel.value   = parts[2];
+    }
+
+    // ─── address3の表示値を初期化 ────────────────────
+    const addr2El    = document.getElementById('address2');
+    const addr3Disp  = document.getElementById('address3Display');
+    const addr3Hid   = document.getElementById('address3Hidden');
+
+    // 初期表示：hidden値をそのまま表示欄に
+    if (addr3Hid.value && !addr3Disp.value) {
+        addr3Disp.value = addr3Hid.value;
+    }
+
+    // 入力変更時に結合
+    function syncAddress3() {
+        const a2  = addr2El.value.trim();
+        const raw = addr3Disp.value.trim();
+        if (!raw) { addr3Hid.value = ''; return; }
+        const num = raw.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+        if (/^[0-9]+$/.test(num) && a2) {
+            addr3Hid.value = a2 + '-' + num;
         } else {
-            addr3Input.value = stored;
+            addr3Hid.value = raw;
         }
     }
-});
+    addr3Disp.addEventListener('input', syncAddress3);
+    addr2El.addEventListener('input', syncAddress3);
+    syncAddress3(); // 初期実行
+})();
 
-// 番地＋部屋番号を結合してhiddenに保存
-function updateAddress3() {
-    const addr2 = document.getElementById('address2').value.trim();
-    const roomRaw = document.getElementById('address3Input').value.trim();
-    const hidden = document.getElementById('address3');
-    if (!roomRaw) {
-        hidden.value = '';
-        return;
-    }
-    // 部屋番号が数字のみ（半角・全角）→ 番地と結合
-    const roomNum = roomRaw.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
-    if (/^[0-9]+$/.test(roomNum) && addr2) {
-        hidden.value = addr2 + '-' + roomNum;
-    } else {
-        // マンション名ありの場合はそのまま
-        hidden.value = roomRaw;
-    }
+// ─── 生年月日更新 ──────────────────────────────────
+function updateBirthDate() {
+    const y = document.getElementById('birthYear').value;
+    const m = document.getElementById('birthMonth').value;
+    const d = document.getElementById('birthDay').value;
+    document.getElementById('birthDateHidden').value = (y && m && d) ? y + '-' + m + '-' + d : '';
 }
 
-// 番地が変わったら部屋番号も再計算
-document.addEventListener('DOMContentLoaded', function() {
-    const addr2 = document.getElementById('address2');
-    if (addr2) addr2.addEventListener('input', updateAddress3);
-});
-
-// 住所自動入力
+// ─── 住所自動入力 ──────────────────────────────────
 function searchAddress() {
     const code = document.getElementById('postalCode').value.replace(/-/g, '');
     if (code.length !== 7) {
-        alert('郵便番号はハイフンなし7桁で入力してください\n例：1500013');
+        alert('郵便番号はハイフンなし7桁で入力してください\n例：1040051');
         return;
     }
     fetch('https://zipcloud.ibsnet.co.jp/api/search?zipcode=' + code)
@@ -264,166 +306,300 @@ function searchAddress() {
         });
 }
 
-// 駅名から路線を自動補完
-const STATION_LINES = {
-    '東京':'JR山手線・JR東海道線・JR中央線ほか','新宿':'JR山手線・JR中央線・小田急線・京王線ほか',
-    '渋谷':'JR山手線・東急東横線・東京メトロ銀座線ほか','池袋':'JR山手線・西武池袋線・東武東上線ほか',
-    '品川':'JR山手線・JR東海道線・京急本線','上野':'JR山手線・JR上野東京ライン・東京メトロ銀座線ほか',
-    '秋葉原':'JR山手線・JR総武線・東京メトロ日比谷線','有楽町':'JR山手線・東京メトロ有楽町線',
-    '新橋':'JR山手線・東京メトロ銀座線・都営浅草線ほか','浜松町':'JR山手線・東京モノレール',
-    '田町':'JR山手線・JR東海道線','恵比寿':'JR山手線・東京メトロ日比谷線',
-    '目黒':'JR山手線・東急目黒線・東京メトロ南北線ほか','五反田':'JR山手線・東急池上線',
-    '大崎':'JR山手線・りんかい線','大井町':'JR京浜東北線・東急大井町線',
-    '大塚':'JR山手線・都電荒川線','巣鴨':'JR山手線・都営三田線',
-    '駒込':'JR山手線・東京メトロ南北線','田端':'JR山手線・JR京浜東北線',
-    '西日暮里':'JR山手線・東京メトロ千代田線','日暮里':'JR山手線・京成本線・舎人ライナー',
-    '鶯谷':'JR山手線','御徒町':'JR山手線・東京メトロ銀座線',
-    '神田':'JR山手線・東京メトロ銀座線','原宿':'JR山手線・東京メトロ千代田線',
-    '代々木':'JR山手線・JR中央線・都営大江戸線','新大久保':'JR山手線',
+// ─── 駅名→路線自動補完 ─────────────────────────────
+var STATION_LINES = {
+    '東京':'JR山手線・JR東海道線・JR中央線ほか',
+    '新宿':'JR山手線・JR中央線・小田急線・京王線ほか',
+    '渋谷':'JR山手線・東急東横線・東京メトロ銀座線ほか',
+    '池袋':'JR山手線・西武池袋線・東武東上線ほか',
+    '品川':'JR山手線・JR東海道線・京急本線',
+    '上野':'JR山手線・JR上野東京ライン・東京メトロ銀座線ほか',
+    '秋葉原':'JR山手線・JR総武線・東京メトロ日比谷線',
+    '有楽町':'JR山手線・東京メトロ有楽町線',
+    '新橋':'JR山手線・東京メトロ銀座線・都営浅草線ほか',
+    '浜松町':'JR山手線・東京モノレール',
+    '田町':'JR山手線・JR東海道線',
+    '恵比寿':'JR山手線・東京メトロ日比谷線',
+    '目黒':'JR山手線・東急目黒線・東京メトロ南北線ほか',
+    '五反田':'JR山手線・東急池上線',
+    '大崎':'JR山手線・りんかい線',
+    '大井町':'JR京浜東北線・東急大井町線',
+    '大塚':'JR山手線・都電荒川線',
+    '巣鴨':'JR山手線・都営三田線',
+    '駒込':'JR山手線・東京メトロ南北線',
+    '田端':'JR山手線・JR京浜東北線',
+    '西日暮里':'JR山手線・東京メトロ千代田線',
+    '日暮里':'JR山手線・京成本線・舎人ライナー',
+    '鶯谷':'JR山手線',
+    '御徒町':'JR山手線・東京メトロ銀座線',
+    '神田':'JR山手線・東京メトロ銀座線',
+    '原宿':'JR山手線・東京メトロ千代田線',
+    '代々木':'JR山手線・JR中央線・都営大江戸線',
+    '新大久保':'JR山手線',
     '高田馬場':'JR山手線・西武新宿線・東京メトロ東西線',
-    '吉祥寺':'JR中央線・京王井の頭線','三鷹':'JR中央線','国分寺':'JR中央線・西武国分寺線',
-    '立川':'JR中央線・JR南武線・多摩モノレール','八王子':'JR中央線・JR横浜線・京王線ほか',
-    '横浜':'JR東海道線・JR横浜線・東急東横線ほか','川崎':'JR東海道線・JR南武線・京急本線',
+    '吉祥寺':'JR中央線・京王井の頭線',
+    '三鷹':'JR中央線・JR総武線',
+    '国分寺':'JR中央線・西武国分寺線',
+    '立川':'JR中央線・JR南武線・多摩モノレール',
+    '八王子':'JR中央線・JR横浜線・京王線ほか',
+    '横浜':'JR東海道線・JR横浜線・東急東横線・みなとみらい線ほか',
+    '川崎':'JR東海道線・JR南武線・京急本線',
     '武蔵小杉':'JR横須賀線・JR南武線・東急東横線・東急目黒線',
-    '自由が丘':'東急東横線・東急大井町線','二子玉川':'東急田園都市線・東急大井町線',
-    '溝の口':'東急田園都市線・JR南武線','長津田':'東急田園都市線・JR横浜線',
-    '中目黒':'東急東横線・東京メトロ日比谷線','代官山':'東急東横線',
-    '中野':'JR中央線・東京メトロ東西線','荻窪':'JR中央線・東京メトロ丸ノ内線',
-    '下北沢':'小田急線・京王井の頭線','成城学園前':'小田急線',
-    '登戸':'小田急線・JR南武線','向ヶ丘遊園':'小田急線',
-    '町田':'小田急線・JR横浜線','海老名':'小田急線・相鉄本線・JR相模線',
-    '本厚木':'小田急線','新百合ヶ丘':'小田急線',
-    '調布':'京王線・京王相模原線','府中':'京王線・JR武蔵野線',
-    '聖蹟桜ヶ丘':'京王線','多摩センター':'京王相模原線・小田急多摩線・多摩モノレール',
-    '北千住':'JR常磐線・東京メトロ千代田線・東京メトロ日比谷線ほか',
-    '亀有':'JR常磐線','柏':'JR常磐線・東武アーバンパークライン',
-    '松戸':'JR常磐線・新京成線','取手':'JR常磐線',
-    '千葉':'JR総武線・JR内房線・JR外房線ほか','津田沼':'JR総武線',
-    '船橋':'JR総武線・東武野田線・京成本線','市川':'JR総武線・JR武蔵野線',
-    '浦安':'東京メトロ東西線','西船橋':'JR総武線・東京メトロ東西線・東葉高速線ほか',
+    '自由が丘':'東急東横線・東急大井町線',
+    '二子玉川':'東急田園都市線・東急大井町線',
+    '溝の口':'東急田園都市線・JR南武線',
+    '長津田':'東急田園都市線・JR横浜線',
+    '中目黒':'東急東横線・東京メトロ日比谷線',
+    '代官山':'東急東横線',
+    '中野':'JR中央線・東京メトロ東西線',
+    '荻窪':'JR中央線・東京メトロ丸ノ内線',
+    '下北沢':'小田急線・京王井の頭線',
+    '成城学園前':'小田急線',
+    '登戸':'小田急線・JR南武線',
+    '向ヶ丘遊園':'小田急線',
+    '町田':'小田急線・JR横浜線',
+    '海老名':'小田急線・相鉄本線・JR相模線',
+    '本厚木':'小田急線',
+    '新百合ヶ丘':'小田急線',
+    '調布':'京王線・京王相模原線',
+    '府中':'京王線・JR武蔵野線',
+    '聖蹟桜ヶ丘':'京王線',
+    '多摩センター':'京王相模原線・小田急多摩線・多摩モノレール',
+    '北千住':'JR常磐線・東京メトロ千代田線・東京メトロ日比谷線・東武伊勢崎線・つくばエクスプレス',
+    '亀有':'JR常磐線',
+    '柏':'JR常磐線・東武アーバンパークライン',
+    '松戸':'JR常磐線・新京成線',
+    '取手':'JR常磐線',
+    '千葉':'JR総武線・JR内房線・JR外房線ほか',
+    '津田沼':'JR総武線',
+    '船橋':'JR総武線・東武野田線・京成本線',
+    '市川':'JR総武線・JR武蔵野線',
+    '浦安':'東京メトロ東西線',
+    '西船橋':'JR総武線・東京メトロ東西線・東葉高速線ほか',
     '大宮':'JR京浜東北線・JR東北本線・東武野田線ほか',
-    '浦和':'JR京浜東北線・JR宇都宮線','川口':'JR京浜東北線',
+    '浦和':'JR京浜東北線・JR宇都宮線',
+    '川口':'JR京浜東北線',
     '赤羽':'JR京浜東北線・JR東北本線・埼京線ほか',
     '王子':'JR京浜東北線・東京メトロ南北線・都電荒川線',
     '三軒茶屋':'東急田園都市線・東急世田谷線',
     '表参道':'東京メトロ千代田線・東京メトロ銀座線・東京メトロ半蔵門線',
     '六本木':'東京メトロ日比谷線・都営大江戸線',
     '麻布十番':'東京メトロ南北線・都営大江戸線',
-    '広尾':'東京メトロ日比谷線','白金高輪':'東京メトロ南北線・都営三田線',
+    '広尾':'東京メトロ日比谷線',
+    '白金高輪':'東京メトロ南北線・都営三田線',
     '三田':'都営浅草線・都営三田線',
     '新宿三丁目':'東京メトロ丸ノ内線・東京メトロ副都心線・都営新宿線',
     '四ツ谷':'JR中央線・東京メトロ丸ノ内線・東京メトロ南北線',
     '市ヶ谷':'JR中央線・東京メトロ有楽町線・東京メトロ南北線・都営新宿線',
     '飯田橋':'JR中央線・東京メトロ東西線・有楽町線・南北線・都営大江戸線',
-    '水道橋':'JR中央線・都営三田線','御茶ノ水':'JR中央線・東京メトロ丸ノ内線・千代田線',
-    '人形町':'東京メトロ日比谷線・都営浅草線','浅草':'東京メトロ銀座線・都営浅草線・東武伊勢崎線',
+    '水道橋':'JR中央線・都営三田線',
+    '御茶ノ水':'JR中央線・東京メトロ丸ノ内線・東京メトロ千代田線',
+    '人形町':'東京メトロ日比谷線・都営浅草線',
+    '浅草':'東京メトロ銀座線・都営浅草線・東武伊勢崎線・東京メトロ銀座線',
     '錦糸町':'JR総武線・東京メトロ半蔵門線',
     '押上':'東京メトロ半蔵門線・都営浅草線・京成押上線・東武伊勢崎線',
-    '門前仲町':'東京メトロ東西線・都営大江戸線','豊洲':'東京メトロ有楽町線・ゆりかもめ',
-    '辰巳':'東京メトロ有楽町線','新木場':'JR京葉線・東京メトロ有楽町線・りんかい線',
-    '国際展示場':'りんかい線','お台場海浜公園':'ゆりかもめ',
+    '門前仲町':'東京メトロ東西線・都営大江戸線',
+    '豊洲':'東京メトロ有楽町線・ゆりかもめ',
+    '辰巳':'東京メトロ有楽町線',
+    '新木場':'JR京葉線・東京メトロ有楽町線・りんかい線',
+    '国際展示場':'りんかい線',
+    'お台場海浜公園':'ゆりかもめ',
+    '月島':'東京メトロ有楽町線・都営大江戸線',
+    '勝どき':'都営大江戸線',
+    '豊洲':'東京メトロ有楽町線・ゆりかもめ',
+    '新富町':'東京メトロ有楽町線',
+    '築地':'東京メトロ日比谷線',
+    '築地市場':'都営大江戸線',
+    '汐留':'ゆりかもめ・都営大江戸線',
+    '光が丘':'都営大江戸線',
+    '練馬':'西武池袋線・都営大江戸線・西武有楽町線',
+    '練馬春日町':'都営大江戸線',
+    '豊島園':'西武豊島線・都営大江戸線',
+    '落合南長崎':'都営大江戸線',
+    '新江古田':'都営大江戸線',
+    '若松河田':'都営大江戸線',
+    '牛込柳町':'都営大江戸線',
+    '牛込神楽坂':'都営大江戸線',
+    '東新宿':'都営大江戸線・東京メトロ副都心線',
+    '西新宿五丁目':'都営大江戸線',
+    '中野坂上':'都営大江戸線・東京メトロ丸ノ内線',
+    '中井':'都営大江戸線・西武新宿線',
+    '清澄白河':'東京メトロ半蔵門線・都営大江戸線',
+    '森下':'都営大江戸線・都営新宿線',
+    '両国':'JR総武線・都営大江戸線',
+    '蔵前':'都営大江戸線・都営浅草線',
+    '新御徒町':'都営大江戸線・つくばエクスプレス',
+    '上野御徒町':'都営大江戸線',
+    '本郷三丁目':'東京メトロ丸ノ内線・都営大江戸線',
+    '春日':'都営三田線・都営大江戸線・東京メトロ丸ノ内線',
+    '文京区役所前':'都営三田線',
+    '本駒込':'東京メトロ南北線・都営三田線',
+    '目白':'JR山手線',
+    '椎名町':'西武池袋線',
+    '東長崎':'西武池袋線',
+    '江古田':'西武池袋線',
+    '桜台':'西武池袋線',
+    '中村橋':'西武池袋線',
+    '富士見台':'西武池袋線',
+    '石神井公園':'西武池袋線',
+    '大泉学園':'西武池袋線',
+    '保谷':'西武池袋線',
+    'ひばりヶ丘':'西武池袋線',
+    '清瀬':'西武池袋線',
+    '秋津':'西武池袋線',
+    '所沢':'西武池袋線・西武新宿線',
+    '入間市':'西武池袋線',
+    '武蔵藤沢':'西武池袋線',
+    '稲荷山公園':'西武池袋線',
+    '狭山市':'西武池袋線',
+    '新狭山':'西武池袋線',
+    '上石神井':'西武新宿線',
+    '武蔵関':'西武新宿線',
+    '東伏見':'西武新宿線',
+    '西武柳沢':'西武新宿線',
+    '田無':'西武新宿線',
+    '花小金井':'西武新宿線',
+    '小平':'西武新宿線・西武拝島線・西武国分寺線',
+    '東村山':'西武新宿線・西武国分寺線・西武園線',
+    '東大和市':'西武拝島線',
+    '桜街道':'多摩モノレール',
+    '上北台':'多摩モノレール',
+    '玉川上水':'西武拝島線・多摩モノレール',
+    '砂川七番':'西武拝島線',
+    '泉体育館':'多摩モノレール',
+    '武蔵砂川':'西武拝島線',
+    '西武立川':'西武拝島線',
+    '拝島':'JR青梅線・JR五日市線・西武拝島線・多摩都市モノレール',
+    '青梅':'JR青梅線',
+    '昭島':'JR青梅線',
+    '拝島':'JR青梅線・西武拝島線',
+    '西国分寺':'JR中央線・JR武蔵野線',
+    '府中本町':'JR南武線・JR武蔵野線',
+    '新秋津':'JR武蔵野線',
+    '東所沢':'JR武蔵野線',
+    '新座':'JR武蔵野線',
+    '北朝霞':'JR武蔵野線',
+    '西浦和':'JR武蔵野線',
+    '武蔵浦和':'JR武蔵野線・JR埼京線',
+    '南浦和':'JR武蔵野線・JR京浜東北線',
+    '東川口':'JR武蔵野線・埼玉高速鉄道',
+    '東浦和':'JR武蔵野線',
+    '東大宮':'JR武蔵野線',
+    '蘇我':'JR京葉線・JR内房線・JR外房線',
+    '海浜幕張':'JR京葉線',
+    '幕張本郷':'JR総武線・京成千葉線',
+    '稲毛':'JR総武線',
+    '千葉みなと':'JR京葉線・千葉都市モノレール',
+    '京成千葉':'京成千葉線',
+    '蒲田':'JR東海道線・JR京浜東北線・東急池上線・東急多摩川線',
+    '川崎大師':'京急大師線',
+    '雑色':'京急本線',
+    '六郷土手':'京急本線',
+    '京急蒲田':'京急本線・京急空港線',
+    '大森':'JR京浜東北線',
+    '大森海岸':'京急本線',
+    '平和島':'京急本線',
+    '青物横丁':'京急本線',
+    '鮫洲':'京急本線',
+    '立会川':'京急本線',
+    '大井町':'JR京浜東北線・東急大井町線・りんかい線',
+    '北品川':'京急本線',
+    '新馬場':'京急本線',
+    '泉岳寺':'京急本線・都営浅草線',
+    '日本橋':'東京メトロ銀座線・東京メトロ東西線・都営浅草線',
+    '三越前':'東京メトロ銀座線・東京メトロ半蔵門線',
+    '京橋':'東京メトロ銀座線',
+    '銀座':'東京メトロ銀座線・東京メトロ丸ノ内線・東京メトロ日比谷線',
+    '新橋':'JR山手線・東京メトロ銀座線・都営浅草線・ゆりかもめ',
+    '内幸町':'都営三田線',
+    '霞ヶ関':'東京メトロ千代田線・東京メトロ丸ノ内線・東京メトロ日比谷線',
+    '虎ノ門':'東京メトロ銀座線・東京メトロ日比谷線',
+    '赤坂見附':'東京メトロ銀座線・東京メトロ丸ノ内線',
+    '溜池山王':'東京メトロ銀座線・東京メトロ南北線',
+    '国会議事堂前':'東京メトロ千代田線・東京メトロ丸ノ内線',
+    '永田町':'東京メトロ半蔵門線・東京メトロ有楽町線・東京メトロ南北線',
+    '桜田門':'東京メトロ有楽町線',
+    '半蔵門':'東京メトロ半蔵門線',
+    '九段下':'東京メトロ東西線・東京メトロ半蔵門線・都営新宿線',
+    '神保町':'東京メトロ半蔵門線・都営三田線・都営新宿線',
+    '大手町':'東京メトロ千代田線・東京メトロ丸ノ内線・東京メトロ東西線・東京メトロ半蔵門線・都営三田線',
+    '竹橋':'東京メトロ東西線',
+    '茅場町':'東京メトロ日比谷線・東京メトロ東西線',
+    '八丁堀':'JR京葉線・東京メトロ日比谷線',
+    '越中島':'JR京葉線',
+    '潮見':'JR京葉線',
+    '葛西臨海公園':'JR京葉線',
+    '葛西':'東京メトロ東西線',
+    '西葛西':'東京メトロ東西線',
+    '南砂町':'東京メトロ東西線',
+    '東陽町':'東京メトロ東西線',
+    '木場':'東京メトロ東西線',
+    '大島':'都営新宿線',
+    '小村井':'東武亀戸線',
+    '亀戸':'JR総武線・東武亀戸線',
+    '平井':'JR総武線',
+    '新小岩':'JR総武線',
+    '小岩':'JR総武線',
+    '金町':'JR常磐線',
+    '綾瀬':'東京メトロ千代田線・JR常磐線',
+    '北綾瀬':'東京メトロ千代田線',
+    '亀有':'JR常磐線',
+    '新柴又':'北総鉄道',
+    '柴又':'京成金町線',
+    '高砂':'京成本線・京成金町線・北総鉄道',
+    '青砥':'京成本線・京成押上線',
+    '四ツ木':'京成押上線',
+    '立石':'京成押上線',
+    '八広':'京成押上線',
+    '京成曳舟':'京成押上線',
+    '向島':'東武伊勢崎線',
+    '東向島':'東武伊勢崎線',
+    '曳舟':'東武伊勢崎線・東武亀戸線',
+    '鐘ヶ淵':'東武伊勢崎線',
+    '堀切':'東武伊勢崎線',
+    '牛田':'東武伊勢崎線',
+    '京成関屋':'京成本線',
+    '堀切菖蒲園':'東武伊勢崎線',
+    '西新井':'東武伊勢崎線・東武大師線',
+    '竹ノ塚':'東武伊勢崎線',
+    '草加':'東武伊勢崎線',
+    '獨協大学前':'東武伊勢崎線',
+    '新越谷':'東武伊勢崎線',
+    '越谷':'東武伊勢崎線',
+    '北越谷':'東武伊勢崎線',
+    '越谷レイクタウン':'JR武蔵野線',
+    '南栗橋':'東武伊勢崎線',
+    '東武動物公園':'東武伊勢崎線・東武日光線',
 };
 
 function lookupLines(stationName) {
-    const hint = document.getElementById('stationHint');
-    const lineInput = document.getElementById('nearestLine');
-    const name = stationName.trim().replace(/駅$/, '');
-    if (!name) { hint.textContent = ''; return; }
+    var hint = document.getElementById('stationHint');
+    var lineInput = document.getElementById('nearestLine');
+    var name = stationName.trim().replace(/駅$/, '');
+
+    if (!name) {
+        lineInput.value = '';
+        hint.textContent = '';
+        return;
+    }
+
     if (STATION_LINES[name]) {
         lineInput.value = STATION_LINES[name];
         hint.textContent = '✓ 路線を自動入力しました';
         hint.style.color = '#4CAF50';
         return;
     }
-    const match = Object.keys(STATION_LINES).find(k => k.includes(name) || name.includes(k));
+
+    var match = Object.keys(STATION_LINES).find(function(k) {
+        return k.includes(name) || name.includes(k);
+    });
+
     if (match) {
         lineInput.value = STATION_LINES[match];
         hint.textContent = '✓ 路線を自動入力しました（' + match + '駅）';
         hint.style.color = '#4CAF50';
     } else {
-        hint.textContent = '路線情報が見つかりませんでした。手動で入力してください。';
-        hint.style.color = '#FF9800';
-    }
-}
-</script>
-    // 山手線
-    '東京':'JR山手線・JR東海道線・JR中央線ほか','新宿':'JR山手線・JR中央線・小田急線・京王線ほか',
-    '渋谷':'JR山手線・東急東横線・東京メトロ銀座線ほか','池袋':'JR山手線・西武池袋線・東武東上線ほか',
-    '品川':'JR山手線・JR東海道線・京急本線','上野':'JR山手線・JR上野東京ライン・東京メトロ銀座線ほか',
-    '秋葉原':'JR山手線・JR総武線・東京メトロ日比谷線','有楽町':'JR山手線・東京メトロ有楽町線',
-    '新橋':'JR山手線・東京メトロ銀座線・都営浅草線ほか','浜松町':'JR山手線・東京モノレール',
-    '田町':'JR山手線・JR東海道線','恵比寿':'JR山手線・東京メトロ日比谷線',
-    '目黒':'JR山手線・東急目黒線・東京メトロ南北線ほか','五反田':'JR山手線・東急池上線',
-    '大崎':'JR山手線・りんかい線','大井町':'JR京浜東北線・東急大井町線',
-    '大塚':'JR山手線・都電荒川線','巣鴨':'JR山手線・都営三田線',
-    '駒込':'JR山手線・東京メトロ南北線','田端':'JR山手線・JR京浜東北線',
-    '西日暮里':'JR山手線・東京メトロ千代田線','日暮里':'JR山手線・京成本線・舎人ライナー',
-    '鶯谷':'JR山手線','御徒町':'JR山手線・東京メトロ銀座線',
-    '神田':'JR山手線・東京メトロ銀座線','原宿':'JR山手線・東京メトロ千代田線',
-    '代々木':'JR山手線・JR中央線・都営大江戸線','新大久保':'JR山手線',
-    '高田馬場':'JR山手線・西武新宿線・東京メトロ東西線',
-    // 主要路線
-    '吉祥寺':'JR中央線・京王井の頭線','三鷹':'JR中央線','国分寺':'JR中央線・西武国分寺線',
-    '立川':'JR中央線・JR南武線・多摩モノレール','八王子':'JR中央線・JR横浜線・京王線ほか',
-    '横浜':'JR東海道線・JR横浜線・東急東横線ほか','川崎':'JR東海道線・JR南武線・京急本線',
-    '武蔵小杉':'JR横須賀線・JR南武線・東急東横線・東急目黒線',
-    '自由が丘':'東急東横線・東急大井町線','二子玉川':'東急田園都市線・東急大井町線',
-    '溝の口':'東急田園都市線・JR南武線','長津田':'東急田園都市線・JR横浜線',
-    '中目黒':'東急東横線・東京メトロ日比谷線','代官山':'東急東横線',
-    '中野':'JR中央線・東京メトロ東西線','荻窪':'JR中央線・東京メトロ丸ノ内線',
-    '下北沢':'小田急線・京王井の頭線','成城学園前':'小田急線',
-    '登戸':'小田急線・JR南武線','向ヶ丘遊園':'小田急線',
-    '町田':'小田急線・JR横浜線','海老名':'小田急線・相鉄本線・JR相模線',
-    '本厚木':'小田急線','新百合ヶ丘':'小田急線',
-    '調布':'京王線・京王相模原線','府中':'京王線・JR武蔵野線',
-    '聖蹟桜ヶ丘':'京王線','多摩センター':'京王相模原線・小田急多摩線・多摩モノレール',
-    '北千住':'JR常磐線・東京メトロ千代田線・東京メトロ日比谷線ほか',
-    '亀有':'JR常磐線','柏':'JR常磐線・東武アーバンパークライン',
-    '松戸':'JR常磐線・新京成線','取手':'JR常磐線',
-    '千葉':'JR総武線・JR内房線・JR外房線ほか','津田沼':'JR総武線',
-    '船橋':'JR総武線・東武野田線・京成本線','市川':'JR総武線・JR武蔵野線',
-    '浦安':'東京メトロ東西線','西船橋':'JR総武線・東京メトロ東西線・東葉高速線ほか',
-    '大宮':'JR京浜東北線・JR東北本線・東武野田線ほか',
-    '浦和':'JR京浜東北線・JR宇都宮線','川口':'JR京浜東北線',
-    '赤羽':'JR京浜東北線・JR東北本線・埼京線ほか',
-    '王子':'JR京浜東北線・東京メトロ南北線・都電荒川線',
-    '三軒茶屋':'東急田園都市線・東急世田谷線',
-    '表参道':'東京メトロ千代田線・東京メトロ銀座線・東京メトロ半蔵門線',
-    '六本木':'東京メトロ日比谷線・都営大江戸線',
-    '麻布十番':'東京メトロ南北線・都営大江戸線',
-    '広尾':'東京メトロ日比谷線','白金高輪':'東京メトロ南北線・都営三田線',
-    '三田':'都営浅草線・都営三田線','新宿三丁目':'東京メトロ丸ノ内線・東京メトロ副都心線・都営新宿線',
-    '四ツ谷':'JR中央線・東京メトロ丸ノ内線・東京メトロ南北線',
-    '市ヶ谷':'JR中央線・東京メトロ有楽町線・東京メトロ南北線・都営新宿線',
-    '飯田橋':'JR中央線・東京メトロ東西線・有楽町線・南北線・都営大江戸線',
-    '水道橋':'JR中央線・都営三田線','御茶ノ水':'JR中央線・東京メトロ丸ノ内線・千代田線',
-    '人形町':'東京メトロ日比谷線・都営浅草線','浅草':'東京メトロ銀座線・都営浅草線・東武伊勢崎線',
-    '錦糸町':'JR総武線・東京メトロ半蔵門線','押上':'東京メトロ半蔵門線・都営浅草線・京成押上線・東武伊勢崎線',
-    '門前仲町':'東京メトロ東西線・都営大江戸線','豊洲':'東京メトロ有楽町線・ゆりかもめ',
-    '辰巳':'東京メトロ有楽町線','新木場':'JR京葉線・東京メトロ有楽町線・りんかい線',
-    '国際展示場':'りんかい線','お台場海浜公園':'ゆりかもめ',
-};
-
-function lookupLines(stationName) {
-    const hint = document.getElementById('stationHint');
-    const lineInput = document.getElementById('nearestLine');
-    const name = stationName.trim().replace(/駅$/, '');
-    if (!name) { hint.textContent = ''; return; }
-
-    // 完全一致
-    if (STATION_LINES[name]) {
-        lineInput.value = STATION_LINES[name];
-        hint.textContent = '✓ 路線を自動入力しました';
-        hint.style.color = '#4CAF50';
-        return;
-    }
-    // 部分一致
-    const match = Object.keys(STATION_LINES).find(k => k.includes(name) || name.includes(k));
-    if (match) {
-        lineInput.value = STATION_LINES[match];
-        hint.textContent = '✓ 路線を自動入力しました（' + match + '駅）';
-        hint.style.color = '#4CAF50';
-    } else {
+        lineInput.value = '';
         hint.textContent = '路線情報が見つかりませんでした。手動で入力してください。';
         hint.style.color = '#FF9800';
     }

@@ -94,8 +94,32 @@ public class CustomerController {
                 customer.setLastNameKanji(existing.getLastNameKanji());
             if (customer.getFirstNameKanji() == null || customer.getFirstNameKanji().isBlank())
                 customer.setFirstNameKanji(existing.getFirstNameKanji());
-            if (customer.getNo() == null) customer.setNo(existing.getNo());
-            if (customer.getRegisteredDate() == null) customer.setRegisteredDate(existing.getRegisteredDate());
+            if (customer.getNo() == null)
+                customer.setNo(existing.getNo());
+            if (customer.getRegisteredDate() == null)
+                customer.setRegisteredDate(existing.getRegisteredDate());
+            if (customer.getBirthDate() == null)
+                customer.setBirthDate(existing.getBirthDate());
+            if (customer.getHomePhone() == null)
+                customer.setHomePhone(existing.getHomePhone());
+            if (customer.getMobilePhone() == null)
+                customer.setMobilePhone(existing.getMobilePhone());
+            if (customer.getFaxPhone() == null)
+                customer.setFaxPhone(existing.getFaxPhone());
+            if (customer.getPostalCode() == null)
+                customer.setPostalCode(existing.getPostalCode());
+            if (customer.getAddress1() == null)
+                customer.setAddress1(existing.getAddress1());
+            if (customer.getAddress2() == null)
+                customer.setAddress2(existing.getAddress2());
+            if (customer.getAddress3() == null)
+                customer.setAddress3(existing.getAddress3());
+            if (customer.getNearestStation() == null)
+                customer.setNearestStation(existing.getNearestStation());
+            if (customer.getNearestLine() == null)
+                customer.setNearestLine(existing.getNearestLine());
+            if (customer.getNotes() == null)
+                customer.setNotes(existing.getNotes());
         });
         customerRepository.save(customer);
         return "redirect:/customer/list";
