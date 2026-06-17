@@ -111,15 +111,15 @@
 
             <div class="form-group">
                 <label>自宅電話番号</label>
-                <input type="text" th:field="*{homePhone}">
+                <input type="text" th:field="*{homePhone}" placeholder="例：03-1234-5678" onblur="formatPhone(this)">
             </div>
             <div class="form-group">
                 <label>FAX番号</label>
-                <input type="text" th:field="*{faxPhone}">
+                <input type="text" th:field="*{faxPhone}" placeholder="例：03-1234-5679" onblur="formatPhone(this)">
             </div>
             <div class="form-group">
                 <label>携帯電話番号 <span class="required">*</span></label>
-                <input type="text" th:field="*{mobilePhone}" required>
+                <input type="text" th:field="*{mobilePhone}" required placeholder="例：090-1234-5678" onblur="formatPhone(this)">
             </div>
 
             <div class="form-group">
@@ -314,6 +314,28 @@
 </div>
 
 <script>
+function formatPhone(input) {
+    var raw = input.value.replace(/[^\d]/g, '');
+    if (!raw) return;
+    var f = '';
+    if (raw.length === 10) {
+        if (raw.startsWith('0120') || raw.startsWith('0800') || raw.startsWith('0570')) {
+            f = raw.slice(0,4) + '-' + raw.slice(4,7) + '-' + raw.slice(7);
+        } else if (/^0[3-9]/.test(raw)) {
+            f = raw.slice(0,2) + '-' + raw.slice(2,6) + '-' + raw.slice(6);
+        } else {
+            f = raw.slice(0,3) + '-' + raw.slice(3,6) + '-' + raw.slice(6);
+        }
+    } else if (raw.length === 11) {
+        f = raw.slice(0,3) + '-' + raw.slice(3,7) + '-' + raw.slice(7);
+    } else if (raw.length === 12) {
+        f = raw.slice(0,4) + '-' + raw.slice(4,8) + '-' + raw.slice(8);
+    } else {
+        return;
+    }
+    input.value = f;
+}
+
 function searchAddress() {
     const code = document.getElementById('postalCode').value;
     if (code.length !== 7) { alert('郵便番号は7桁で入力してください'); return; }

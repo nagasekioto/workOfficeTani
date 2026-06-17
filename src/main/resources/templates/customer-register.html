@@ -128,15 +128,15 @@
             <!-- 電話番号 -->
             <div class="form-group">
                 <label>自宅電話番号</label>
-                <input type="text" th:field="*{homePhone}" placeholder="例：03-1234-5678">
+                <input type="text" th:field="*{homePhone}" placeholder="例：03-1234-5678" onblur="formatPhone(this)">
             </div>
             <div class="form-group">
                 <label>携帯電話番号</label>
-                <input type="text" th:field="*{mobilePhone}" placeholder="例：090-1234-5678">
+                <input type="text" th:field="*{mobilePhone}" placeholder="例：090-1234-5678" onblur="formatPhone(this)">
             </div>
             <div class="form-group">
                 <label>FAX番号</label>
-                <input type="text" th:field="*{faxPhone}" placeholder="例：03-1234-5679">
+                <input type="text" th:field="*{faxPhone}" placeholder="例：03-1234-5679" onblur="formatPhone(this)">
             </div>
 
             <!-- 生年月日（年4桁セレクト） -->
@@ -288,6 +288,29 @@
 })();
 
 // ─── 生年月日更新 ──────────────────────────────────
+// ─── 電話番号ハイフン自動付与 ──────────────────────
+function formatPhone(input) {
+    var raw = input.value.replace(/[^\d]/g, '');
+    if (!raw) return;
+    var f = '';
+    if (raw.length === 10) {
+        if (raw.startsWith('0120') || raw.startsWith('0800') || raw.startsWith('0570')) {
+            f = raw.slice(0,4) + '-' + raw.slice(4,7) + '-' + raw.slice(7);
+        } else if (/^0[3-9]/.test(raw)) {
+            f = raw.slice(0,2) + '-' + raw.slice(2,6) + '-' + raw.slice(6);
+        } else {
+            f = raw.slice(0,3) + '-' + raw.slice(3,6) + '-' + raw.slice(6);
+        }
+    } else if (raw.length === 11) {
+        f = raw.slice(0,3) + '-' + raw.slice(3,7) + '-' + raw.slice(7);
+    } else if (raw.length === 12) {
+        f = raw.slice(0,4) + '-' + raw.slice(4,8) + '-' + raw.slice(8);
+    } else {
+        return;
+    }
+    input.value = f;
+}
+
 function updateBirthDate() {
     const y = document.getElementById('birthYear').value;
     const m = document.getElementById('birthMonth').value;
