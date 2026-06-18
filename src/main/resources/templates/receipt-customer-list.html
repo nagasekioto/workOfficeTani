@@ -15,6 +15,7 @@
         tr:hover { background: #fce4ec; }
         .print-btn { background: #FF9800; color: white; border: none; border-radius: 4px; padding: 6px 14px; cursor: pointer; font-size: 13px; }
         .print-btn:hover { background: #F57C00; }
+        .pdf-btn { background: #4CAF50; color: white; border: none; border-radius: 4px; padding: 6px 14px; cursor: pointer; font-size: 13px; text-decoration: none; display: inline-block; margin-left: 5px; }
         .badge { padding: 2px 8px; border-radius: 10px; font-size: 12px; }
         .badge-done { background: #e8f5e9; color: #2e7d32; }
         .badge-pending { background: #fff8e1; color: #f57f17; }
@@ -55,8 +56,9 @@
                 <td>
                     <form action="/receipt-menu/customer-receipt/mark-printed" method="post" style="display:inline;">
                         <input type="hidden" name="detailId" th:value="${item.detail.id}">
-                        <button type="submit" class="print-btn">&#128438; 印刷・発行済みにする</button>
+                        <button type="submit" class="print-btn">&#128438; 発行済みにする</button>
                     </form>
+                    <a th:href="@{/receipt-menu/customer-receipt/pdf(detailId=${item.detail.id})}" target="_blank" class="pdf-btn">&#128196; PDF出力</a>
                 </td>
             </tr>
         </tbody>

@@ -1,5 +1,7 @@
 package jp.co.housekeeping.person_management.controller;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -7,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.StreamSupport;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +20,20 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.Font;
+import com.itextpdf.text.PageSize;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.Phrase;
+import com.itextpdf.text.Rectangle;
+import com.itextpdf.text.pdf.BaseFont;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
 
 import jp.co.housekeeping.person_management.model.Person;
 import jp.co.housekeeping.person_management.model.RegisterRecord;
@@ -178,6 +195,136 @@ public class RegisterController {
         return "register-fee-ledger";
     }
 
+    // ─── 1-8-3 手数料管理簿 PDF出力 ─────────────────────
+    @GetMapping("/fee-ledger/pdf")
+    public void feeLedgerPdf(@RequestParam Integer year,
+                              HttpSession session,
+                              HttpServletResponse response) throws IOException, DocumentException {
+        if (!checkAuth(session)) { response.sendError(401); return; }
+
+        List<RegisterRecord> raw = registerRecordRepository.findByYear(year + "-%");
+
+        // 求職者名マップ
+        Map<Long, String> personMap = new HashMap<>();
+        StreamSupport.stream(personRepository.findAll().spliterator(), false).forEach(p ->
+            personMap.put(p.getId(), p.getLastNameKanji() + " " + p.getFirstNameKanji()));
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        createFeeLedgerPdf(year, raw, personMap, baos);
+
+        response.setContentType("application/pdf");
+        response.setHeader("Content-Disposition", "inline; filename=fee-ledger-" + year + ".pdf");
+        response.setContentLength(baos.size());
+        response.getOutputStream().write(baos.toByteArray());
+        response.getOutputStream().flush();
+    }
+
+    private void createFeeLedgerPdf(int year, List<RegisterRecord> records,
+                                     Map<Long, String> personMap,
+                                     ByteArrayOutputStream baos) throws DocumentException, IOException {
+        Document doc = new Document(PageSize.A4.rotate());
+        PdfWriter.getInstance(doc, baos);
+        doc.open();
+
+        BaseFont bf = BaseFont.createFont("HeiseiMin-W3", "UniJIS-UCS2-H", BaseFont.NOT_EMBEDDED);
+        Font titleFont  = new Font(bf, 13, Font.BOLD);
+        Font boldFont   = new Font(bf, 8, Font.BOLD);
+        Font normalFont = new Font(bf, 8);
+        Font smallFont  = new Font(bf, 7);
+
+        // タイトル
+        Paragraph title = new Paragraph("手数料管理簿　[届出制手数料用]　" + year + "年", titleFont);
+        title.setAlignment(Element.ALIGN_CENTER);
+        title.setSpacingAfter(8);
+        doc.add(title);
+
+        // テーブル列：領収年月日 | 支払者名 | 賃金 | 手数料※1(届出手数料) | 手数料※2 | 求人受付事務費 | 手数料割合 | 備考 | 日雇1ヶ月 | 臨時3ヶ月
+        float[] widths = {2.5f, 3f, 2f, 2f, 2f, 2f, 1.5f, 2f, 1.5f, 1.5f};
+        PdfPTable table = new PdfPTable(widths);
+        table.setWidthPercentage(100);
+
+        String[] headers = {"領収\n年月日", "支払者名", "賃金", "手数料※1\n届出手数料", "手数料※2", "求人受付\n事務費", "手数料\n割合", "備考", "日雇\n1ヶ月", "臨時\n3ヶ月"};
+        BaseColor headerColor = new BaseColor(200, 200, 200);
+        for (String h : headers) {
+            PdfPCell c = new PdfPCell(new Phrase(h, boldFont));
+            c.setBackgroundColor(headerColor);
+            c.setPadding(3);
+            c.setHorizontalAlignment(Element.ALIGN_CENTER);
+            c.setVerticalAlignment(Element.ALIGN_MIDDLE);
+            table.addCell(c);
+        }
+
+        // データ行（月ごとにグループ）
+        String currentMonth = "";
+        long pageSalary = 0, pageFee = 0;
+
+        for (RegisterRecord r : records) {
+            String month = r.getWorkMonth(); // "2025-03"
+            String[] parts = month.split("-");
+            String displayDate = parts[0] + "/" + parts[1];
+
+            addLedgerCell(table, displayDate, normalFont, Element.ALIGN_CENTER);
+            addLedgerCell(table, personMap.getOrDefault(r.getPersonId(), ""), normalFont, Element.ALIGN_LEFT);
+            addLedgerCell(table, r.getSalary() != null ? String.format("%,d", r.getSalary()) : "0", normalFont, Element.ALIGN_RIGHT);
+            addLedgerCell(table, r.getFee() != null ? String.format("%,d", r.getFee()) : "0", boldFont, Element.ALIGN_RIGHT);
+            addLedgerCell(table, "", normalFont, Element.ALIGN_RIGHT); // ※2
+            addLedgerCell(table, "", normalFont, Element.ALIGN_RIGHT); // 求人受付
+            addLedgerCell(table, "15%", normalFont, Element.ALIGN_CENTER);
+            addLedgerCell(table, r.getMemo() != null ? r.getMemo() : "", normalFont, Element.ALIGN_LEFT);
+            addLedgerCell(table, "0", normalFont, Element.ALIGN_RIGHT);
+            addLedgerCell(table, "0", normalFont, Element.ALIGN_RIGHT);
+
+            pageSalary += r.getSalary() != null ? r.getSalary() : 0;
+            pageFee += r.getFee() != null ? r.getFee() : 0;
+        }
+
+        // ページ計
+        BaseColor totalColor = new BaseColor(240, 240, 200);
+        addLedgerTotalRow(table, "ページ計", pageSalary, pageFee, boldFont, totalColor);
+        // 累計
+        addLedgerTotalRow(table, year + "年分累計", pageSalary, pageFee, boldFont, totalColor);
+
+        doc.add(table);
+
+        // 注釈
+        doc.add(new Paragraph(" ", smallFont));
+        doc.add(new Paragraph("※1は、徴収した届け出制手数料の総額から第二種特別加入料に充てるべき手数料額を除いた額を記載する。", smallFont));
+        doc.add(new Paragraph("※2は、第二種特別加入保険料に充てるべき手数料。", smallFont));
+
+        doc.close();
+    }
+
+    private void addLedgerCell(PdfPTable t, String text, Font f, int align) {
+        PdfPCell c = new PdfPCell(new Phrase(text, f));
+        c.setPadding(3);
+        c.setHorizontalAlignment(align);
+        c.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        t.addCell(c);
+    }
+
+    private void addLedgerTotalRow(PdfPTable t, String label, long salary, long fee, Font f, BaseColor bg) {
+        // 1列目：ラベル（領収年月日列）
+        PdfPCell lc = new PdfPCell(new Phrase(label, f));
+        lc.setColspan(2);
+        lc.setBackgroundColor(bg);
+        lc.setPadding(3);
+        lc.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        t.addCell(lc);
+        addColorCell(t, String.format("%,d", salary), f, bg, Element.ALIGN_RIGHT);
+        addColorCell(t, String.format("%,d", fee), f, bg, Element.ALIGN_RIGHT);
+        for (int i = 0; i < 4; i++) addColorCell(t, "0", f, bg, Element.ALIGN_RIGHT);
+        addColorCell(t, "0", f, bg, Element.ALIGN_RIGHT);
+        addColorCell(t, "0", f, bg, Element.ALIGN_RIGHT);
+    }
+
+    private void addColorCell(PdfPTable t, String text, Font f, BaseColor bg, int align) {
+        PdfPCell c = new PdfPCell(new Phrase(text, f));
+        c.setBackgroundColor(bg);
+        c.setPadding(3);
+        c.setHorizontalAlignment(align);
+        t.addCell(c);
+    }
+
     // ─── 内部クラス ────────────────────────────────────
     public static class RegisterRow {
         public Long id;
@@ -196,3 +343,4 @@ public class RegisterController {
         public long fee;
     }
 }
+// NOTE: this append won't work cleanly - we'll rewrite the file

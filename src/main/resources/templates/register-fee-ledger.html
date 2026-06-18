@@ -14,6 +14,7 @@
         .filter-row select, .filter-row input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
         .filter-btn { background: #673AB7; color: white; border: none; border-radius: 4px; padding: 9px 20px; cursor: pointer; font-size: 14px; }
         .filter-btn:hover { background: #4527A0; }
+        .pdf-btn { background: #4CAF50; color: white; border: none; border-radius: 4px; padding: 9px 20px; cursor: pointer; font-size: 14px; text-decoration: none; display: inline-block; }
         h2 { color: #673AB7; border-bottom: 2px solid #673AB7; padding-bottom: 8px; margin-top: 30px; }
         table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 20px; }
         th { background: #673AB7; color: white; padding: 10px; text-align: center; }
@@ -43,6 +44,7 @@
                 </select>
             </div>
             <button type="submit" class="filter-btn">&#128269; 表示</button>
+            <a th:if="${selectedYear != null}" th:href="@{/register/fee-ledger/pdf(year=${selectedYear})}" target="_blank" class="pdf-btn">&#128196; PDF出力</a>
         </div>
     </form>
 
