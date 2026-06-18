@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>手数料管理簿 - 家政婦紹介事務所</title>
+    <style>
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; color: #333; }
+        .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .filter-row { display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px; }
+        .filter-row label { font-weight: bold; color: #555; font-size: 14px; display: block; margin-bottom: 4px; }
+        .filter-row select, .filter-row input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .filter-btn { background: #673AB7; color: white; border: none; border-radius: 4px; padding: 9px 20px; cursor: pointer; font-size: 14px; }
+        .filter-btn:hover { background: #4527A0; }
+        h2 { color: #673AB7; border-bottom: 2px solid #673AB7; padding-bottom: 8px; margin-top: 30px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 20px; }
+        th { background: #673AB7; color: white; padding: 10px; text-align: center; }
+        td { padding: 9px 10px; border: 1px solid #e0e0e0; text-align: center; }
+        tr:nth-child(even) { background: #f3e5f5; }
+        .total-row { background: #ede7f6 !important; font-weight: bold; }
+        .grand-total-row { background: #d1c4e9 !important; font-weight: bold; font-size: 15px; }
+        .summary-box { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
+        .summary-card { background: #f3e5f5; border-radius: 8px; padding: 18px; text-align: center; }
+        .summary-card .label { font-size: 13px; color: #7b1fa2; margin-bottom: 6px; }
+        .summary-card .value { font-size: 22px; font-weight: bold; color: #4a148c; }
+        .empty { text-align: center; padding: 40px; color: #999; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>&#128196; 手数料管理簿（1-8-3）</h1>
+    <a href="/register-menu" class="back-btn">&#8592; レジメニューに戻る</a>
+</div>
+<div class="container">
+    <form method="get" action="/register/fee-ledger">
+        <div class="filter-row">
+            <div>
+                <label for="year">年</label>
+                <select id="year" name="year">
+                    <option th:each="y : ${years}" th:value="${y}" th:text="${y + '年'}" th:selected="${y == selectedYear}"></option>
+                </select>
+            </div>
+            <button type="submit" class="filter-btn">&#128269; 表示</button>
+        </div>
+    </form>
+
+    <div th:if="${selectedYear != null}">
+        <!-- サマリー -->
+        <div class="summary-box">
+            <div class="summary-card">
+                <div class="label">年間 総給料合計</div>
+                <div class="value" th:text="'¥' + #numbers.formatInteger(yearTotalSalary, 1, 'COMMA')"></div>
+            </div>
+            <div class="summary-card">
+                <div class="label">年間 手数料合計（15%）</div>
+                <div class="value" th:text="'¥' + #numbers.formatInteger(yearTotalFee, 1, 'COMMA')"></div>
+            </div>
+            <div class="summary-card">
+                <div class="label">記録件数</div>
+                <div class="value" th:text="${yearTotalCount + '件'}"></div>
+            </div>
+        </div>
+
+        <h2 th:text="${selectedYear + '年 手数料管理簿'}"></h2>
+
+        <table th:if="${not #lists.isEmpty(monthlyRows)}">
+            <thead>
+                <tr>
+                    <th>月</th>
+                    <th>件数</th>
+                    <th>給料合計</th>
+                    <th>手数料合計（15%）</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="row : ${monthlyRows}" th:classappend="${row.month == '合計' ? 'grand-total-row' : ''}">
+                    <td th:text="${row.month != '合計' ? row.month + '月' : '合　計'}"></td>
+                    <td th:text="${row.count + '件'}"></td>
+                    <td th:text="'¥' + #numbers.formatInteger(row.salary, 1, 'COMMA')"></td>
+                    <td th:text="'¥' + #numbers.formatInteger(row.fee, 1, 'COMMA')"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="empty" th:if="${#lists.isEmpty(monthlyRows)}">
+            <span th:text="${selectedYear + '年の記録はありません。'}"></span>
+        </div>
+    </div>
+
+    <div class="empty" th:if="${selectedYear == null}">
+        表示したい年を選択してください。
+    </div>
+</div>
+</body>
+</html>

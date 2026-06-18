@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>レジ一覧 - 家政婦紹介事務所</title>
+    <style>
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; color: #333; }
+        .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
+        .container { max-width: 1100px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .filter-row { display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px; }
+        .filter-row label { font-weight: bold; color: #555; font-size: 14px; display: block; margin-bottom: 4px; }
+        .filter-row input[type="month"] { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .filter-btn { background: #FF9800; color: white; border: none; border-radius: 4px; padding: 9px 20px; cursor: pointer; font-size: 14px; }
+        .filter-btn:hover { background: #F57C00; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { background: #FF9800; color: white; padding: 10px; text-align: left; }
+        td { padding: 10px; border-bottom: 1px solid #e0e0e0; vertical-align: middle; }
+        tr:hover { background: #fff8e1; }
+        .total-row { background: #fff3e0; font-weight: bold; font-size: 15px; }
+        .total-row td { border-top: 2px solid #FF9800; }
+        .empty { text-align: center; padding: 40px; color: #999; }
+        .delete-btn { background: #f44336; color: white; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
+        .delete-btn:hover { background: #c62828; }
+        .month-label { font-size: 18px; font-weight: bold; color: #e65100; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>&#128202; レジ一覧（1-8-2）</h1>
+    <a href="/register-menu" class="back-btn">&#8592; レジメニューに戻る</a>
+</div>
+<div class="container">
+    <form method="get" action="/register/list">
+        <div class="filter-row">
+            <div>
+                <label for="month">表示月</label>
+                <input type="month" id="month" name="month" th:value="${selectedMonth}">
+            </div>
+            <button type="submit" class="filter-btn">&#128269; 表示</button>
+        </div>
+    </form>
+
+    <div th:if="${selectedMonth != null}">
+        <div class="month-label" th:text="${selectedMonth + ' の記録'}"></div>
+
+        <table th:if="${not #lists.isEmpty(records)}">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>求職者</th>
+                    <th>対象月</th>
+                    <th>給料</th>
+                    <th>手数料（15%）</th>
+                    <th>備考</th>
+                    <th>登録日</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="r, stat : ${records}">
+                    <td th:text="${stat.count}"></td>
+                    <td th:text="${r.personName}"></td>
+                    <td th:text="${r.workMonth}"></td>
+                    <td th:text="'¥' + #numbers.formatInteger(r.salary, 1, 'COMMA')"></td>
+                    <td th:text="'¥' + #numbers.formatInteger(r.fee, 1, 'COMMA')"></td>
+                    <td th:text="${r.memo}"></td>
+                    <td th:text="${#temporals.format(r.createdAt, 'MM/dd HH:mm')}"></td>
+                    <td>
+                        <form th:action="@{/register/calc/delete}" method="post" style="display:inline;" onsubmit="return confirm('削除しますか？');">
+                            <input type="hidden" name="id" th:value="${r.id}">
+                            <input type="hidden" name="month" th:value="${selectedMonth}">
+                            <button type="submit" class="delete-btn">削除</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr class="total-row">
+                    <td colspan="3">合計</td>
+                    <td th:text="'¥' + #numbers.formatInteger(totalSalary, 1, 'COMMA')"></td>
+                    <td th:text="'¥' + #numbers.formatInteger(totalFee, 1, 'COMMA')"></td>
+                    <td colspan="3"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="empty" th:if="${#lists.isEmpty(records)}">
+            この月の記録はありません。
+        </div>
+    </div>
+
+    <div class="empty" th:if="${selectedMonth == null}">
+        表示したい月を選択してください。
+    </div>
+</div>
+</body>
+</html>

@@ -19,6 +19,18 @@ public class MenuController {
         return "customer-menu";
     }
 
+    @GetMapping("/introduction-menu")
+    public String introductionMenu(HttpSession session) {
+        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+        return "introduction-menu";
+    }
+
+    @GetMapping("/register-menu")
+    public String registerMenu(HttpSession session) {
+        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+        return "register-menu";
+    }
+
     @GetMapping("/report-menu")
     public String reportMenu(HttpSession session) {
         if (session.getAttribute("authenticated") == null) return "redirect:/login";

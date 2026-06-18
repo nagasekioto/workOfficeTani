@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>求人者領収書 - 家政婦紹介事務所</title>
+    <title>求職受付手数料領収書 - 家政婦紹介事務所</title>
     <style>
         body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
         .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
@@ -10,34 +10,34 @@
         .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
         .container { max-width: 1100px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        th { background: #9C27B0; color: white; padding: 10px; text-align: left; }
+        th { background: #4CAF50; color: white; padding: 10px; text-align: left; }
         td { padding: 10px; border-bottom: 1px solid #e0e0e0; vertical-align: middle; }
-        tr:hover { background: #fce4ec; }
+        tr:hover { background: #e8f5e9; }
         .print-btn { background: #FF9800; color: white; border: none; border-radius: 4px; padding: 6px 14px; cursor: pointer; font-size: 13px; }
         .print-btn:hover { background: #F57C00; }
         .badge { padding: 2px 8px; border-radius: 10px; font-size: 12px; }
         .badge-done { background: #e8f5e9; color: #2e7d32; }
         .badge-pending { background: #fff8e1; color: #f57f17; }
         .empty { text-align: center; padding: 40px; color: #999; }
-        .info-box { background: #f3e5f5; padding: 12px 16px; border-radius: 5px; margin-bottom: 15px; font-size: 14px; color: #6a1b9a; }
+        .info-box { background: #e8f5e9; padding: 12px 16px; border-radius: 5px; margin-bottom: 15px; font-size: 14px; color: #1b5e20; }
     </style>
 </head>
 <body>
 <div class="header">
-    <h1>&#128101; 求人者宛領収書（1-7-1）</h1>
+    <h1>&#128084; 求職受付手数料領収書（1-7-2）</h1>
     <a href="/receipt-menu" class="back-btn">&#8592; 戻る</a>
 </div>
 <div class="container">
     <div class="info-box">
-        &#9432; 求人受付手数料（1,000円）が登録されている求人者の一覧です。印刷ボタンを押すと発行済みフラグが立ちます。
+        &#9432; 受付料（710円）が登録されている求職者の一覧です。印刷ボタンを押すと発行済みフラグが立ちます。
     </div>
 
     <table th:if="${not #lists.isEmpty(items)}">
         <thead>
             <tr>
-                <th>求人者</th>
+                <th>求職者</th>
                 <th>紹介年月日</th>
-                <th>求人受付手数料</th>
+                <th>受付手数料</th>
                 <th>領収書No</th>
                 <th>状態</th>
                 <th>操作</th>
@@ -45,15 +45,16 @@
         </thead>
         <tbody>
             <tr th:each="item : ${items}">
-                <td th:text="${item.customer.lastNameKanji + ' ' + item.customer.firstNameKanji}"></td>
+                <td th:text="${item.person.lastNameKanji + ' ' + item.person.firstNameKanji}"></td>
                 <td th:text="${item.detail.introductionDate}"></td>
-                <td th:text="${item.detail.customerFee != null ? '¥' + #numbers.formatInteger(item.detail.customerFee, 1, 'COMMA') : '-'}"></td>
+                <td th:text="${item.detail.receptionFee != null ? '¥' + #numbers.formatInteger(item.detail.receptionFee, 1, 'COMMA') : '-'}"></td>
                 <td th:text="${item.detail.receiptNo}"></td>
                 <td>
-                    <span class="badge badge-pending">未発行</span>
+                    <span th:if="${item.detail.receiptNo != null}" class="badge badge-done">発行済</span>
+                    <span th:unless="${item.detail.receiptNo != null}" class="badge badge-pending">未発行</span>
                 </td>
                 <td>
-                    <form action="/receipt-menu/customer-receipt/mark-printed" method="post" style="display:inline;">
+                    <form th:action="@{/receipt-menu/jobseeker-receipt/print}" method="post" style="display:inline;">
                         <input type="hidden" name="detailId" th:value="${item.detail.id}">
                         <button type="submit" class="print-btn">&#128438; 印刷・発行済みにする</button>
                     </form>
@@ -63,8 +64,8 @@
     </table>
 
     <div class="empty" th:if="${#lists.isEmpty(items)}">
-        求人受付手数料が登録されている求人者がいません。<br>
-        売上入力で「求人受付手数料」にチェックを入れて保存してください。
+        受付料が登録されている求職者がいません。<br>
+        売上入力で「受付料」にチェックを入れて保存してください。
     </div>
 </div>
 </body>

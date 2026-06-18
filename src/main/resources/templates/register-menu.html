@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>レジ - 家政婦紹介事務所</title>
+    <style>
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; color: #333; }
+        .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
+        .menu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 800px; margin: 0 auto; }
+        .menu-item { background: white; padding: 35px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; transition: transform 0.2s, box-shadow 0.2s; text-decoration: none; color: inherit; display: block; }
+        .menu-item:hover { transform: translateY(-4px); box-shadow: 0 5px 15px rgba(0,0,0,0.15); }
+        .menu-icon { font-size: 44px; margin-bottom: 12px; }
+        .menu-title { font-size: 18px; font-weight: bold; color: #333; }
+        .menu-sub { font-size: 12px; color: #999; margin-top: 5px; }
+        .menu-item-wide { grid-column: span 2; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>&#128180; レジ（1-8）</h1>
+    <a href="/menu" class="back-btn">&#8592; 初期画面に戻る</a>
+</div>
+<div class="menu-grid">
+    <a href="/register/calc" class="menu-item">
+        <div class="menu-icon">&#128176;</div>
+        <div class="menu-title">1-8-1 計算</div>
+        <div class="menu-sub">給料の15%手数料を計算・記録</div>
+    </a>
+    <a href="/register/list" class="menu-item">
+        <div class="menu-icon">&#128202;</div>
+        <div class="menu-title">1-8-2 レジ一覧</div>
+        <div class="menu-sub">月別計算結果一覧・合計</div>
+    </a>
+    <a href="/register/fee-ledger" class="menu-item menu-item-wide">
+        <div class="menu-icon">&#128196;</div>
+        <div class="menu-title">1-8-3 手数料管理簿</div>
+        <div class="menu-sub">手数料の管理・確認</div>
+    </a>
+</div>
+</body>
+</html>
