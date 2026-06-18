@@ -267,6 +267,7 @@
                         <option value="">日</option>
                     </select>
                     <span>日</span>
+                    <span id="ageDisplay" style="font-size:14px;color:#2e7d32;font-weight:bold;margin-left:8px;"></span>
                     <input type="hidden" th:field="*{birthDate}" id="birthDateHidden">
                 </div>
             </div>
@@ -303,6 +304,7 @@
                 <tr>
                     <th>No</th>
                     <th>氏名</th>
+                    <th>年齢</th>
                     <th>携帯電話</th>
                     <th>希望</th>
                     <th>LINE</th>
@@ -314,6 +316,8 @@
                 <tr th:each="p : ${persons}">
                     <td th:text="${p.no}"></td>
                     <td th:text="${p.lastNameKanji + ' ' + p.firstNameKanji}"></td>
+                    <td th:with="age=${p.birthDate != null ? T(java.time.LocalDate).now().getYear() - p.birthDate.getYear() - (T(java.time.LocalDate).now().getDayOfYear() < p.birthDate.getDayOfYear() ? 1 : 0) : null}"
+                        th:text="${age != null ? age + '歳' : '-'}"></td>
                     <td th:text="${p.mobilePhone}"></td>
                     <td th:text="${p.desiredJob + '/' + p.desiredType}"></td>
                     <td>
@@ -420,6 +424,18 @@ function updateBirthDate() {
     var m = document.getElementById('birthMonth').value;
     var d = document.getElementById('birthDay').value;
     document.getElementById('birthDateHidden').value = (y && m && d) ? y + '-' + m + '-' + d : '';
+    // 年齢計算
+    var ageEl = document.getElementById('ageDisplay');
+    if (y && m && d) {
+        var today = new Date();
+        var birth = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+        var age = today.getFullYear() - birth.getFullYear();
+        var monthDiff = today.getMonth() - birth.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
+        ageEl.textContent = '（' + age + '歳）';
+    } else {
+        ageEl.textContent = '';
+    }
 }
 
 // 電話番号ハイフン自動付与

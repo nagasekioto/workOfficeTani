@@ -4,62 +4,56 @@
     <meta charset="UTF-8">
     <title>紹介状 - 家政婦紹介事務所</title>
     <style>
-        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
-        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        h1 { margin: 0; color: #333; font-size: 20px; }
-        .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
-        .input-area { max-width: 900px; margin: 0 auto; background: white; padding: 28px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .sec { margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid #eee; }
-        .sec h3 { color: #4CAF50; margin: 0 0 10px; font-size: 14px; }
-        .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-        .fg { margin-bottom: 10px; }
-        label { display: block; margin-bottom: 3px; font-weight: bold; color: #555; font-size: 12px; }
-        input[type=text], input[type=date], input[type=time], input[type=number], select, textarea {
-            width: 100%; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 13px; }
-        textarea { min-height: 55px; resize: vertical; }
-        .cb-group { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 4px; }
-        .cb-group label { font-weight: normal; display: flex; align-items: center; gap: 4px; cursor: pointer; margin: 0; }
-        .time-row { display: flex; gap: 6px; align-items: center; }
-        .time-row span { white-space: nowrap; font-size: 13px; color: #555; }
-        .info-box { background: #e8f5e9; padding: 10px 14px; border-radius: 5px; margin-bottom: 16px; font-size: 12px; color: #2e7d32; }
-        .btn-area { display: flex; gap: 10px; margin-top: 15px; }
-        .btn-print { background: #FF9800; color: white; border: none; border-radius: 5px; padding: 12px 30px; cursor: pointer; font-size: 15px; flex: 1; }
-        .btn-preview { background: #4CAF50; color: white; border: none; border-radius: 5px; padding: 12px 30px; cursor: pointer; font-size: 15px; flex: 1; }
+        body{font-family:'Segoe UI',Meiryo,sans-serif;background:#f5f5f5;margin:0;padding:20px;}
+        .header{background:white;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.1);margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;}
+        h1{margin:0;color:#333;font-size:20px;}
+        .back-btn{background:#2196F3;color:white;padding:10px 20px;border:none;border-radius:5px;text-decoration:none;}
+        .input-area{max-width:900px;margin:0 auto;background:white;padding:28px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.1);margin-bottom:20px;}
+        .sec{margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid #eee;}
+        .sec h3{color:#4CAF50;margin:0 0 10px;font-size:14px;}
+        .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+        .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+        .fg{margin-bottom:10px;}
+        label{display:block;margin-bottom:3px;font-weight:bold;color:#555;font-size:12px;}
+        input[type=text],input[type=number],select,textarea{width:100%;padding:6px 8px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box;font-size:13px;}
+        textarea{min-height:55px;resize:vertical;}
+        .cbg{display:flex;flex-wrap:wrap;gap:12px;margin-top:4px;}
+        .cbg label{font-weight:normal;display:flex;align-items:center;gap:4px;cursor:pointer;margin:0;}
+        .tr{display:flex;gap:6px;align-items:center;}
+        .tr span{white-space:nowrap;font-size:13px;color:#555;}
+        .info-box{background:#e8f5e9;padding:10px 14px;border-radius:5px;margin-bottom:16px;font-size:12px;color:#2e7d32;}
+        .btn-area{display:flex;gap:10px;margin-top:15px;}
+        .btn-save{background:#4CAF50;color:white;border:none;border-radius:5px;padding:12px 30px;cursor:pointer;font-size:15px;flex:1;}
+        .btn-print{background:#FF9800;color:white;border:none;border-radius:5px;padding:12px 30px;cursor:pointer;font-size:15px;flex:1;display:none;}
+        .saved-msg{background:#e8f5e9;padding:10px;border-radius:5px;color:#2e7d32;font-weight:bold;margin-top:10px;display:none;}
 
-        /* ─── 印刷ドキュメント ─── */
-        .print-area { max-width: 900px; margin: 0 auto; }
-        .doc-page {
-            background: white; padding: 18mm 15mm 12mm;
-            border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 20px; font-size: 11pt; line-height: 1.4;
-        }
-        .doc-head-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
-        .doc-corner-box { border: 1px solid #333; padding: 2px 8px; font-size: 10pt; }
-        .doc-ref-no { font-size: 10pt; }
-        .doc-title { text-align: center; font-size: 18pt; font-weight: bold; letter-spacing: 4px; margin: 4px 0 6px; }
-        .doc-date-row { display: flex; justify-content: flex-end; font-size: 10pt; margin-bottom: 8px; gap: 20px; }
-        .doc-kyunin { font-size: 11pt; margin-bottom: 6px; border-bottom: 1px solid #333; padding-bottom: 4px; }
-        .doc-notice { font-size: 9pt; color: #555; margin-bottom: 6px; }
-        .doc-kyushoku { display: flex; align-items: center; gap: 8px; border: 1px solid #333; padding: 5px 8px; margin-bottom: 8px; font-size: 11pt; }
-        .doc-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
-        .doc-table th { background: #f0f0f0; border: 1px solid #555; padding: 5px 8px; text-align: center; font-size: 10pt; white-space: nowrap; width: 80px; vertical-align: middle; }
-        .doc-table td { border: 1px solid #555; padding: 5px 8px; font-size: 10pt; vertical-align: top; }
-        .doc-table td.inner-table { padding: 0; }
-        .inner { width: 100%; border-collapse: collapse; }
-        .inner td { border: none; border-bottom: 1px solid #ccc; padding: 4px 6px; font-size: 10pt; }
-        .inner tr:last-child td { border-bottom: none; }
-        .doc-footer { margin-top: 8px; font-size: 9pt; border-top: 1px solid #333; padding-top: 6px; line-height: 1.8; }
-        .doc-footer .co-name { font-size: 12pt; font-weight: bold; }
-        .doc-note { font-size: 9pt; margin-top: 6px; }
-        .blank-line { display: inline-block; border-bottom: 1px solid #333; min-width: 80px; }
+        /* 印刷 */
+        .print-area{max-width:900px;margin:0 auto;}
+        .doc-page{background:white;padding:13mm 13mm 9mm;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.1);margin-bottom:20px;font-size:10pt;line-height:1.4;}
+        .doc-head-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;}
+        .doc-corner-box{border:1px solid #333;padding:2px 8px;font-size:9.5pt;}
+        .doc-ref-no{font-size:9.5pt;}
+        .doc-title{text-align:center;font-size:16pt;font-weight:bold;letter-spacing:4px;margin:3px 0 5px;}
+        .doc-date-row{display:flex;justify-content:flex-end;font-size:9.5pt;margin-bottom:5px;}
+        .doc-kyunin{font-size:10.5pt;margin-bottom:3px;border-bottom:1px solid #333;padding-bottom:3px;}
+        .doc-notice{font-size:8.5pt;color:#555;margin-bottom:3px;}
+        .doc-kyushoku{display:flex;align-items:center;gap:8px;border:1px solid #333;padding:3px 8px;margin-bottom:5px;font-size:10.5pt;}
+        .doc-table{width:100%;border-collapse:collapse;margin-bottom:3px;}
+        .doc-table th{background:#f0f0f0;border:1px solid #555;padding:3px 5px;text-align:center;font-size:9pt;white-space:nowrap;width:70px;vertical-align:middle;}
+        .doc-table td{border:1px solid #555;padding:3px 5px;font-size:9pt;vertical-align:top;}
+        .inner{width:100%;border-collapse:collapse;}
+        .inner td{border:none;border-bottom:1px solid #ccc;padding:2px 4px;font-size:9pt;}
+        .inner tr:last-child td{border-bottom:none;}
+        .doc-note{font-size:8pt;margin-top:3px;}
+        .doc-footer{margin-top:5px;font-size:9pt;border:2px solid #000;padding:6px 12px;text-align:right;line-height:1.9;}
+        .doc-footer .co-name{font-size:11pt;font-weight:bold;}
 
-        @media print {
-            body { background: white; padding: 0; margin: 0; font-size: 10pt; }
-            .header, .input-area, .no-print { display: none !important; }
-            .print-area { max-width: 100%; margin: 0; }
-            .doc-page { box-shadow: none; border-radius: 0; page-break-after: always; margin: 0; padding: 10mm 12mm 8mm; }
-            .doc-page:last-child { page-break-after: avoid; }
+        @media print{
+            body{background:white;padding:0;margin:0;}
+            .header,.input-area,.no-print{display:none!important;}
+            .print-area{max-width:100%;margin:0;}
+            .doc-page{box-shadow:none;border-radius:0;page-break-after:always;margin:0;padding:7mm 11mm 5mm;}
+            .doc-page:last-child{page-break-after:avoid;}
         }
     </style>
 </head>
@@ -69,13 +63,10 @@
     <a href="/menu" class="back-btn">&#8592; 初期画面に戻る</a>
 </div>
 
-<!-- 入力フォーム -->
 <div class="input-area no-print">
-    <div class="info-box">&#9432; 内容を入力して「印刷」を押すと①労働条件明示書（求職者控）②紹介状（求人者控）③雇用契約書（求人者控）の3枚を印刷できます。</div>
+    <div class="info-box">&#9432; 内容を入力して「保存する」を押すと紹介番号が採番されます。保存後に印刷できます。</div>
 
-    <!-- 基本情報 -->
-    <div class="sec">
-        <h3>&#9312; 基本情報</h3>
+    <div class="sec"><h3>&#9312; 基本情報</h3>
         <div class="row2">
             <div class="fg"><label>求職者（家政婦）</label>
                 <select id="personSelect" onchange="fillPerson()">
@@ -90,7 +81,6 @@
                     <option value="">-- 選択 --</option>
                     <option th:each="c : ${customers}" th:value="${c.id}"
                         th:data-name="${c.lastNameKanji + ' ' + c.firstNameKanji}"
-                        th:data-phone="${c.homePhone != null ? c.homePhone : (c.mobilePhone != null ? c.mobilePhone : '')}"
                         th:data-postal="${c.postalCode != null ? c.postalCode : ''}"
                         th:data-addr="${(c.address1 != null ? c.address1 : '') + (c.address3 != null and !c.address3.isBlank() ? c.address3 : (c.address2 != null ? c.address2 : ''))}"
                         th:data-station="${c.nearestStation != null ? c.nearestStation : ''}"
@@ -99,74 +89,64 @@
                         th:text="${c.lastNameKanji + ' ' + c.firstNameKanji}"></option>
                 </select></div>
         </div>
-        <div class="row3">
-            <div class="fg"><label>紹介年月日</label><input type="date" id="introDate" oninput="update()"></div>
-            <div class="fg"><label>紹介番号</label><input type="text" id="refNo" placeholder="例：2024-001" oninput="update()"></div>
-            <div class="fg"><label>就業開始予定日</label><input type="date" id="startDate" oninput="update()"></div>
+        <div class="row2">
+            <div class="fg"><label>紹介年月日</label><div id="introDateSel" style="display:flex;gap:4px;align-items:center;"></div><input type="hidden" id="introDate"></div>
+            <div class="fg"><label>就業開始予定日</label><div id="startDateSel" style="display:flex;gap:4px;align-items:center;"></div><input type="hidden" id="startDate"></div>
         </div>
     </div>
 
-    <!-- 職務内容・就業場所 -->
-    <div class="sec">
-        <h3>&#9313; 職務内容・就業場所</h3>
+    <div class="sec"><h3>&#9313; 職務内容・就業場所</h3>
         <div class="fg"><label>職務内容</label>
-            <div class="cb-group">
+            <div class="cbg">
                 <label><input type="checkbox" id="jobKaji" onchange="updateJobContent()"> 家事サービス</label>
                 <label><input type="checkbox" id="jobKaigo" onchange="updateJobContent()"> 介護サービス</label>
                 <label><input type="checkbox" id="jobOther" onchange="toggleJobOther()"> その他</label>
             </div>
-            <div id="jobOtherArea" style="display:none;margin-top:6px;">
-                <input type="text" id="jobOtherText" placeholder="その他の内容" oninput="updateJobContent()">
-            </div>
-            <input type="hidden" id="jobContent"></div>
-        <div class="fg"><label>就業場所 〒</label><input type="text" id="workPostal" placeholder="例：107-0052" oninput="update()"></div>
+            <div id="jobOtherArea" style="display:none;margin-top:6px;"><input type="text" id="jobOtherText" placeholder="その他の内容" oninput="updateJobContent()"></div>
+            <input type="hidden" id="jobContent">
+        </div>
+        <div class="fg"><label>就業場所 〒（求人者を選択すると自動入力）</label><input type="text" id="workPostal" oninput="update()"></div>
         <div class="fg"><label>就業場所 住所</label><input type="text" id="workPlace" placeholder="求人者を選択すると自動入力" oninput="update()"></div>
         <div class="row3">
-            <div class="fg"><label>最寄り駅</label><input type="text" id="workStation" placeholder="例：月島" oninput="update()"></div>
-            <div class="fg"><label>路線</label><input type="text" id="workLine" placeholder="例：東京メトロ有楽町線" oninput="update()"></div>
+            <div class="fg"><label>最寄り駅（求人者から自動入力）</label><input type="text" id="workStation" oninput="update()"></div>
+            <div class="fg"><label>路線</label><input type="text" id="workLine" oninput="update()"></div>
             <div class="fg"><label>駅から（徒歩・バス）</label><input type="text" id="workAccess" placeholder="例：徒歩5分" oninput="update()"></div>
         </div>
         <div class="fg"><label>受動喫煙防止措置状況</label><input type="text" id="smoking" placeholder="例：敷地内禁煙" oninput="update()"></div>
     </div>
 
-    <!-- 雇用条件 -->
-    <div class="sec">
-        <h3>&#9314; 雇用条件</h3>
+    <div class="sec"><h3>&#9314; 雇用条件</h3>
         <div class="row2">
             <div class="fg"><label>雇用期間</label>
-                <div class="cb-group">
-                    <label><input type="radio" name="empPeriod" value="無期" onchange="toggleEmpPeriod()"> 無期</label>
+                <div class="cbg">
+                    <label><input type="radio" name="empPeriod" value="無期" checked onchange="toggleEmpPeriod()"> 無期</label>
                     <label><input type="radio" name="empPeriod" value="有期" onchange="toggleEmpPeriod()"> 有期</label>
                 </div>
                 <div id="empPeriodArea" style="display:none;margin-top:6px;">
-                    <div class="time-row">
-                        <input type="date" id="empFrom" oninput="update()" style="max-width:150px;">
-                        <span>〜</span>
-                        <input type="date" id="empTo" oninput="update()" style="max-width:150px;">
-                    </div>
+                    <div id="empFromSel" style="display:flex;gap:4px;align-items:center;"></div><input type="hidden" id="empFrom">
+                    <div style="margin:3px 0;">〜</div>
+                    <div id="empToSel" style="display:flex;gap:4px;align-items:center;"></div><input type="hidden" id="empTo">
                 </div>
             </div>
             <div class="fg"><label>試用期間</label>
-                <div class="cb-group">
-                    <label><input type="radio" name="trialPeriod" value="無" onchange="update()"> 無</label>
+                <div class="cbg">
+                    <label><input type="radio" name="trialPeriod" value="無" checked onchange="toggleTrialPeriod()"> 無</label>
                     <label><input type="radio" name="trialPeriod" value="有" onchange="toggleTrialPeriod()"> 有（詳細は備考欄）</label>
                 </div>
                 <div id="trialPeriodArea" style="display:none;margin-top:6px;">
-                    <div class="time-row">
-                        <input type="date" id="trialFrom" oninput="update()" style="max-width:150px;">
-                        <span>〜</span>
-                        <input type="date" id="trialTo" oninput="update()" style="max-width:150px;">
-                    </div>
+                    <div id="trialFromSel" style="display:flex;gap:4px;align-items:center;"></div><input type="hidden" id="trialFrom">
+                    <div style="margin:3px 0;">〜</div>
+                    <div id="trialToSel" style="display:flex;gap:4px;align-items:center;"></div><input type="hidden" id="trialTo">
                 </div>
             </div>
         </div>
         <div class="row2">
             <div class="fg"><label>勤務日</label>
-                <div class="cb-group">
-                    <label><input type="radio" name="workStyle" value="通勤" onchange="update()"> 通勤</label>
+                <div class="cbg">
+                    <label><input type="radio" name="workStyle" value="通勤" checked onchange="update()"> 通勤</label>
                     <label><input type="radio" name="workStyle" value="泊込み" onchange="update()"> 泊込み</label>
                 </div>
-                <div class="cb-group" style="margin-top:6px;">
+                <div class="cbg" style="margin-top:6px;">
                     <label><input type="checkbox" class="dow" value="月"> 月</label>
                     <label><input type="checkbox" class="dow" value="火"> 火</label>
                     <label><input type="checkbox" class="dow" value="水"> 水</label>
@@ -177,10 +157,11 @@
                 </div>
             </div>
             <div class="fg"><label>勤務時間</label>
-                <div class="time-row">
-                    <input type="time" id="workStart" oninput="update()" style="max-width:120px;">
-                    <span>〜</span>
-                    <input type="time" id="workEnd" oninput="update()" style="max-width:120px;">
+                <div class="tr">
+                    <select id="wSH" onchange="update()" style="width:65px;padding:5px;"></select><span>時</span>
+                    <select id="wSM" onchange="update()" style="width:65px;padding:5px;"></select><span>分 〜</span>
+                    <select id="wEH" onchange="update()" style="width:65px;padding:5px;"></select><span>時</span>
+                    <select id="wEM" onchange="update()" style="width:65px;padding:5px;"></select><span>分</span>
                 </div>
                 <label style="margin-top:6px;">実働時間</label>
                 <input type="text" id="actualHours" placeholder="例：7時間" oninput="update()">
@@ -188,45 +169,44 @@
         </div>
         <div class="row2">
             <div class="fg"><label>時間外労働</label>
-                <div class="cb-group">
-                    <label><input type="radio" name="overtime" value="無" onchange="update()"> 無</label>
+                <div class="cbg">
+                    <label><input type="radio" name="overtime" value="無" checked onchange="update()"> 無</label>
                     <label><input type="radio" name="overtime" value="有" onchange="update()"> 有</label>
                 </div>
             </div>
             <div class="fg"><label>休憩時間</label>
-                <div class="time-row">
-                    <input type="time" id="breakStart" oninput="update()" style="max-width:120px;">
-                    <span>〜</span>
-                    <input type="time" id="breakEnd" oninput="update()" style="max-width:120px;">
+                <div class="tr">
+                    <select id="bSH" onchange="update()" style="width:65px;padding:5px;"></select><span>時</span>
+                    <select id="bSM" onchange="update()" style="width:65px;padding:5px;"></select><span>分 〜</span>
+                    <select id="bEH" onchange="update()" style="width:65px;padding:5px;"></select><span>時</span>
+                    <select id="bEM" onchange="update()" style="width:65px;padding:5px;"></select><span>分</span>
                 </div>
             </div>
         </div>
         <div class="fg"><label>休日</label>
-            <div class="cb-group">
+            <div class="cbg">
                 <label><input type="checkbox" id="holWeekly"> 毎週</label>
                 <label><input type="checkbox" id="holBiWeekly"> 隔週</label>
                 <label><input type="checkbox" id="holHoliday"> 祝日</label>
                 <label><input type="checkbox" id="holOther"> その他</label>
-                <div class="cb-group" style="margin-top:4px;">
-                    <label><input type="checkbox" class="hol-dow" value="月"> 月</label>
-                    <label><input type="checkbox" class="hol-dow" value="火"> 火</label>
-                    <label><input type="checkbox" class="hol-dow" value="水"> 水</label>
-                    <label><input type="checkbox" class="hol-dow" value="木"> 木</label>
-                    <label><input type="checkbox" class="hol-dow" value="金"> 金</label>
-                    <label><input type="checkbox" class="hol-dow" value="土"> 土</label>
-                    <label><input type="checkbox" class="hol-dow" value="日"> 日</label>
-                </div>
+            </div>
+            <div class="cbg" style="margin-top:4px;">
+                <label><input type="checkbox" class="hol-dow" value="月"> 月</label>
+                <label><input type="checkbox" class="hol-dow" value="火"> 火</label>
+                <label><input type="checkbox" class="hol-dow" value="水"> 水</label>
+                <label><input type="checkbox" class="hol-dow" value="木"> 木</label>
+                <label><input type="checkbox" class="hol-dow" value="金"> 金</label>
+                <label><input type="checkbox" class="hol-dow" value="土"> 土</label>
+                <label><input type="checkbox" class="hol-dow" value="日"> 日</label>
             </div>
         </div>
     </div>
 
-    <!-- 賃金 -->
-    <div class="sec">
-        <h3>&#9315; 賃金</h3>
+    <div class="sec"><h3>&#9315; 賃金</h3>
         <div class="row3">
             <div class="fg"><label>賃金形態</label>
-                <div class="cb-group">
-                    <label><input type="radio" name="wageType" value="時給" onchange="update()"> 時給</label>
+                <div class="cbg">
+                    <label><input type="radio" name="wageType" value="時給" checked onchange="update()"> 時給</label>
                     <label><input type="radio" name="wageType" value="日給" onchange="update()"> 日給</label>
                     <label><input type="radio" name="wageType" value="月給" onchange="update()"> 月給</label>
                 </div>
@@ -236,417 +216,359 @@
         </div>
         <div class="row2">
             <div class="fg"><label>交通費</label>
-                <div class="cb-group">
-                    <label><input type="radio" name="transport" value="無" onchange="update()"> 無</label>
+                <div class="cbg">
+                    <label><input type="radio" name="transport" value="無" checked onchange="update()"> 無</label>
                     <label><input type="radio" name="transport" value="往復の実費" onchange="update()"> 往復の実費</label>
                     <label><input type="radio" name="transport" value="有" onchange="update()"> 有</label>
                 </div>
                 <input type="text" id="transportAmt" placeholder="金額（円）" oninput="update()" style="margin-top:4px;">
             </div>
             <div class="fg"><label>昇給</label>
-                <div class="cb-group">
-                    <label><input type="radio" name="raise" value="無" onchange="update()"> 無</label>
+                <div class="cbg">
+                    <label><input type="radio" name="raise" value="無" checked onchange="update()"> 無</label>
                     <label><input type="radio" name="raise" value="有" onchange="update()"> 有（詳細は備考欄）</label>
                 </div>
             </div>
         </div>
         <div class="fg"><label>賃金支払方法</label>
-            <div class="cb-group">
+            <div class="cbg">
                 <label><input type="checkbox" id="payDaily"> 毎日</label>
                 <label><input type="checkbox" id="payWeekly"> 毎週</label>
-                <input type="text" id="payWeeklyDay" placeholder="曜日" style="width:60px;" oninput="update()">
+                <input type="text" id="payWeeklyDay" placeholder="曜日" style="width:55px;" oninput="update()">
                 <label><input type="checkbox" id="payMonthly"> 毎月</label>
                 <input type="text" id="payMonthlyDay" placeholder="日" style="width:40px;" oninput="update()">
                 <label>方法：</label>
-                <label><input type="radio" name="payMethod" value="現金" onchange="update()"> 現金</label>
+                <label><input type="radio" name="payMethod" value="現金" checked onchange="update()"> 現金</label>
                 <label><input type="radio" name="payMethod" value="振込" onchange="update()"> 振込</label>
             </div>
         </div>
     </div>
 
-    <!-- 社会保険 -->
-    <div class="sec">
-        <h3>&#9316; 社会・労働保険</h3>
-        <div class="cb-group">
+    <div class="sec"><h3>&#9316; 社会・労働保険</h3>
+        <div class="cbg">
             <label><input type="checkbox" id="insHealth"> 健康保険</label>
             <label><input type="checkbox" id="insPension"> 厚生年金</label>
             <label><input type="checkbox" id="insEmploy"> 雇用</label>
             <label><input type="checkbox" id="insWork"> 労災</label>
             <label><input type="checkbox" id="insWorkSpecial"> 労災特別加入</label>
             <label><input type="checkbox" id="insOther"> その他</label>
-            <input type="text" id="insOtherText" placeholder="その他内容" style="width:120px;" oninput="update()">
+            <input type="text" id="insOtherText" placeholder="その他内容" style="width:110px;" oninput="update()">
         </div>
     </div>
 
-    <!-- 備考 -->
-    <div class="sec">
-        <h3>&#9317; 備考</h3>
-        <textarea id="remarksField" oninput="update()" style="min-height:70px;"></textarea>
+    <div class="sec"><h3>&#9317; 備考</h3>
+        <textarea id="remarksField" oninput="update()"></textarea>
     </div>
 
     <div class="btn-area">
-        <button class="btn-preview" onclick="update()">&#128065; プレビュー更新</button>
-        <button class="btn-print" onclick="window.print()">&#128438; 3枚まとめて印刷</button>
+        <button class="btn-save" onclick="saveIntro()">&#128190; 保存する</button>
+        <button class="btn-print" id="btnPrint" onclick="window.print()">&#128438; 印刷（3枚）</button>
+    </div>
+    <div class="saved-msg" id="savedMsg"></div>
+</div>
+
+<!-- 印刷3枚 -->
+<div class="print-area">
+<div th:each="docId : ${ {'doc1','doc2','doc3'} }"></div>
+
+<!-- ① -->
+<div class="doc-page" id="doc1" style="display:none;">
+    <div class="doc-head-row"><div class="doc-corner-box">求職者控</div><div class="doc-ref-no">紹介番号　<span class="d-refno"></span></div></div>
+    <div class="doc-title">労 働 条 件 明 示 書</div>
+    <div class="doc-date-row">紹介年月日：<span class="d-date"></span></div>
+    <div class="doc-kyunin">求人者　<span class="d-customer"></span>　様</div>
+    <div class="doc-notice">お申込みにより下記の者を紹介いたします。</div>
+    <div class="doc-kyushoku">求職者氏名　<strong class="d-person" style="min-width:170px;border-bottom:1px solid #333;display:inline-block;"></strong></div>
+    <p style="font-size:8.5pt;margin:2px 0;">ご依頼の内容及び雇用条件</p>
+    <table class="doc-table">
+        <tr><th>職務内容</th><td>&#9633;家事サービス　&#9633;介護サービス　&#9633;その他〔<span class="d-job-other" style="min-width:55px;display:inline-block;"></span>〕<br><strong class="d-job-checked"></strong></td></tr>
+        <tr><th>就業場所</th><td><table class="inner">
+            <tr><td>〒<span class="d-work-postal"></span>　<span class="d-workplace"></span></td></tr>
+            <tr><td>最寄り駅　<span class="d-station"></span>　<span class="d-line"></span>線　　駅から 徒歩・バス　<span class="d-access"></span></td></tr>
+            <tr><td>受動喫煙防止措置状況　<span class="d-smoking"></span></td></tr>
+        </table></td></tr>
+        <tr><th>雇用期間</th><td><span class="d-emp-type"></span>　<span class="d-emp-period"></span></td></tr>
+        <tr><th>試用期間</th><td><span class="d-trial"></span></td></tr>
+        <tr><th>勤務日</th><td><span class="d-work-style"></span>　<span class="d-dow"></span></td></tr>
+        <tr><th>勤務時間</th><td><span class="d-hours"></span>　〔実働　<span class="d-actual"></span>〕</td></tr>
+        <tr><th>時間外労働</th><td><span class="d-overtime-type"></span>　　<strong>休憩時間</strong>　<span class="d-break"></span></td></tr>
+        <tr><th>休　日</th><td><span class="d-holiday"></span></td></tr>
+        <tr><th>賃金形態</th><td><span class="d-wage-type"></span>　　<strong>基本給</strong>　<span class="d-base-wage"></span>　円</td></tr>
+        <tr><th>諸手当</th><td>時間外手当　<span class="d-overtime-wage"></span>　円</td></tr>
+        <tr><th>交通費</th><td><span class="d-transport"></span></td></tr>
+        <tr><th>昇給</th><td><span class="d-raise"></span></td></tr>
+        <tr><th>賃金支払方法</th><td><span class="d-pay-method"></span></td></tr>
+        <tr><th>社会・労働保険<br>加入状況</th><td><span class="d-insurance"></span><div style="text-align:right;margin-top:3px;">紹介手数料15%　＋消費税</div></td></tr>
+        <tr><th>就業開始予定日</th><td><span class="d-start"></span></td></tr>
+        <tr><th>備考</th><td><span class="d-remarks"></span></td></tr>
+    </table>
+    <div class="doc-note">1. 手数料は別表のとおりです。2. 採否については至急に電話または書面によりご連絡をお願いいたします。</div>
+    <div class="doc-footer">
+        <div>所在地　〒107-0052 東京都港区赤坂6-10-45-203</div>
+        <div class="co-name">紹介所　有限会社　ワークオフィス谷</div>
+        <div>代表者　代表取締役　谷 二三代</div>
+        <div>連絡先　TEL 03-5544-8315　FAX 03-5544-8316</div>
     </div>
 </div>
 
-<!-- 印刷エリア（3枚） -->
-<div class="print-area">
-    <div th:each="doc : ${ {'doc1','doc2','doc3'} }" class="doc-page" style="display:none;"></div>
-
-    <!-- ① 労働条件明示書（求職者控） -->
-    <div class="doc-page" id="doc1">
-        <div class="doc-head-row">
-            <div class="doc-corner-box">求職者控</div>
-            <div class="doc-ref-no">紹介番号 <span class="d-refno"></span></div>
-        </div>
-        <div class="doc-title">労 働 条 件 明 示 書</div>
-        <div class="doc-date-row">
-            <span>紹介年月日：<span class="d-date"></span></span>
-        </div>
-        <div class="doc-kyunin">求人者 <span class="d-customer"></span> 様</div>
-        <div class="doc-notice">お申込みにより下記の者を紹介いたします。</div>
-        <div class="doc-kyushoku">求職者氏名　<strong class="d-person" style="min-width:200px;border-bottom:1px solid #333;display:inline-block;"></strong></div>
-
-        <p style="font-size:10pt;margin:4px 0;">ご依頼の内容及び雇用条件</p>
-        <table class="doc-table">
-            <tr><th>職務内容</th><td>
-                <span style="margin-right:6px;">&#9633;家事サービス</span>
-                <span style="margin-right:6px;">&#9633;介護サービス</span>
-                &#9633;その他〔<span class="d-job-other" style="min-width:80px;display:inline-block;"></span>〕
-                <br><strong class="d-job-checked"></strong>
-            </td></tr>
-            <tr><th>就業場所</th><td class="inner-table">
-                <table class="inner">
-                    <tr><td>〒<span class="d-work-postal"></span>　<span class="d-workplace"></span></td></tr>
-                    <tr><td>最寄り駅　<span class="d-station"></span>　<span class="d-line"></span>線　　駅から 徒歩・バス <span class="d-access"></span></td></tr>
-                    <tr><td>受動喫煙防止措置状況　<span class="d-smoking"></span></td></tr>
-                </table>
-            </td></tr>
-            <tr><th>雇用期間</th><td>
-                <span class="d-emp-type"></span>　<span class="d-emp-period"></span>
-            </td></tr>
-            <tr><th>試用期間</th><td>
-                <span class="d-trial"></span>
-            </td></tr>
-            <tr><th>勤務日</th><td>
-                <span class="d-work-style"></span>　<span class="d-dow"></span>
-            </td></tr>
-            <tr><th>勤務時間</th><td>
-                <span class="d-hours"></span>　〔実働 <span class="d-actual"></span>〕
-            </td></tr>
-            <tr><th>時間外労働</th><td>
-                <span class="d-overtime"></span>　　<strong>休憩時間</strong>　<span class="d-break"></span>
-            </td></tr>
-            <tr><th>休日</th><td>
-                <span class="d-holiday"></span>
-            </td></tr>
-            <tr><th>賃金形態</th><td>
-                <span class="d-wage-type"></span>　　<strong>基本給</strong>　<span class="d-base-wage"></span>　円
-            </td></tr>
-            <tr><th>諸手当</th><td>
-                時間外手当　<span class="d-overtime-wage"></span>　円
-            </td></tr>
-            <tr><th>交通費</th><td>
-                <span class="d-transport"></span>
-            </td></tr>
-            <tr><th>昇給</th><td>
-                <span class="d-raise"></span>
-            </td></tr>
-            <tr><th>賃金支払方法</th><td>
-                <span class="d-pay-method"></span>
-            </td></tr>
-            <tr><th>社会・労働保険<br>加入状況</th><td>
-                <span class="d-insurance"></span>
-                <br>　　　　　　　　　　　　　　紹介手数料15%　＋消費税
-            </td></tr>
-            <tr><th>就業開始予定日</th><td><span class="d-start"></span></td></tr>
-            <tr><th>備考</th><td><span class="d-remarks"></span></td></tr>
-        </table>
-        <div class="doc-note">1. 手数料は別表のとおりです。2. 採否については至急に電話または書面によりご連絡をお願いいたします。</div>
-        <div class="doc-footer">
-            <div>所在地　〒107-0052 東京都港区赤坂6-10-45-203</div>
-            <div class="co-name">紹介所　有限会社　ワークオフィス谷</div>
-            <div>代表者　代表取締役　谷 二三代</div>
-            <div>連絡先　TEL 03-5544-8315　FAX 03-5544-8316</div>
-        </div>
+<!-- ② -->
+<div class="doc-page" id="doc2" style="display:none;">
+    <div class="doc-head-row"><div class="doc-corner-box">求人者控</div><div class="doc-ref-no">紹介番号　<span class="d-refno"></span></div></div>
+    <div class="doc-title">紹 介 状</div>
+    <div class="doc-date-row">紹介年月日：<span class="d-date"></span></div>
+    <div class="doc-kyunin">求人者　<span class="d-customer"></span>　様</div>
+    <div class="doc-notice">お申込みにより下記の者を紹介いたします。</div>
+    <div class="doc-kyushoku">求職者氏名　<strong class="d-person" style="min-width:170px;border-bottom:1px solid #333;display:inline-block;"></strong></div>
+    <p style="font-size:8.5pt;margin:2px 0;">ご依頼の内容及び雇用条件</p>
+    <table class="doc-table">
+        <tr><th>職務内容</th><td>&#9633;家事サービス　&#9633;介護サービス　&#9633;その他〔<span class="d-job-other" style="min-width:55px;display:inline-block;"></span>〕<br><strong class="d-job-checked"></strong></td></tr>
+        <tr><th>就業場所</th><td><table class="inner"><tr><td>〒<span class="d-work-postal"></span>　<span class="d-workplace"></span></td></tr><tr><td>最寄り駅　<span class="d-station"></span>　<span class="d-line"></span>線　　駅から 徒歩・バス　<span class="d-access"></span></td></tr><tr><td>受動喫煙防止措置状況　<span class="d-smoking"></span></td></tr></table></td></tr>
+        <tr><th>雇用期間</th><td><span class="d-emp-type"></span>　<span class="d-emp-period"></span></td></tr>
+        <tr><th>試用期間</th><td><span class="d-trial"></span></td></tr>
+        <tr><th>勤務日</th><td><span class="d-work-style"></span>　<span class="d-dow"></span></td></tr>
+        <tr><th>勤務時間</th><td><span class="d-hours"></span>　〔実働　<span class="d-actual"></span>〕</td></tr>
+        <tr><th>時間外労働</th><td><span class="d-overtime-type"></span>　　<strong>休憩時間</strong>　<span class="d-break"></span></td></tr>
+        <tr><th>休　日</th><td><span class="d-holiday"></span></td></tr>
+        <tr><th>賃金形態</th><td><span class="d-wage-type"></span>　　<strong>基本給</strong>　<span class="d-base-wage"></span>　円</td></tr>
+        <tr><th>諸手当</th><td>時間外手当　<span class="d-overtime-wage"></span>　円</td></tr>
+        <tr><th>交通費</th><td><span class="d-transport"></span></td></tr>
+        <tr><th>昇給</th><td><span class="d-raise"></span></td></tr>
+        <tr><th>賃金支払方法</th><td><span class="d-pay-method"></span></td></tr>
+        <tr><th>社会・労働保険<br>加入状況</th><td><span class="d-insurance"></span><div style="text-align:right;margin-top:3px;">紹介手数料15%　＋消費税</div></td></tr>
+        <tr><th>就業開始予定日</th><td><span class="d-start"></span></td></tr>
+        <tr><th>備考</th><td><span class="d-remarks"></span></td></tr>
+    </table>
+    <div class="doc-note">1. 手数料は別表のとおりです。2. 採否については至急に電話または書面によりご連絡をお願いいたします。</div>
+    <div class="doc-footer">
+        <div>所在地　〒107-0052 東京都港区赤坂6-10-45-203</div>
+        <div class="co-name">紹介所　有限会社　ワークオフィス谷</div>
+        <div>代表者　代表取締役　谷 二三代</div>
+        <div>連絡先　TEL 03-5544-8315　FAX 03-5544-8316</div>
     </div>
+</div>
 
-    <!-- ② 紹介状（求人者控） -->
-    <div class="doc-page" id="doc2">
-        <div class="doc-head-row">
-            <div class="doc-corner-box">求人者控</div>
-            <div class="doc-ref-no">紹介番号 <span class="d-refno"></span></div>
-        </div>
-        <div class="doc-title">紹 介 状</div>
-        <div class="doc-date-row"><span>紹介年月日：<span class="d-date"></span></span></div>
-        <div class="doc-kyunin">求人者 <span class="d-customer"></span> 様</div>
-        <div class="doc-notice">お申込みにより下記の者を紹介いたします。</div>
-        <div class="doc-kyushoku">求職者氏名　<strong class="d-person" style="min-width:200px;border-bottom:1px solid #333;display:inline-block;"></strong></div>
-        <p style="font-size:10pt;margin:4px 0;">ご依頼の内容及び雇用条件</p>
-        <table class="doc-table">
-            <tr><th>職務内容</th><td>
-                <span style="margin-right:6px;">&#9633;家事サービス</span>
-                <span style="margin-right:6px;">&#9633;介護サービス</span>
-                &#9633;その他〔<span class="d-job-other" style="min-width:80px;display:inline-block;"></span>〕
-                <br><strong class="d-job-checked"></strong>
-            </td></tr>
-            <tr><th>就業場所</th><td class="inner-table">
-                <table class="inner">
-                    <tr><td>〒<span class="d-work-postal"></span>　<span class="d-workplace"></span></td></tr>
-                    <tr><td>最寄り駅　<span class="d-station"></span>　<span class="d-line"></span>線　　駅から 徒歩・バス <span class="d-access"></span></td></tr>
-                    <tr><td>受動喫煙防止措置状況　<span class="d-smoking"></span></td></tr>
-                </table>
-            </td></tr>
-            <tr><th>雇用期間</th><td><span class="d-emp-type"></span>　<span class="d-emp-period"></span></td></tr>
-            <tr><th>試用期間</th><td><span class="d-trial"></span></td></tr>
-            <tr><th>勤務日</th><td><span class="d-work-style"></span>　<span class="d-dow"></span></td></tr>
-            <tr><th>勤務時間</th><td><span class="d-hours"></span>　〔実働 <span class="d-actual"></span>〕</td></tr>
-            <tr><th>時間外労働</th><td><span class="d-overtime"></span>　　<strong>休憩時間</strong>　<span class="d-break"></span></td></tr>
-            <tr><th>休日</th><td><span class="d-holiday"></span></td></tr>
-            <tr><th>賃金形態</th><td><span class="d-wage-type"></span>　　<strong>基本給</strong>　<span class="d-base-wage"></span>　円</td></tr>
-            <tr><th>諸手当</th><td>時間外手当　<span class="d-overtime-wage"></span>　円</td></tr>
-            <tr><th>交通費</th><td><span class="d-transport"></span></td></tr>
-            <tr><th>昇給</th><td><span class="d-raise"></span></td></tr>
-            <tr><th>賃金支払方法</th><td><span class="d-pay-method"></span></td></tr>
-            <tr><th>社会・労働保険<br>加入状況</th><td><span class="d-insurance"></span><br>　　　　　　　　　　　　　　紹介手数料15%　＋消費税</td></tr>
-            <tr><th>就業開始予定日</th><td><span class="d-start"></span></td></tr>
-            <tr><th>備考</th><td><span class="d-remarks"></span></td></tr>
-        </table>
-        <div class="doc-note">1. 手数料は別表のとおりです。2. 採否については至急に電話または書面によりご連絡をお願いいたします。</div>
-        <div class="doc-footer">
-            <div>所在地　〒107-0052 東京都港区赤坂6-10-45-203</div>
-            <div class="co-name">紹介所　有限会社　ワークオフィス谷</div>
-            <div>代表者　代表取締役　谷 二三代</div>
-            <div>連絡先　TEL 03-5544-8315　FAX 03-5544-8316</div>
-        </div>
+<!-- ③ -->
+<div class="doc-page" id="doc3" style="display:none;">
+    <div class="doc-head-row"><div class="doc-corner-box">求人者控</div><div class="doc-ref-no">紹介番号　<span class="d-refno"></span></div></div>
+    <div class="doc-title">雇 用 契 約 書</div>
+    <div class="doc-date-row">紹介年月日：<span class="d-date"></span></div>
+    <div class="doc-kyunin">求人者　<span class="d-customer"></span>　様</div>
+    <div class="doc-notice">お申込みにより下記の者を紹介いたします。</div>
+    <div class="doc-kyushoku">求職者氏名　<strong class="d-person" style="min-width:170px;border-bottom:1px solid #333;display:inline-block;"></strong></div>
+    <p style="font-size:8.5pt;margin:2px 0;">ご依頼の内容及び雇用条件</p>
+    <table class="doc-table">
+        <tr><th>職務内容</th><td>&#9633;家事サービス　&#9633;介護サービス　&#9633;その他〔<span class="d-job-other" style="min-width:55px;display:inline-block;"></span>〕<br><strong class="d-job-checked"></strong></td></tr>
+        <tr><th>就業場所</th><td><table class="inner"><tr><td>〒<span class="d-work-postal"></span>　<span class="d-workplace"></span></td></tr><tr><td>最寄り駅　<span class="d-station"></span>　<span class="d-line"></span>線　　駅から 徒歩・バス　<span class="d-access"></span></td></tr><tr><td>受動喫煙防止措置状況　<span class="d-smoking"></span></td></tr></table></td></tr>
+        <tr><th>雇用期間</th><td><span class="d-emp-type"></span>　<span class="d-emp-period"></span></td></tr>
+        <tr><th>試用期間</th><td><span class="d-trial"></span></td></tr>
+        <tr><th>勤務日</th><td><span class="d-work-style"></span>　<span class="d-dow"></span></td></tr>
+        <tr><th>勤務時間</th><td><span class="d-hours"></span>　〔実働　<span class="d-actual"></span>〕</td></tr>
+        <tr><th>時間外労働</th><td><span class="d-overtime-type"></span>　　<strong>休憩時間</strong>　<span class="d-break"></span></td></tr>
+        <tr><th>休　日</th><td><span class="d-holiday"></span></td></tr>
+        <tr><th>賃金形態</th><td><span class="d-wage-type"></span>　　<strong>基本給</strong>　<span class="d-base-wage"></span>　円</td></tr>
+        <tr><th>諸手当</th><td>時間外手当　<span class="d-overtime-wage"></span>　円</td></tr>
+        <tr><th>交通費</th><td><span class="d-transport"></span></td></tr>
+        <tr><th>昇給</th><td><span class="d-raise"></span></td></tr>
+        <tr><th>賃金支払方法</th><td><span class="d-pay-method"></span></td></tr>
+        <tr><th>社会・労働保険<br>加入状況</th><td><span class="d-insurance"></span><div style="text-align:right;margin-top:3px;">紹介手数料15%　＋消費税</div></td></tr>
+        <tr><th>就業開始予定日</th><td><span class="d-start"></span></td></tr>
+        <tr><th>備考</th><td><span class="d-remarks"></span></td></tr>
+    </table>
+    <div class="doc-note">1. 手数料は別表のとおりです。2. 採否については至急に電話または書面によりご連絡をお願いいたします。</div>
+    <div class="doc-footer">
+        <div>所在地　〒107-0052 東京都港区赤坂6-10-45-203</div>
+        <div class="co-name">紹介所　有限会社　ワークオフィス谷</div>
+        <div>代表者　代表取締役　谷 二三代</div>
+        <div>連絡先　TEL 03-5544-8315　FAX 03-5544-8316</div>
     </div>
-
-    <!-- ③ 雇用契約書（求人者控） -->
-    <div class="doc-page" id="doc3">
-        <div class="doc-head-row">
-            <div class="doc-corner-box">求人者控</div>
-            <div class="doc-ref-no">紹介番号 <span class="d-refno"></span></div>
-        </div>
-        <div class="doc-title">雇 用 契 約 書</div>
-        <div class="doc-date-row"><span>紹介年月日：<span class="d-date"></span></span></div>
-        <div class="doc-kyunin">求人者 <span class="d-customer"></span> 様</div>
-        <div class="doc-notice">お申込みにより下記の者を紹介いたします。</div>
-        <div class="doc-kyushoku">求職者氏名　<strong class="d-person" style="min-width:200px;border-bottom:1px solid #333;display:inline-block;"></strong></div>
-        <p style="font-size:10pt;margin:4px 0;">ご依頼の内容及び雇用条件</p>
-        <table class="doc-table">
-            <tr><th>職務内容</th><td>
-                <span style="margin-right:6px;">&#9633;家事サービス</span>
-                <span style="margin-right:6px;">&#9633;介護サービス</span>
-                &#9633;その他〔<span class="d-job-other" style="min-width:80px;display:inline-block;"></span>〕
-                <br><strong class="d-job-checked"></strong>
-            </td></tr>
-            <tr><th>就業場所</th><td class="inner-table">
-                <table class="inner">
-                    <tr><td>〒<span class="d-work-postal"></span>　<span class="d-workplace"></span></td></tr>
-                    <tr><td>最寄り駅　<span class="d-station"></span>　<span class="d-line"></span>線　　駅から 徒歩・バス <span class="d-access"></span></td></tr>
-                    <tr><td>受動喫煙防止措置状況　<span class="d-smoking"></span></td></tr>
-                </table>
-            </td></tr>
-            <tr><th>雇用期間</th><td><span class="d-emp-type"></span>　<span class="d-emp-period"></span></td></tr>
-            <tr><th>試用期間</th><td><span class="d-trial"></span></td></tr>
-            <tr><th>勤務日</th><td><span class="d-work-style"></span>　<span class="d-dow"></span></td></tr>
-            <tr><th>勤務時間</th><td><span class="d-hours"></span>　〔実働 <span class="d-actual"></span>〕</td></tr>
-            <tr><th>時間外労働</th><td><span class="d-overtime"></span>　　<strong>休憩時間</strong>　<span class="d-break"></span></td></tr>
-            <tr><th>休日</th><td><span class="d-holiday"></span></td></tr>
-            <tr><th>賃金形態</th><td><span class="d-wage-type"></span>　　<strong>基本給</strong>　<span class="d-base-wage"></span>　円</td></tr>
-            <tr><th>諸手当</th><td>時間外手当　<span class="d-overtime-wage"></span>　円</td></tr>
-            <tr><th>交通費</th><td><span class="d-transport"></span></td></tr>
-            <tr><th>昇給</th><td><span class="d-raise"></span></td></tr>
-            <tr><th>賃金支払方法</th><td><span class="d-pay-method"></span></td></tr>
-            <tr><th>社会・労働保険<br>加入状況</th><td><span class="d-insurance"></span><br>　　　　　　　　　　　　　　紹介手数料15%　＋消費税</td></tr>
-            <tr><th>就業開始予定日</th><td><span class="d-start"></span></td></tr>
-            <tr><th>備考</th><td><span class="d-remarks"></span></td></tr>
-        </table>
-        <div class="doc-note">1. 手数料は別表のとおりです。2. 採否については至急に電話または書面によりご連絡をお願いいたします。</div>
-        <div class="doc-footer">
-            <div>所在地　〒107-0052 東京都港区赤坂6-10-45-203</div>
-            <div class="co-name">紹介所　有限会社　ワークオフィス谷</div>
-            <div>代表者　代表取締役　谷 二三代</div>
-            <div>連絡先　TEL 03-5544-8315　FAX 03-5544-8316</div>
-        </div>
-    </div>
+</div>
 </div>
 
 <script>
-function g(id) { return document.getElementById(id); }
-function setAll(cls, val) {
-    document.querySelectorAll('.' + cls).forEach(function(el) { el.textContent = val || ''; });
+var g=function(id){return document.getElementById(id);}
+function setAll(cls,val){document.querySelectorAll('.'+cls).forEach(function(el){el.textContent=val||'';});}
+
+// 日付セレクト生成（西暦4桁固定）
+function makeDateSel(containerId,hiddenId,defaultToday){
+    var c=g(containerId),h=g(hiddenId),ex=h?h.value:'';
+    var yy=mk('select','width:70px;padding:4px;border:1px solid #ddd;border-radius:4px;');
+    var mo=mk('select','width:52px;padding:4px;border:1px solid #ddd;border-radius:4px;');
+    var dd=mk('select','width:52px;padding:4px;border:1px solid #ddd;border-radius:4px;');
+    addOpt(yy,'','年'); addOpt(mo,'','月'); addOpt(dd,'','日');
+    var cy=new Date().getFullYear();
+    for(var y=cy+2;y>=2000;y--) addOpt(yy,y,y);
+    for(var m=1;m<=12;m++) addOpt(mo,pad(m),m);
+    for(var d=1;d<=31;d++) addOpt(dd,pad(d),d);
+    var tgt=ex||(defaultToday?new Date().toISOString().split('T')[0]:'');
+    if(tgt&&tgt.length>=8){var p=tgt.substring(0,10).split('-');if(p.length===3){yy.value=p[0];mo.value=p[1];dd.value=p[2];}}
+    function sync(){if(h)h.value=(yy.value&&mo.value&&dd.value)?yy.value+'-'+mo.value+'-'+dd.value:'';update();}
+    yy.onchange=mo.onchange=dd.onchange=sync;
+    var s1=mkSpan('年'),s2=mkSpan('月'),s3=mkSpan('日');
+    c.appendChild(yy);c.appendChild(s1);c.appendChild(mo);c.appendChild(s2);c.appendChild(dd);c.appendChild(s3);
+    if(h)sync();
 }
+function mk(tag,style){var el=document.createElement(tag);el.style.cssText=style||'';return el;}
+function mkSpan(t){var s=mk('span','font-size:13px;color:#555;margin:0 2px;');s.textContent=t;return s;}
+function addOpt(sel,val,txt){var o=document.createElement('option');o.value=val;o.textContent=txt;sel.appendChild(o);}
+function pad(n){return String(n).padStart(2,'0');}
 
-function fillPerson() { update(); }
-
-function fillCustomer() {
-    var sel = g('customerSelect');
-    var opt = sel.options[sel.selectedIndex];
-    if (!opt || !opt.value) { update(); return; }
-    var postal = opt.dataset.postal || '';
-    var addr   = opt.dataset.addr   || '';
-    g('workPostal').value  = postal;
-    g('workPlace').value   = addr;
-    g('workStation').value = opt.dataset.station || '';
-    g('workLine').value    = opt.dataset.line    || '';
-    g('workAccess').value  = opt.dataset.access  || '';
-    update();
-}
-
-function toggleJobOther() {
-    g('jobOtherArea').style.display = g('jobOther').checked ? 'block' : 'none';
-    updateJobContent();
-}
-function updateJobContent() {
-    var parts = [];
-    if (g('jobKaji').checked)  parts.push('家事サービス');
-    if (g('jobKaigo').checked) parts.push('介護サービス');
-    if (g('jobOther').checked) {
-        var txt = g('jobOtherText').value.trim();
-        parts.push(txt ? 'その他：' + txt : 'その他');
-    }
-    g('jobContent').value = parts.join('・');
-    update();
-}
-
-function toggleEmpPeriod() {
-    var v = document.querySelector('input[name=empPeriod]:checked');
-    g('empPeriodArea').style.display = (v && v.value === '有期') ? 'block' : 'none';
-    update();
-}
-function toggleTrialPeriod() {
-    var v = document.querySelector('input[name=trialPeriod]:checked');
-    g('trialPeriodArea').style.display = (v && v.value === '有') ? 'block' : 'none';
-    update();
-}
-
-function getChecked(name) {
-    var v = document.querySelector('input[name=' + name + ']:checked');
-    return v ? v.value : '';
-}
-function getDow(cls) {
-    return Array.from(document.querySelectorAll('.' + cls + ':checked')).map(function(c){return c.value;}).join('・');
-}
-
-function update() {
-    var pSel = g('personSelect');
-    var cSel = g('customerSelect');
-    var pOpt = pSel.options[pSel.selectedIndex];
-    var cOpt = cSel.options[cSel.selectedIndex];
-    var pName = (pOpt && pOpt.value) ? pOpt.text : '';
-    var cName = (cOpt && cOpt.value) ? cOpt.text : '';
-
-    // 職務内容チェックボックス表示
-    var jobChecked = [];
-    if (g('jobKaji').checked)  jobChecked.push('✓家事サービス');
-    if (g('jobKaigo').checked) jobChecked.push('✓介護サービス');
-    var jobOtherTxt = (g('jobOther').checked) ? g('jobOtherText').value.trim() : '';
-
-    // 雇用期間
-    var empType = getChecked('empPeriod');
-    var empPeriod = '';
-    if (empType === '有期') {
-        empPeriod = (g('empFrom').value || '') + ' 〜 ' + (g('empTo').value || '');
-    }
-
-    // 試用期間
-    var trialType = getChecked('trialPeriod');
-    var trialStr = trialType;
-    if (trialType === '有') {
-        trialStr += '（詳細は備考欄）';
-        var tf = g('trialFrom').value; var tt = g('trialTo').value;
-        if (tf || tt) trialStr += '　' + tf + ' 〜 ' + tt;
-    }
-
-    // 勤務時間
-    var ws = g('workStart').value; var we = g('workEnd').value;
-    var hoursStr = (ws && we) ? ws + ' 〜 ' + we : (ws || we || '');
-
-    // 休憩時間
-    var bs = g('breakStart').value; var be = g('breakEnd').value;
-    var breakStr = (bs && be) ? bs + ' 〜 ' + be : (bs || be || '');
-
-    // 休日
-    var holParts = [];
-    if (g('holWeekly').checked)   holParts.push('毎週');
-    if (g('holBiWeekly').checked) holParts.push('隔週');
-    var holDow = getDow('hol-dow');
-    if (holDow) holParts.push(holDow + '曜日');
-    if (g('holHoliday').checked)  holParts.push('祝日');
-    if (g('holOther').checked)    holParts.push('その他');
-
-    // 賃金
-    var baseWage  = g('baseWage').value ? parseInt(g('baseWage').value).toLocaleString() : '';
-    var otWage    = g('overtimeWage').value ? parseInt(g('overtimeWage').value).toLocaleString() : '';
-    var transport = getChecked('transport');
-    var tAmt = g('transportAmt').value;
-    if (tAmt && transport === '有') transport += '　' + tAmt + ' 円';
-
-    // 賃金支払方法
-    var payParts = [];
-    if (g('payDaily').checked)   payParts.push('毎日');
-    if (g('payWeekly').checked)  payParts.push('毎週' + g('payWeeklyDay').value + '曜日');
-    if (g('payMonthly').checked) payParts.push('毎月' + g('payMonthlyDay').value + '日');
-    var payMethod = getChecked('payMethod');
-    if (payMethod) payParts.push('方法：' + payMethod);
-
-    // 社会保険
-    var insParts = [];
-    if (g('insHealth').checked)       insParts.push('健康保険');
-    if (g('insPension').checked)      insParts.push('厚生年金');
-    if (g('insEmploy').checked)       insParts.push('雇用');
-    if (g('insWork').checked)         insParts.push('労災');
-    if (g('insWorkSpecial').checked)  insParts.push('労災特別加入');
-    if (g('insOther').checked)        insParts.push('その他' + (g('insOtherText').value ? '：' + g('insOtherText').value : ''));
-
-    // プレビューに反映
-    setAll('d-refno',        g('refNo').value);
-    setAll('d-date',         g('introDate').value);
-    setAll('d-person',       pName);
-    setAll('d-customer',     cName);
-    setAll('d-job-checked',  jobChecked.join('　'));
-    setAll('d-job-other',    jobOtherTxt);
-    setAll('d-work-postal',  g('workPostal').value);
-    setAll('d-workplace',    g('workPlace').value);
-    setAll('d-station',      g('workStation').value);
-    setAll('d-line',         g('workLine').value);
-    setAll('d-access',       g('workAccess').value);
-    setAll('d-smoking',      g('smoking').value);
-    setAll('d-emp-type',     empType);
-    setAll('d-emp-period',   empPeriod);
-    setAll('d-trial',        trialStr);
-    setAll('d-work-style',   getChecked('workStyle'));
-    setAll('d-dow',          getDow('dow'));
-    setAll('d-hours',        hoursStr);
-    setAll('d-actual',       g('actualHours').value);
-    setAll('d-overtime',     getChecked('overtime'));
-    setAll('d-break',        breakStr);
-    setAll('d-holiday',      holParts.join('　'));
-    setAll('d-wage-type',    getChecked('wageType'));
-    setAll('d-base-wage',    baseWage);
-    setAll('d-overtime-wage',otWage);
-    setAll('d-transport',    transport);
-    setAll('d-raise',        getChecked('raise'));
-    setAll('d-pay-method',   payParts.join('　'));
-    setAll('d-insurance',    insParts.join('　'));
-    setAll('d-start',        g('startDate').value);
-    setAll('d-remarks',      g('remarksField').value);
-
-    // プレビューページを表示
-    ['doc1','doc2','doc3'].forEach(function(id) {
-        g(id).style.display = 'block';
+// 時分セレクト初期化
+function initTime(){
+    ['wSH','wEH','bSH','bEH'].forEach(function(id){
+        var s=g(id);addOpt(s,'','時');
+        for(var h=0;h<=23;h++) addOpt(s,pad(h),pad(h));
+    });
+    ['wSM','wEM','bSM','bEM'].forEach(function(id){
+        var s=g(id);addOpt(s,'','分');
+        for(var m=0;m<=55;m+=5) addOpt(s,pad(m),pad(m));
     });
 }
 
-// 全チェックボックスにイベント
-document.querySelectorAll('input[type=checkbox]').forEach(function(cb) {
-    cb.addEventListener('change', update);
-});
+function fillPerson(){update();}
+function fillCustomer(){
+    var sel=g('customerSelect'),opt=sel.options[sel.selectedIndex];
+    if(!opt||!opt.value){update();return;}
+    g('workPostal').value=opt.dataset.postal||'';
+    g('workPlace').value=opt.dataset.addr||'';
+    g('workStation').value=opt.dataset.station||'';
+    g('workLine').value=opt.dataset.line||'';
+    g('workAccess').value=opt.dataset.access||'';
+    update();
+}
 
-window.addEventListener('load', function() {
-    g('introDate').value = new Date().toISOString().split('T')[0];
+function toggleJobOther(){g('jobOtherArea').style.display=g('jobOther').checked?'block':'none';updateJobContent();}
+function updateJobContent(){
+    var p=[];
+    if(g('jobKaji').checked) p.push('家事サービス');
+    if(g('jobKaigo').checked) p.push('介護サービス');
+    if(g('jobOther').checked){var t=g('jobOtherText').value.trim();p.push(t?'その他：'+t:'その他');}
+    g('jobContent').value=p.join('・');update();
+}
+
+function toggleEmpPeriod(){
+    var v=document.querySelector('input[name=empPeriod]:checked');
+    g('empPeriodArea').style.display=(v&&v.value==='有期')?'block':'none';update();
+}
+function toggleTrialPeriod(){
+    var v=document.querySelector('input[name=trialPeriod]:checked');
+    // 無にしたら必ず隠す
+    g('trialPeriodArea').style.display=(v&&v.value==='有')?'block':'none';update();
+}
+
+function gc(name){var v=document.querySelector('input[name='+name+']:checked');return v?v.value:'';}
+function getDow(cls){return Array.from(document.querySelectorAll('.'+cls+':checked')).map(function(c){return c.value;}).join('・');}
+function getTime(hId,mId){var h=g(hId).value,m=g(mId).value;return(h&&m)?h+':'+m:'';}
+
+function update(){
+    var pSel=g('personSelect'),cSel=g('customerSelect');
+    var pOpt=pSel.options[pSel.selectedIndex],cOpt=cSel.options[cSel.selectedIndex];
+    var pName=(pOpt&&pOpt.value)?pOpt.text:'';
+    var cName=(cOpt&&cOpt.value)?cOpt.text:'';
+
+    var jc=[]; if(g('jobKaji').checked) jc.push('✓家事サービス'); if(g('jobKaigo').checked) jc.push('✓介護サービス');
+    var joTxt=g('jobOther').checked?g('jobOtherText').value.trim():'';
+
+    var eType=gc('empPeriod');
+    var ePeriod='';if(eType==='有期') ePeriod=(g('empFrom').value||'')+' 〜 '+(g('empTo').value||'');
+
+    var tType=gc('trialPeriod');
+    var tStr=tType||'';
+    if(tType==='有'){tStr+='（詳細は備考欄）';var tf=g('trialFrom').value,tt=g('trialTo').value;if(tf||tt) tStr+='　'+(tf||'')+' 〜 '+(tt||'');}
+
+    var ws=getTime('wSH','wSM'),we=getTime('wEH','wEM');
+    var hoursStr=(ws&&we)?ws+' 〜 '+we:(ws||we||'');
+    var bs=getTime('bSH','bSM'),be=getTime('bEH','bEM');
+    var breakStr=(bs&&be)?bs+' 〜 '+be:(bs||be||'');
+
+    var hol=[];
+    if(g('holWeekly').checked) hol.push('毎週');
+    if(g('holBiWeekly').checked) hol.push('隔週');
+    var hDow=getDow('hol-dow'); if(hDow) hol.push(hDow+'曜日');
+    if(g('holHoliday').checked) hol.push('祝日');
+    if(g('holOther').checked) hol.push('その他');
+
+    var bw=g('baseWage').value?parseInt(g('baseWage').value).toLocaleString():'';
+    var ow=g('overtimeWage').value?parseInt(g('overtimeWage').value).toLocaleString():'';
+    var tr=gc('transport'); var ta=g('transportAmt').value;
+    if(tr==='有'&&ta) tr+='　'+ta+'円';
+
+    var pay=[]; if(g('payDaily').checked) pay.push('毎日');
+    if(g('payWeekly').checked) pay.push('毎週'+g('payWeeklyDay').value+'曜日');
+    if(g('payMonthly').checked) pay.push('毎月'+g('payMonthlyDay').value+'日');
+    var pm=gc('payMethod'); if(pm) pay.push('方法：'+pm);
+
+    var ins=[];
+    if(g('insHealth').checked) ins.push('健康保険');
+    if(g('insPension').checked) ins.push('厚生年金');
+    if(g('insEmploy').checked) ins.push('雇用');
+    if(g('insWork').checked) ins.push('労災');
+    if(g('insWorkSpecial').checked) ins.push('労災特別加入');
+    if(g('insOther').checked) ins.push('その他'+(g('insOtherText').value?'：'+g('insOtherText').value:''));
+
+    setAll('d-date',        g('introDate').value);
+    setAll('d-person',      pName);
+    setAll('d-customer',    cName);
+    setAll('d-job-checked', jc.join('　'));
+    setAll('d-job-other',   joTxt);
+    setAll('d-work-postal', g('workPostal').value);
+    setAll('d-workplace',   g('workPlace').value);
+    setAll('d-station',     g('workStation').value);
+    setAll('d-line',        g('workLine').value);
+    setAll('d-access',      g('workAccess').value);
+    setAll('d-smoking',     g('smoking').value);
+    setAll('d-emp-type',    eType);
+    setAll('d-emp-period',  ePeriod);
+    setAll('d-trial',       tStr);
+    setAll('d-work-style',  gc('workStyle'));
+    setAll('d-dow',         getDow('dow'));
+    setAll('d-hours',       hoursStr);
+    setAll('d-actual',      g('actualHours').value);
+    setAll('d-overtime-type',gc('overtime'));
+    setAll('d-break',       breakStr);
+    setAll('d-holiday',     hol.join('　'));
+    setAll('d-wage-type',   gc('wageType'));
+    setAll('d-base-wage',   bw);
+    setAll('d-overtime-wage',ow);
+    setAll('d-transport',   tr);
+    setAll('d-raise',       gc('raise'));
+    setAll('d-pay-method',  pay.join('　'));
+    setAll('d-insurance',   ins.join('　'));
+    setAll('d-start',       g('startDate').value);
+    setAll('d-remarks',     g('remarksField').value);
+
+    ['doc1','doc2','doc3'].forEach(function(id){g(id).style.display='block';});
+}
+
+function saveIntro(){
+    var pSel=g('personSelect'),cSel=g('customerSelect');
+    var params=new URLSearchParams();
+    if(pSel.value) params.append('personId',pSel.value);
+    if(cSel.value) params.append('customerId',cSel.value);
+    params.append('introDate',g('introDate').value||'');
+    params.append('startDate',g('startDate').value||'');
+    params.append('formData','{}');
+    fetch('/introduction/save',{method:'POST',body:params})
+        .then(function(r){return r.text();})
+        .then(function(refNo){
+            setAll('d-refno',refNo);
+            var msg=g('savedMsg');
+            msg.textContent='✅ 保存しました（紹介番号：'+refNo+'）';
+            msg.style.display='block';
+            g('btnPrint').style.display='block';
+        })
+        .catch(function(){alert('保存に失敗しました');});
+}
+
+document.querySelectorAll('input[type=checkbox]').forEach(function(cb){cb.addEventListener('change',update);});
+
+window.addEventListener('load',function(){
+    initTime();
+    makeDateSel('introDateSel','introDate',true);
+    makeDateSel('startDateSel','startDate',false);
+    makeDateSel('empFromSel','empFrom',false);
+    makeDateSel('empToSel','empTo',false);
+    makeDateSel('trialFromSel','trialFrom',false);
+    makeDateSel('trialToSel','trialTo',false);
     update();
 });
 </script>
