@@ -48,7 +48,7 @@
             <tr th:each="item : ${items}">
                 <td th:text="${item.customer.lastNameKanji + ' ' + item.customer.firstNameKanji}"></td>
                 <td th:text="${item.detail.introductionDate}"></td>
-                <td th:text="${item.detail.customerFee != null ? '¥' + #numbers.formatInteger(item.detail.customerFee, 1, 'COMMA') : '-'}"></td>
+                <td th:text="${item.detail.customerFee != null ? item.detail.customerFee + '円' : '-'}"></td>
                 <td th:text="${item.detail.receiptNo}"></td>
                 <td>
                     <span class="badge badge-pending">未発行</span>

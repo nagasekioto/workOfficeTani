@@ -117,10 +117,27 @@ public class WorkingLedgerController {
                 }
 
                 // 賃金総額
-                row.wageTotal = d.getMonthlyTotal() != null ? d.getMonthlyTotal() : 0;
+                row.wageTotal    = d.getMonthlyTotal() != null ? d.getMonthlyTotal() : 0;
+                row.wageTotalStr = fmt(row.wageTotal);
 
                 // 手数料率（固定15%）
                 row.commissionRate = "15%";
+
+                // 時給・日給・受付料フォーマット
+                row.hourlyWageStr     = fmt(d.getHourlyWage());
+                row.hourlyWageOTStr   = fmt(d.getHourlyWageOvertime());
+                row.receptionFeeStr   = fmt(d.getReceptionFee());
+                // 日給（カンマ区切り文字列 → ¥付き配列）
+                if (d.getDailyWages() != null && !d.getDailyWages().isBlank()) {
+                    String[] parts = d.getDailyWages().split(",");
+                    row.dailyWageStrs = new String[parts.length];
+                    for (int wi = 0; wi < parts.length; wi++) {
+                        try { row.dailyWageStrs[wi] = fmt(Long.parseLong(parts[wi].trim())); }
+                        catch (NumberFormatException e) { row.dailyWageStrs[wi] = "-"; }
+                    }
+                } else {
+                    row.dailyWageStrs = new String[0];
+                }
 
                 rows.add(row);
             }
@@ -160,6 +177,13 @@ public class WorkingLedgerController {
         return src.toLowerCase().contains(q.toLowerCase());
     }
 
+    private String fmt(Number n) {
+        if (n == null) return "-";
+        long v = n.longValue();
+        if (v == 0) return "-";
+        return "\u00a5" + java.text.NumberFormat.getNumberInstance(java.util.Locale.JAPAN).format(v);
+    }
+
     // ─── 内部DTO ────────────────────────────────────────
     public static class LedgerRow {
         public SalesDetail detail;
@@ -168,6 +192,11 @@ public class WorkingLedgerController {
         public int         workDays       = 0;
         public LocalDate   receiptDate;
         public int         wageTotal      = 0;
+        public String      wageTotalStr   = "-";
         public String      commissionRate = "15%";
+        public String      hourlyWageStr  = "-";
+        public String      hourlyWageOTStr = "-";
+        public String      receptionFeeStr = "-";
+        public String[]    dailyWageStrs  = new String[0];
     }
 }

@@ -96,19 +96,16 @@
                 <tr th:each="row : ${rows}">
                     <td th:text="${row.detail.introductionDate}">-</td>
                     <td th:text="${row.customerName}">-</td>
-                    <td th:text="${row.detail.hourlyWage != null ? '¥' + #numbers.formatInteger(row.detail.hourlyWage, 1, 'COMMA') : '-'}">-</td>
-                    <td th:text="${row.detail.hourlyWageOvertime != null ? '¥' + #numbers.formatInteger(row.detail.hourlyWageOvertime, 1, 'COMMA') : '-'}">-</td>
+                    <td th:text="${row.hourlyWageStr}">-</td>
+                    <td th:text="${row.hourlyWageOTStr}">-</td>
 
                     <!-- 日給（最大5枠） -->
-                    <th:block th:with="wages=${row.detail.dailyWages != null ? row.detail.dailyWages.split(',') : new String[0]}">
-                        <td th:text="${wages.length > 0 and wages[0] != '' ? '¥' + wages[0] : '-'}" class="daily-cell">-</td>
-                        <td th:text="${wages.length > 1 ? '¥' + wages[1] : '-'}" class="daily-cell">-</td>
-                        <td th:text="${wages.length > 2 ? '¥' + wages[2] : '-'}" class="daily-cell">-</td>
-                        <td th:text="${wages.length > 3 ? '¥' + wages[3] : '-'}" class="daily-cell">-</td>
-                        <td th:text="${wages.length > 4 ? '¥' + wages[4] : '-'}" class="daily-cell">-</td>
-                    </th:block>
-
-                    <td th:text="${row.detail.receptionFee != null ? '¥' + #numbers.formatInteger(row.detail.receptionFee, 1, 'COMMA') : '-'}">-</td>
+                    <td th:text="${row.dailyWageStrs.length > 0 ? row.dailyWageStrs[0] : '-'}" class="daily-cell">-</td>
+                        <td th:text="${row.dailyWageStrs.length > 1 ? row.dailyWageStrs[1] : '-'}" class="daily-cell">-</td>
+                        <td th:text="${row.dailyWageStrs.length > 2 ? row.dailyWageStrs[2] : '-'}" class="daily-cell">-</td>
+                        <td th:text="${row.dailyWageStrs.length > 3 ? row.dailyWageStrs[3] : '-'}" class="daily-cell">-</td>
+                        <td th:text="${row.dailyWageStrs.length > 4 ? row.dailyWageStrs[4] : '-'}" class="daily-cell">-</td>
+<td th:text="${row.receptionFeeStr}">-</td>
 
                     <!-- 就労月日 -->
                     <td>
@@ -118,7 +115,7 @@
                     </td>
 
                     <td th:text="${row.workDays > 0 ? row.workDays + '日' : '-'}">-</td>
-                    <td th:text="${row.wageTotal > 0 ? '¥' + #numbers.formatInteger(row.wageTotal, 1, 'COMMA') : '-'}">-</td>
+                    <td th:text="${row.wageTotalStr}">-</td>
                     <td th:text="${row.commissionRate}">15%</td>
                     <td th:text="${row.receiptDate}">-</td>
                     <td th:text="${row.detail.receiptNo}">-</td>

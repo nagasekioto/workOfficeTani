@@ -85,7 +85,7 @@
             <span style="margin-left:20px;"><strong>求人数：</strong>1人</span>
             <span style="margin-left:20px;"><strong>給与：</strong>
                 <span th:if="${latestDetail != null and latestDetail.hourlyWage != null}"
-                      th:text="'時給 ¥' + ${latestDetail.hourlyWage}"></span>
+                      th:text="'時給 ' + ${latestDetail.hourlyWage} + '円'"></span>
                 <span th:unless="${latestDetail != null and latestDetail.hourlyWage != null}">-</span>
             </span>
         </div>

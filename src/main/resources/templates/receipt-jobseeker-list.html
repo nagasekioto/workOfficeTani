@@ -48,7 +48,7 @@
             <tr th:each="item : ${items}">
                 <td th:text="${item.person.lastNameKanji + ' ' + item.person.firstNameKanji}"></td>
                 <td th:text="${item.detail.introductionDate}"></td>
-                <td th:text="${item.detail.receptionFee != null ? '¥' + #numbers.formatInteger(item.detail.receptionFee, 1, 'COMMA') : '-'}"></td>
+                <td th:text="${item.detail.receptionFee != null ? item.detail.receptionFee + '円' : '-'}"></td>
                 <td th:text="${item.detail.receiptNo}"></td>
                 <td>
                     <span th:if="${item.detail.receiptNo != null}" class="badge badge-done">発行済</span>
