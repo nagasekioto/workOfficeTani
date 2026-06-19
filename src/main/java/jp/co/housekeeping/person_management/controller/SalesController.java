@@ -35,6 +35,7 @@ import com.itextpdf.text.pdf.PdfWriter;
 import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import jp.co.housekeeping.person_management.model.Customer;
 import jp.co.housekeeping.person_management.model.Person;
 import jp.co.housekeeping.person_management.model.Sales;
 import jp.co.housekeeping.person_management.model.SalesDetail;
