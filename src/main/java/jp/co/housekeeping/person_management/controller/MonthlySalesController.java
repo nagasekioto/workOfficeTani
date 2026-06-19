@@ -15,6 +15,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import jp.co.housekeeping.person_management.model.SalesDetail;
 import jp.co.housekeeping.person_management.repository.CustomerRepository;
@@ -30,42 +31,57 @@ public class MonthlySalesController {
     @Autowired private SalesRepository salesRepository;
     @Autowired private SalesDetailRepository salesDetailRepository;
 
+    // ── テスト用：このURLが返れば到達OK ──────────────────
+    @GetMapping("/sales-monthly-test")
+    @ResponseBody
+    public String test() {
+        return "OK - MonthlySalesController reached";
+    }
+
     @GetMapping("/sales-monthly")
     public String monthly(@RequestParam(required = false) String month,
                           HttpSession session, Model model) {
+
+        // セッションチェック
         if (session.getAttribute("authenticated") == null) return "redirect:/login";
 
+        // デフォルト値をすべて先に設定
         model.addAttribute("selectedMonth", month);
-        model.addAttribute("rows", new ArrayList<>());
-        model.addAttribute("totalCount", 0);
-        model.addAttribute("totalWage", 0L);
+        model.addAttribute("rows",          new ArrayList<>());
+        model.addAttribute("totalCount",    0);
+        model.addAttribute("totalWage",     0L);
         model.addAttribute("totalCommission", 0L);
-        model.addAttribute("totalFees", 0L);
-        model.addAttribute("errorMsg", null);
+        model.addAttribute("totalFees",     0L);
+        model.addAttribute("errorMsg",      null);
 
         if (month == null || month.isBlank()) {
             return "sales-monthly";
         }
 
         try {
+            // ① 人物マップ
             Map<Long, String> personMap = new HashMap<>();
             StreamSupport.stream(personRepository.findAll().spliterator(), false)
                 .forEach(p -> personMap.put(p.getId(),
                     p.getLastNameKanji() + " " + p.getFirstNameKanji()));
 
+            // ② 求人者マップ
             Map<Long, String> customerMap = new HashMap<>();
             StreamSupport.stream(customerRepository.findAll().spliterator(), false)
                 .forEach(c -> customerMap.put(c.getId(),
                     c.getLastNameKanji() + " " + c.getFirstNameKanji()));
 
+            // ③ salesId→personId マップ
             Map<Long, Long> salesPersonMap = new HashMap<>();
             StreamSupport.stream(salesRepository.findAll().spliterator(), false)
                 .forEach(s -> salesPersonMap.put(s.getId(), s.getPersonId()));
 
-            YearMonth ym = YearMonth.parse(month);
+            // ④ 月範囲
+            YearMonth ym        = YearMonth.parse(month);
             LocalDate startDate = ym.atDay(1);
             LocalDate endDate   = ym.atEndOfMonth();
 
+            // ⑤ 全detail取得してJavaでフィルタ
             List<MonthlyRow> rows = new ArrayList<>();
             long totalWage = 0, totalCommission = 0, totalFees = 0;
 
@@ -75,11 +91,11 @@ public class MonthlySalesController {
                              || isInMonth(d.getWorkEndDate(),      startDate, endDate);
                 if (!match) continue;
 
-                MonthlyRow row = new MonthlyRow();
-                row.detail = d;
-                Long pid = salesPersonMap.get(d.getSalesId());
-                row.personName   = pid != null ? personMap.getOrDefault(pid, "不明") : "不明";
-                row.customerName = d.getCustomerId() != null
+                MonthlyRow row    = new MonthlyRow();
+                row.detail        = d;
+                Long pid          = salesPersonMap.get(d.getSalesId());
+                row.personName    = pid != null ? personMap.getOrDefault(pid,   "不明") : "不明";
+                row.customerName  = d.getCustomerId() != null
                         ? customerMap.getOrDefault(d.getCustomerId(), "不明") : "-";
 
                 if (d.getDailyWages() != null && !d.getDailyWages().isBlank()) {
@@ -96,21 +112,24 @@ public class MonthlySalesController {
             }
 
             rows.sort((a, b) -> {
-                LocalDate da = firstNonNull(a.detail.getIntroductionDate(), a.detail.getWorkStartDate(), startDate);
-                LocalDate db = firstNonNull(b.detail.getIntroductionDate(), b.detail.getWorkStartDate(), startDate);
+                LocalDate da = firstNonNull(
+                    a.detail.getIntroductionDate(), a.detail.getWorkStartDate(), startDate);
+                LocalDate db = firstNonNull(
+                    b.detail.getIntroductionDate(), b.detail.getWorkStartDate(), startDate);
                 return da.compareTo(db);
             });
 
-            model.addAttribute("rows", rows);
-            model.addAttribute("totalCount",      rows.size());
-            model.addAttribute("totalWage",       totalWage);
+            model.addAttribute("rows",          rows);
+            model.addAttribute("totalCount",    rows.size());
+            model.addAttribute("totalWage",     totalWage);
             model.addAttribute("totalCommission", totalCommission);
-            model.addAttribute("totalFees",       totalFees);
+            model.addAttribute("totalFees",     totalFees);
 
         } catch (Exception e) {
-            String msg = e.getClass().getName() + ": " + e.getMessage();
-            if (e.getCause() != null) msg += " / Cause: " + e.getCause().getMessage();
-            model.addAttribute("errorMsg", msg);
+            // スタックトレースをまるごと画面に出す
+            java.io.StringWriter sw = new java.io.StringWriter();
+            e.printStackTrace(new java.io.PrintWriter(sw));
+            model.addAttribute("errorMsg", sw.toString());
         }
 
         return "sales-monthly";
