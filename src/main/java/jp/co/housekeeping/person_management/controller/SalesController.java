@@ -32,7 +32,9 @@ import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 
-import jp.co.housekeeping.person_management.model.Customer;
+import org.springframework.web.bind.annotation.ResponseBody;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import jp.co.housekeeping.person_management.model.Person;
 import jp.co.housekeeping.person_management.model.Sales;
 import jp.co.housekeeping.person_management.model.SalesDetail;
@@ -73,17 +75,15 @@ public class SalesController {
         return "person-sales";
     }
 
-    // ─── 保存処理 ───────────────────────────────────
     @PostMapping("/person/sales/save")
     public String saveSales(
             @RequestParam Long personId,
-            // 勤務先1～5の各項目（配列）
-            @RequestParam(required = false) Long[] customerIds,
+            @RequestParam(required = false) String[] customerIds,
             @RequestParam(required = false) String[] introductionDates,
-            @RequestParam(required = false) Integer[] receptionFees,
-            @RequestParam(required = false) Integer[] customerFees,
-            @RequestParam(required = false) Integer[] hourlyWages,
-            @RequestParam(required = false) Integer[] hourlyWageOvertimes,
+            @RequestParam(required = false) String[] receptionFees,
+            @RequestParam(required = false) String[] customerFees,
+            @RequestParam(required = false) String[] hourlyWages,
+            @RequestParam(required = false) String[] hourlyWageOvertimes,
             @RequestParam(required = false) String[] dailyWagesList,
             @RequestParam(required = false) String[] workStartDates,
             @RequestParam(required = false) String[] workEndDates,
@@ -93,7 +93,7 @@ public class SalesController {
 
         if (session.getAttribute("authenticated") == null) return "redirect:/login";
 
-        // 既存salesレコードを取得 or 新規作成（person単位で1レコード）
+        // 既存salesレコードを取得 or 新規作成
         List<Sales> existing = salesRepository.findByPersonId(personId);
         Sales sales;
         if (existing.isEmpty()) {
@@ -105,58 +105,63 @@ public class SalesController {
         }
 
         // 既存詳細を削除して再登録
-        List<SalesDetail> oldDetails = salesDetailRepository.findBySalesId(sales.getId());
-        for (SalesDetail od : oldDetails) {
+        for (SalesDetail od : salesDetailRepository.findBySalesId(sales.getId())) {
             salesDetailRepository.deleteById(od.getId());
         }
 
-        if (customerIds == null) {
-            return "redirect:/person/sales?saved=" + personId;
-        }
+        if (customerIds == null) return "redirect:/person/sales?saved=" + personId;
 
         for (int i = 0; i < customerIds.length; i++) {
-            if (customerIds[i] == null) continue;
+            // 求人者未選択はスキップ
+            if (customerIds[i] == null || customerIds[i].isBlank()) continue;
+            Long customerId;
+            try { customerId = Long.parseLong(customerIds[i]); } catch (NumberFormatException e) { continue; }
 
             SalesDetail detail = new SalesDetail();
             detail.setSalesId(sales.getId());
-            detail.setCustomerId(customerIds[i]);
+            detail.setCustomerId(customerId);
             detail.setDetailOrder(i + 1);
 
-            if (introductionDates != null && i < introductionDates.length && !introductionDates[i].isBlank()) {
-                detail.setIntroductionDate(LocalDate.parse(introductionDates[i]));
+            if (introductionDates != null && i < introductionDates.length
+                    && introductionDates[i] != null && !introductionDates[i].isBlank()) {
+                try { detail.setIntroductionDate(LocalDate.parse(introductionDates[i])); } catch (Exception ignored) {}
             }
-            if (receptionFees != null && i < receptionFees.length) {
-                detail.setReceptionFee(receptionFees[i]);
+            if (receptionFees != null && i < receptionFees.length
+                    && receptionFees[i] != null && !receptionFees[i].isBlank()) {
+                try { detail.setReceptionFee(Integer.parseInt(receptionFees[i])); } catch (NumberFormatException ignored) {}
             }
-            if (customerFees != null && i < customerFees.length) {
-                detail.setCustomerFee(customerFees[i]);
+            if (customerFees != null && i < customerFees.length
+                    && customerFees[i] != null && !customerFees[i].isBlank()) {
+                try { detail.setCustomerFee(Integer.parseInt(customerFees[i])); } catch (NumberFormatException ignored) {}
             }
-            if (hourlyWages != null && i < hourlyWages.length) {
-                detail.setHourlyWage(hourlyWages[i]);
+            if (hourlyWages != null && i < hourlyWages.length
+                    && hourlyWages[i] != null && !hourlyWages[i].isBlank()) {
+                try { detail.setHourlyWage(Integer.parseInt(hourlyWages[i])); } catch (NumberFormatException ignored) {}
             }
-            if (hourlyWageOvertimes != null && i < hourlyWageOvertimes.length) {
-                detail.setHourlyWageOvertime(hourlyWageOvertimes[i]);
+            if (hourlyWageOvertimes != null && i < hourlyWageOvertimes.length
+                    && hourlyWageOvertimes[i] != null && !hourlyWageOvertimes[i].isBlank()) {
+                try { detail.setHourlyWageOvertime(Integer.parseInt(hourlyWageOvertimes[i])); } catch (NumberFormatException ignored) {}
             }
             if (dailyWagesList != null && i < dailyWagesList.length && dailyWagesList[i] != null) {
                 detail.setDailyWages(dailyWagesList[i]);
             }
-            if (workStartDates != null && i < workStartDates.length && workStartDates[i] != null && !workStartDates[i].isBlank()) {
-                detail.setWorkStartDate(LocalDate.parse(workStartDates[i]));
+            if (workStartDates != null && i < workStartDates.length
+                    && workStartDates[i] != null && !workStartDates[i].isBlank()) {
+                try { detail.setWorkStartDate(LocalDate.parse(workStartDates[i])); } catch (Exception ignored) {}
             }
-            if (workEndDates != null && i < workEndDates.length && workEndDates[i] != null && !workEndDates[i].isBlank()) {
-                detail.setWorkEndDate(LocalDate.parse(workEndDates[i]));
+            if (workEndDates != null && i < workEndDates.length
+                    && workEndDates[i] != null && !workEndDates[i].isBlank()) {
+                try { detail.setWorkEndDate(LocalDate.parse(workEndDates[i])); } catch (Exception ignored) {}
             }
-            if (workingHoursList != null && i < workingHoursList.length && workingHoursList[i] != null && !workingHoursList[i].isBlank()) {
-                try { detail.setWorkingHours(new BigDecimal(workingHoursList[i])); } catch (NumberFormatException ignored) {}
+            if (workingHoursList != null && i < workingHoursList.length
+                    && workingHoursList[i] != null && !workingHoursList[i].isBlank()) {
+                try { detail.setWorkingHours(new java.math.BigDecimal(workingHoursList[i])); } catch (NumberFormatException ignored) {}
             }
-            if (remarksList != null && i < remarksList.length) {
+            if (remarksList != null && i < remarksList.length && remarksList[i] != null) {
                 detail.setRemarks(remarksList[i]);
             }
 
-            // 領収書Noを採番
-            String receiptNo = generateReceiptNo();
-            detail.setReceiptNo(receiptNo);
-
+            detail.setReceiptNo(generateReceiptNo());
             detail.calculateAmounts();
             salesDetailRepository.save(detail);
         }
@@ -168,6 +173,35 @@ public class SalesController {
     private String generateReceiptNo() {
         int maxNo = salesDetailRepository.findMaxReceiptNo();
         return String.format("%04d", maxNo + 1);
+    }
+
+    // ─── デバッグ：DB内容確認 (/person/sales/debug?personId=1) ──
+    @GetMapping("/person/sales/debug")
+    @ResponseBody
+    public String debug(@RequestParam(required = false) Long personId, HttpSession session) {
+        if (session.getAttribute("authenticated") == null) return "unauthorized";
+        StringBuilder sb = new StringBuilder();
+        sb.append("=== sales table ===\n");
+        for (Sales s : salesRepository.findAll()) {
+            sb.append("sales.id=").append(s.getId())
+              .append(" person_id=").append(s.getPersonId()).append("\n");
+        }
+        sb.append("\n=== sales_details table ===\n");
+        Iterable<Sales> all = personId != null ? salesRepository.findByPersonId(personId) : salesRepository.findAll();
+        for (Sales s : all) {
+            for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {
+                sb.append("detail.id=").append(d.getId())
+                  .append(" sales_id=").append(d.getSalesId())
+                  .append(" customer_id=").append(d.getCustomerId())
+                  .append(" intro=").append(d.getIntroductionDate())
+                  .append(" wage=").append(d.getHourlyWage())
+                  .append(" hours=").append(d.getWorkingHours())
+                  .append(" daily=").append(d.getDailyWages())
+                  .append(" total=").append(d.getMonthlyTotal())
+                  .append("\n");
+            }
+        }
+        return "<pre>" + sb + "</pre>";
     }
 
     // ─── PDF印刷 ─────────────────────────────────────

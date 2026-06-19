@@ -12,7 +12,7 @@ import jp.co.housekeeping.person_management.model.SalesDetail;
 @Repository
 public interface SalesDetailRepository extends CrudRepository<SalesDetail, Long> {
 
-    @Query("SELECT * FROM sales_details WHERE sales_id = :salesId ORDER BY detail_order")
+    @Query("SELECT * FROM sales_details WHERE sales_id = :salesId ORDER BY COALESCE(detail_order, 0), id")
     List<SalesDetail> findBySalesId(@Param("salesId") Long salesId);
 
     @Query("SELECT COALESCE(MAX(CAST(receipt_no AS INTEGER)), 0) FROM sales_details WHERE receipt_no ~ '^[0-9]+$'")
