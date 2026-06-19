@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>計算 - 家政婦紹介事務所</title>
+    <title>振込金入力 - 家政婦紹介事務所</title>
     <style>
         body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
         .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
@@ -16,9 +16,6 @@
             width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 15px;
         }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .calc-box { background: #fff3e0; border: 2px solid #FF9800; border-radius: 8px; padding: 20px; margin-top: 20px; }
-        .calc-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 16px; border-bottom: 1px solid #ffe0b2; }
-        .calc-row:last-child { border-bottom: none; font-weight: bold; font-size: 20px; color: #e65100; padding-top: 12px; }
         .btn-save { background: #4CAF50; color: white; padding: 15px 30px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; width: 100%; margin-top: 20px; }
         .btn-save:hover { background: #45a049; }
         .info-box { background: #fff8e1; border-left: 4px solid #ffc107; padding: 12px; margin-bottom: 20px; font-size: 14px; }
@@ -27,17 +24,17 @@
 </head>
 <body>
 <div class="header">
-    <h1>&#128176; 計算（1-8-1）</h1>
+    <h1>&#128176; 振込金入力（1-8-1）</h1>
     <a href="/register-menu" class="back-btn">&#8592; レジメニューに戻る</a>
 </div>
 <div class="container">
     <div class="info-box">
-        &#9432; 求人者から求職者へ支払われた給料に対して、求職者が15%の手数料を支払います。
+        &#9432; 求職者が受け取った振込額の15%が手数料です。
     </div>
 
     <div class="success-msg" id="successMsg">&#10003; 記録しました！</div>
 
-    <h2>手数料計算</h2>
+    <h2>振込金入力</h2>
 
     <div class="form-group">
         <label for="personSelect">求職者を選択</label>
@@ -57,8 +54,8 @@
 
     <div class="form-row">
         <div class="form-group">
-            <label for="salary">給料（円）</label>
-            <input type="number" id="salary" placeholder="例: 150000" min="0" oninput="calculate()">
+            <label for="salary">振込額（円）</label>
+            <input type="number" id="salary" placeholder="例: 150000" min="0">
         </div>
         <div class="form-group">
             <label for="memo">備考</label>
@@ -66,42 +63,19 @@
         </div>
     </div>
 
-    <div class="calc-box" id="calcBox" style="display:none;">
-        <div class="calc-row">
-            <span>給料：</span>
-            <span id="dispSalary">¥0</span>
-        </div>
-        <div class="calc-row">
-            <span>手数料（15%）：</span>
-            <span id="dispFee">¥0</span>
-        </div>
-    </div>
-
     <button class="btn-save" onclick="save()">&#128190; 記録する</button>
 </div>
 
 <script>
-function calculate() {
-    const salary = parseInt(document.getElementById('salary').value) || 0;
-    if (salary > 0) {
-        const fee = Math.floor(salary * 0.15);
-        document.getElementById('dispSalary').textContent = '¥' + salary.toLocaleString();
-        document.getElementById('dispFee').textContent = '¥' + fee.toLocaleString();
-        document.getElementById('calcBox').style.display = 'block';
-    } else {
-        document.getElementById('calcBox').style.display = 'none';
-    }
-}
-
 function save() {
-    const personId = document.getElementById('personSelect').value;
+    const personId  = document.getElementById('personSelect').value;
     const workMonth = document.getElementById('workMonth').value;
-    const salary = document.getElementById('salary').value;
-    const memo = document.getElementById('memo').value;
+    const salary    = document.getElementById('salary').value;
+    const memo      = document.getElementById('memo').value;
 
-    if (!personId) { alert('求職者を選択してください'); return; }
-    if (!workMonth) { alert('対象月を選択してください'); return; }
-    if (!salary || parseInt(salary) <= 0) { alert('給料を入力してください'); return; }
+    if (!personId)                        { alert('求職者を選択してください'); return; }
+    if (!workMonth)                       { alert('対象月を選択してください'); return; }
+    if (!salary || parseInt(salary) <= 0) { alert('振込額を入力してください'); return; }
 
     const fee = Math.floor(parseInt(salary) * 0.15);
 
@@ -113,10 +87,9 @@ function save() {
         if (r.ok) {
             document.getElementById('successMsg').style.display = 'block';
             document.getElementById('personSelect').value = '';
-            document.getElementById('workMonth').value = '';
-            document.getElementById('salary').value = '';
-            document.getElementById('memo').value = '';
-            document.getElementById('calcBox').style.display = 'none';
+            document.getElementById('workMonth').value   = '';
+            document.getElementById('salary').value      = '';
+            document.getElementById('memo').value        = '';
             setTimeout(() => document.getElementById('successMsg').style.display = 'none', 3000);
         } else {
             alert('保存に失敗しました');

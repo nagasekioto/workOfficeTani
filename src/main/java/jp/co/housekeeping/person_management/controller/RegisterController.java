@@ -113,6 +113,8 @@ public class RegisterController {
                 row.workMonth = r.getWorkMonth();
                 row.salary = r.getSalary() != null ? r.getSalary() : 0;
                 row.fee = r.getFee() != null ? r.getFee() : 0;
+                row.salaryStr = fmtYen(row.salary);
+                row.feeStr    = fmtYen(row.fee);
                 row.memo = r.getMemo();
                 row.createdAt = r.getCreatedAt();
                 records.add(row);
@@ -122,6 +124,8 @@ public class RegisterController {
             model.addAttribute("records", records);
             model.addAttribute("totalSalary", totalSalary);
             model.addAttribute("totalFee", totalFee);
+            model.addAttribute("totalSalaryStr", fmtYen(totalSalary));
+            model.addAttribute("totalFeeStr",    fmtYen(totalFee));
             model.addAttribute("selectedMonth", month);
         } else {
             model.addAttribute("records", new ArrayList<>());
@@ -139,7 +143,6 @@ public class RegisterController {
                             HttpSession session, Model model) {
         if (!checkAuth(session)) return "redirect:/login";
 
-        // 年リスト（2020～現在＋2年）
         int currentYear = LocalDateTime.now().getYear();
         List<Integer> years = new ArrayList<>();
         for (int y = 2020; y <= currentYear + 1; y++) years.add(y);
@@ -147,18 +150,17 @@ public class RegisterController {
 
         if (year != null) {
             List<RegisterRecord> raw = registerRecordRepository.findByYear(year + "-%");
-            // 月別集計
             Map<String, long[]> monthly = new HashMap<>();
             for (int m = 1; m <= 12; m++) {
-                monthly.put(String.format("%02d", m), new long[]{0, 0, 0}); // count, salary, fee
+                monthly.put(String.format("%02d", m), new long[]{0, 0, 0});
             }
             for (RegisterRecord r : raw) {
-                String m = r.getWorkMonth().substring(5, 7); // "2025-03" -> "03"
+                String m = r.getWorkMonth().substring(5, 7);
                 long[] vals = monthly.get(m);
                 if (vals != null) {
                     vals[0]++;
                     vals[1] += r.getSalary() != null ? r.getSalary() : 0;
-                    vals[2] += r.getFee() != null ? r.getFee() : 0;
+                    vals[2] += r.getFee()    != null ? r.getFee()    : 0;
                 }
             }
 
@@ -167,32 +169,47 @@ public class RegisterController {
             for (int m = 1; m <= 12; m++) {
                 long[] vals = monthly.get(String.format("%02d", m));
                 if (vals[0] > 0) {
-                    MonthlyRow row = new MonthlyRow();
-                    row.month = String.valueOf(m);
-                    row.count = vals[0];
-                    row.salary = vals[1];
-                    row.fee = vals[2];
+                    MonthlyRow row  = new MonthlyRow();
+                    row.monthLabel  = m + "月";
+                    row.count       = vals[0];
+                    row.salaryStr   = fmtYen(vals[1]);
+                    row.feeStr      = fmtYen(vals[2]);
+                    row.isTotal     = false;
                     monthlyRows.add(row);
                     yearSalary += vals[1];
-                    yearFee += vals[2];
-                    yearCount += vals[0];
+                    yearFee    += vals[2];
+                    yearCount  += vals[0];
                 }
             }
+            // 合計行
+            if (!monthlyRows.isEmpty()) {
+                MonthlyRow total = new MonthlyRow();
+                total.monthLabel = "合　計";
+                total.count      = yearCount;
+                total.salaryStr  = fmtYen(yearSalary);
+                total.feeStr     = fmtYen(yearFee);
+                total.isTotal    = true;
+                monthlyRows.add(total);
+            }
 
-            model.addAttribute("monthlyRows", monthlyRows);
-            model.addAttribute("yearTotalSalary", yearSalary);
-            model.addAttribute("yearTotalFee", yearFee);
-            model.addAttribute("yearTotalCount", yearCount);
-            model.addAttribute("selectedYear", year);
+            model.addAttribute("monthlyRows",       monthlyRows);
+            model.addAttribute("yearTotalSalaryStr",fmtYen(yearSalary));
+            model.addAttribute("yearTotalFeeStr",   fmtYen(yearFee));
+            model.addAttribute("yearTotalCount",    yearCount);
+            model.addAttribute("selectedYear",      year);
         } else {
-            model.addAttribute("monthlyRows", new ArrayList<>());
-            model.addAttribute("yearTotalSalary", 0L);
-            model.addAttribute("yearTotalFee", 0L);
-            model.addAttribute("yearTotalCount", 0L);
-            model.addAttribute("selectedYear", null);
+            model.addAttribute("monthlyRows",        new ArrayList<>());
+            model.addAttribute("yearTotalSalaryStr", "0");
+            model.addAttribute("yearTotalFeeStr",    "0");
+            model.addAttribute("yearTotalCount",     0L);
+            model.addAttribute("selectedYear",       null);
         }
 
         return "register-fee-ledger";
+    }
+
+    private String fmtYen(long v) {
+        return "\u00a5" + java.text.NumberFormat.getNumberInstance(java.util.Locale.JAPAN).format(v);
     }
 
     // ─── 1-8-3 手数料管理簿 PDF出力 ─────────────────────
@@ -332,15 +349,17 @@ public class RegisterController {
         public String workMonth;
         public long salary;
         public long fee;
+        public String salaryStr;
+        public String feeStr;
         public String memo;
         public LocalDateTime createdAt;
     }
 
     public static class MonthlyRow {
-        public String month;
-        public long count;
-        public long salary;
-        public long fee;
+        public String  monthLabel;
+        public long    count;
+        public String  salaryStr;
+        public String  feeStr;
+        public boolean isTotal;
     }
 }
-// NOTE: this append won't work cleanly - we'll rewrite the file

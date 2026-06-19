@@ -63,8 +63,8 @@
                     <td th:text="${stat.count}"></td>
                     <td th:text="${r.personName}"></td>
                     <td th:text="${r.workMonth}"></td>
-                    <td th:text="'¥' + #numbers.formatInteger(r.salary, 1, 'COMMA')"></td>
-                    <td th:text="'¥' + #numbers.formatInteger(r.fee, 1, 'COMMA')"></td>
+                    <td th:text="${r.salaryStr}"></td>
+                    <td th:text="${r.feeStr}"></td>
                     <td th:text="${r.memo}"></td>
                     <td th:text="${#temporals.format(r.createdAt, 'MM/dd HH:mm')}"></td>
                     <td>
@@ -77,8 +77,8 @@
                 </tr>
                 <tr class="total-row">
                     <td colspan="3">合計</td>
-                    <td th:text="'¥' + #numbers.formatInteger(totalSalary, 1, 'COMMA')"></td>
-                    <td th:text="'¥' + #numbers.formatInteger(totalFee, 1, 'COMMA')"></td>
+                    <td th:text="${totalSalaryStr}"></td>
+                    <td th:text="${totalFeeStr}"></td>
                     <td colspan="3"></td>
                 </tr>
             </tbody>
