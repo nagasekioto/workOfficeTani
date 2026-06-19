@@ -36,26 +36,46 @@ public class WorkingLedgerController {
     @Autowired private SalesRepository salesRepository;
     @Autowired private SalesDetailRepository salesDetailRepository;
 
-    // ─── 1ページ目：求職者一覧 + 検索 ──────────────────
+    // ─── 1ページ目：全求職者一覧 + 検索 ────────────────
     @GetMapping
     public String list(@RequestParam(required = false) String search,
                        HttpSession session, Model model) {
         if (session.getAttribute("authenticated") == null) return "redirect:/login";
 
         Iterable<Person> allPersons = personRepository.findAll();
-        List<Person> filtered = new ArrayList<>();
+        List<LedgerListRow> rows = new ArrayList<>();
+
         for (Person p : allPersons) {
-            if (search == null || search.isBlank()
-                    || containsIgnoreCase(p.getLastNameKanji(), search)
-                    || containsIgnoreCase(p.getFirstNameKanji(), search)
-                    || containsIgnoreCase(p.getLastNameKana(), search)
-                    || containsIgnoreCase(p.getFirstNameKana(), search)) {
-                filtered.add(p);
+            // 検索フィルター
+            if (search != null && !search.isBlank()) {
+                boolean match = containsIgnoreCase(p.getLastNameKanji(), search)
+                        || containsIgnoreCase(p.getFirstNameKanji(), search)
+                        || containsIgnoreCase(p.getLastNameKana(), search)
+                        || containsIgnoreCase(p.getFirstNameKana(), search);
+                if (!match) continue;
             }
+
+            // 売上件数カウント
+            List<Sales> salesList = salesRepository.findByPersonId(p.getId());
+            int count = 0;
+            for (Sales s : salesList) {
+                count += salesDetailRepository.findBySalesId(s.getId()).size();
+            }
+
+            LedgerListRow row = new LedgerListRow();
+            row.person = p;
+            row.salesCount = count;
+            rows.add(row);
         }
-        model.addAttribute("persons", filtered);
+
+        model.addAttribute("persons", rows);
         model.addAttribute("search", search);
         return "working-ledger-list";
+    }
+
+    public static class LedgerListRow {
+        public Person person;
+        public int salesCount;
     }
 
     // ─── 2ページ目：求職者詳細（稼働履歴）──────────────

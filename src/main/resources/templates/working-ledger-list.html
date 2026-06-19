@@ -8,24 +8,27 @@
         .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         h1 { margin: 0; color: #333; }
         .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
-        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .search-area { display: flex; gap: 10px; margin-bottom: 25px; }
+        .container { max-width: 1100px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .search-area { display: flex; gap: 10px; margin-bottom: 20px; align-items: center; }
         .search-area input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 15px; }
         .search-area button { padding: 10px 24px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 15px; }
+        .search-area .clear-btn { padding: 10px 16px; background: #9e9e9e; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; text-decoration: none; }
+        .count-label { font-size: 13px; color: #777; margin-bottom: 10px; }
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e0e0e0; }
-        th { background: #4CAF50; color: white; }
+        th, td { padding: 11px 10px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+        th { background: #4CAF50; color: white; white-space: nowrap; }
         tr:hover { background: #f1f8e9; }
         .person-link { color: #1565c0; text-decoration: none; font-weight: bold; }
         .person-link:hover { text-decoration: underline; }
         .empty { text-align: center; padding: 40px; color: #999; }
         .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
         .badge-yes { background: #e8f5e9; color: #2e7d32; }
+        .badge-sales { background: #e3f2fd; color: #1565c0; }
     </style>
 </head>
 <body>
 <div class="header">
-    <h1>&#128202; 稼働管理簿</h1>
+    <h1>&#128202; 稼働管理簿（1-1-5）</h1>
     <a href="/person-menu" class="back-btn">&#8592; 求職者管理に戻る</a>
 </div>
 
@@ -33,7 +36,15 @@
     <form method="get" action="/person/working-ledger" class="search-area">
         <input type="text" name="search" th:value="${search}" placeholder="名前で検索（漢字・カナ）">
         <button type="submit">&#128269; 検索</button>
+        <a href="/person/working-ledger" class="clear-btn">クリア</a>
     </form>
+
+    <div class="count-label">
+        <span th:if="${search != null and !#strings.isEmpty(search)}">
+            「<span th:text="${search}"></span>」の検索結果：
+        </span>
+        <span th:text="${persons.size() + '件'}"></span>
+    </div>
 
     <table th:if="${not #lists.isEmpty(persons)}">
         <thead>
@@ -42,27 +53,30 @@
                 <th>氏名（漢字）</th>
                 <th>氏名（カナ）</th>
                 <th>電話番号</th>
-                <th>希望職種</th>
+                <th>売上件数</th>
                 <th>LINE WORKS</th>
                 <th>登録日</th>
             </tr>
         </thead>
         <tbody>
-            <tr th:each="p : ${persons}">
-                <td th:text="${p.no}"></td>
+            <tr th:each="row : ${persons}">
+                <td th:text="${row.person.no}"></td>
                 <td>
-                    <a th:href="@{/person/working-ledger/{id}(id=${p.id})}"
+                    <a th:href="@{/person/working-ledger/{id}(id=${row.person.id})}"
                        class="person-link"
-                       th:text="${p.lastNameKanji + ' ' + p.firstNameKanji}"></a>
+                       th:text="${row.person.lastNameKanji + ' ' + row.person.firstNameKanji}"></a>
                 </td>
-                <td th:text="${p.lastNameKana + ' ' + p.firstNameKana}"></td>
-                <td th:text="${p.mobilePhone}"></td>
-                <td th:text="${p.desiredJob}"></td>
+                <td th:text="${row.person.lastNameKana + ' ' + row.person.firstNameKana}"></td>
+                <td th:text="${row.person.mobilePhone}"></td>
                 <td>
-                    <span th:if="${p.lineWorks != null and p.lineWorks}" class="badge badge-yes">登録済</span>
-                    <span th:unless="${p.lineWorks != null and p.lineWorks}">-</span>
+                    <span th:if="${row.salesCount > 0}" class="badge badge-sales" th:text="${row.salesCount + '件'}"></span>
+                    <span th:unless="${row.salesCount > 0}" style="color:#bbb;">-</span>
                 </td>
-                <td th:text="${p.registeredDate}"></td>
+                <td>
+                    <span th:if="${row.person.lineWorks != null and row.person.lineWorks}" class="badge badge-yes">登録済</span>
+                    <span th:unless="${row.person.lineWorks != null and row.person.lineWorks}">-</span>
+                </td>
+                <td th:text="${row.person.registeredDate}"></td>
             </tr>
         </tbody>
     </table>
