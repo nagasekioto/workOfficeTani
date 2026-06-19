@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import jp.co.housekeeping.person_management.model.SalesDetail;
@@ -24,7 +23,6 @@ import jp.co.housekeeping.person_management.repository.SalesDetailRepository;
 import jp.co.housekeeping.person_management.repository.SalesRepository;
 
 @Controller
-@RequestMapping("/person/sales/monthly")
 public class MonthlySalesController {
 
     @Autowired private PersonRepository personRepository;
@@ -32,7 +30,7 @@ public class MonthlySalesController {
     @Autowired private SalesRepository salesRepository;
     @Autowired private SalesDetailRepository salesDetailRepository;
 
-    @GetMapping
+    @GetMapping("/sales-monthly")
     public String monthly(@RequestParam(required = false) String month,
                           HttpSession session, Model model) {
         if (session.getAttribute("authenticated") == null) return "redirect:/login";
