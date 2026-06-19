@@ -8,29 +8,29 @@
         .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         h1 { margin: 0; color: #333; }
         .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .filter-bar { background: white; padding: 16px 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+        .container { max-width: 1300px; margin: 0 auto; }
+        .filter-bar { background: white; padding: 16px 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; gap: 15px; align-items: center; }
         .filter-bar label { font-weight: bold; color: #555; font-size: 14px; }
-        .filter-bar select, .filter-bar input[type=month] { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .filter-bar input[type=month] { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
         .filter-btn { background: #FF9800; color: white; border: none; border-radius: 4px; padding: 9px 20px; cursor: pointer; font-size: 14px; font-weight: bold; }
         .summary-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
         .card { background: white; padding: 18px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
         .card .label { font-size: 12px; color: #888; margin-bottom: 6px; }
-        .card .value { font-size: 22px; font-weight: bold; color: #333; }
+        .card .value { font-size: 20px; font-weight: bold; }
         .card.orange .value { color: #FF9800; }
         .card.green .value  { color: #4CAF50; }
         .card.blue .value   { color: #2196F3; }
         .card.red .value    { color: #f44336; }
-        .section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; overflow-x: auto; }
         .section h2 { margin-top: 0; color: #FF9800; border-bottom: 2px solid #FF9800; padding-bottom: 8px; font-size: 16px; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1000px; }
         th { background: #FF9800; color: white; padding: 9px 8px; text-align: left; white-space: nowrap; }
-        td { padding: 8px; border-bottom: 1px solid #e0e0e0; vertical-align: middle; }
+        td { padding: 8px; border-bottom: 1px solid #e0e0e0; vertical-align: middle; white-space: nowrap; }
         tr:hover { background: #fff8e1; }
         .total-row { background: #fff3e0 !important; font-weight: bold; }
         .total-row td { border-top: 2px solid #FF9800; }
         .empty { text-align: center; padding: 40px; color: #999; }
-        .month-badge { display: inline-block; background: #FF9800; color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px; }
+        .error-box { background: #ffebee; border: 2px solid #f44336; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-family: monospace; font-size: 13px; color: #b71c1c; white-space: pre-wrap; }
     </style>
 </head>
 <body>
@@ -40,7 +40,6 @@
 </div>
 
 <div class="container">
-    <!-- フィルター -->
     <form method="get" action="/sales-monthly" class="filter-bar">
         <label>表示月：</label>
         <input type="month" name="month" th:value="${selectedMonth}" required>
@@ -49,83 +48,79 @@
               th:text="${selectedMonth + ' の売上'}"></span>
     </form>
 
-    <!-- エラー表示（デバッグ用） -->
-    <div th:if="${errorMsg != null}"
-         style="background:#ffebee;border:2px solid #f44336;padding:15px;border-radius:6px;margin-bottom:20px;font-family:monospace;font-size:13px;color:#b71c1c;"
-         th:text="${errorMsg}"></div>
+    <div class="error-box" th:if="${errorMsg != null}" th:text="${errorMsg}"></div>
 
-    <!-- サマリーカード -->
-    <div class="summary-cards" th:if="${selectedMonth != null}">
-        <div class="card orange">
-            <div class="label">件数</div>
-            <div class="value" th:text="${totalCount + '件'}">0件</div>
+    <div th:if="${selectedMonth != null and errorMsg == null}">
+        <div class="summary-cards">
+            <div class="card orange">
+                <div class="label">件数</div>
+                <div class="value" th:text="${totalCount + '件'}">0件</div>
+            </div>
+            <div class="card green">
+                <div class="label">賃金総額合計</div>
+                <div class="value" th:text="${totalWageStr}">0</div>
+            </div>
+            <div class="card blue">
+                <div class="label">手数料合計（15%）</div>
+                <div class="value" th:text="${totalCommissionStr}">0</div>
+            </div>
+            <div class="card red">
+                <div class="label">受付料・求人手数料合計</div>
+                <div class="value" th:text="${totalFeesStr}">0</div>
+            </div>
         </div>
-        <div class="card green">
-            <div class="label">賃金総額合計</div>
-            <div class="value" th:text="'¥' + #numbers.formatInteger(totalWage, 1, 'COMMA')">¥0</div>
-        </div>
-        <div class="card blue">
-            <div class="label">手数料合計（15%）</div>
-            <div class="value" th:text="'¥' + #numbers.formatInteger(totalCommission, 1, 'COMMA')">¥0</div>
-        </div>
-        <div class="card red">
-            <div class="label">受付料・求人手数料合計</div>
-            <div class="value" th:text="'¥' + #numbers.formatInteger(totalFees, 1, 'COMMA')">¥0</div>
-        </div>
-    </div>
 
-    <!-- 明細テーブル -->
-    <div class="section" th:if="${selectedMonth != null}">
-        <h2 th:text="${selectedMonth + ' の売上明細'}">売上明細</h2>
+        <div class="section">
+            <h2 th:text="${selectedMonth + ' の売上明細'}">売上明細</h2>
 
-        <table th:if="${not #lists.isEmpty(rows)}">
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>求職者名</th>
-                    <th>求人者名</th>
-                    <th>紹介年月日</th>
-                    <th>就労開始日</th>
-                    <th>就労終了日</th>
-                    <th>時給</th>
-                    <th>勤務時間</th>
-                    <th>日給合計</th>
-                    <th>賃金総額</th>
-                    <th>手数料(15%)</th>
-                    <th>受付料</th>
-                    <th>求人手数料</th>
-                    <th>領収書No</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr th:each="row, stat : ${rows}">
-                    <td th:text="${stat.count}"></td>
-                    <td th:text="${row.personName}"></td>
-                    <td th:text="${row.customerName}"></td>
-                    <td th:text="${row.detail.introductionDate}"></td>
-                    <td th:text="${row.detail.workStartDate}"></td>
-                    <td th:text="${row.detail.workEndDate}"></td>
-                    <td th:text="${row.detail.hourlyWage != null ? '¥' + #numbers.formatInteger(row.detail.hourlyWage, 1, 'COMMA') : '-'}"></td>
-                    <td th:text="${row.detail.workingHours != null ? row.detail.workingHours + 'h' : '-'}"></td>
-                    <td th:text="${row.dailyTotal > 0 ? '¥' + #numbers.formatInteger(row.dailyTotal, 1, 'COMMA') : '-'}"></td>
-                    <td th:text="${row.detail.monthlyTotal != null ? '¥' + #numbers.formatInteger(row.detail.monthlyTotal, 1, 'COMMA') : '-'}"></td>
-                    <td th:text="${row.detail.commission != null ? '¥' + #numbers.formatInteger(row.detail.commission, 1, 'COMMA') : '-'}"></td>
-                    <td th:text="${row.detail.receptionFee != null ? '¥' + #numbers.formatInteger(row.detail.receptionFee, 1, 'COMMA') : '-'}"></td>
-                    <td th:text="${row.detail.customerFee != null ? '¥' + #numbers.formatInteger(row.detail.customerFee, 1, 'COMMA') : '-'}"></td>
-                    <td th:text="${row.detail.receiptNo}"></td>
-                </tr>
-                <!-- 合計行 -->
-                <tr class="total-row">
-                    <td colspan="9" style="text-align:right;">合　計</td>
-                    <td th:text="'¥' + #numbers.formatInteger(totalWage, 1, 'COMMA')"></td>
-                    <td th:text="'¥' + #numbers.formatInteger(totalCommission, 1, 'COMMA')"></td>
-                    <td colspan="3"></td>
-                </tr>
-            </tbody>
-        </table>
+            <table th:if="${not #lists.isEmpty(rows)}">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>求職者名</th>
+                        <th>求人者名</th>
+                        <th>紹介年月日</th>
+                        <th>就労開始日</th>
+                        <th>就労終了日</th>
+                        <th>時給</th>
+                        <th>勤務時間</th>
+                        <th>日給合計</th>
+                        <th>賃金総額</th>
+                        <th>手数料(15%)</th>
+                        <th>受付料</th>
+                        <th>求人手数料</th>
+                        <th>領収書No</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="row, stat : ${rows}">
+                        <td th:text="${stat.count}"></td>
+                        <td th:text="${row.personName}"></td>
+                        <td th:text="${row.customerName}"></td>
+                        <td th:text="${row.detail.introductionDate}"></td>
+                        <td th:text="${row.detail.workStartDate}"></td>
+                        <td th:text="${row.detail.workEndDate}"></td>
+                        <td th:text="${row.hourlyWageStr}"></td>
+                        <td th:text="${row.detail.workingHours != null ? row.detail.workingHours + 'h' : '-'}"></td>
+                        <td th:text="${row.dailyTotalStr}"></td>
+                        <td th:text="${row.monthlyTotalStr}"></td>
+                        <td th:text="${row.commissionStr}"></td>
+                        <td th:text="${row.receptionFeeStr}"></td>
+                        <td th:text="${row.customerFeeStr}"></td>
+                        <td th:text="${row.detail.receiptNo}"></td>
+                    </tr>
+                    <tr class="total-row">
+                        <td colspan="9" style="text-align:right;">合　計</td>
+                        <td th:text="${totalWageStr}"></td>
+                        <td th:text="${totalCommissionStr}"></td>
+                        <td colspan="3"></td>
+                    </tr>
+                </tbody>
+            </table>
 
-        <div class="empty" th:if="${#lists.isEmpty(rows)}">
-            <span th:text="${selectedMonth + ' の売上データがありません'}"></span>
+            <div class="empty" th:if="${#lists.isEmpty(rows)}">
+                <span th:text="${selectedMonth + ' の売上データがありません'}"></span>
+            </div>
         </div>
     </div>
 

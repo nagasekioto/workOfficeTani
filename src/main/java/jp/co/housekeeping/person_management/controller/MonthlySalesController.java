@@ -1,10 +1,12 @@
 package jp.co.housekeeping.person_management.controller;
 
+import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.StreamSupport;
 
@@ -31,57 +33,45 @@ public class MonthlySalesController {
     @Autowired private SalesRepository salesRepository;
     @Autowired private SalesDetailRepository salesDetailRepository;
 
-    // ── テスト用：このURLが返れば到達OK ──────────────────
     @GetMapping("/sales-monthly-test")
     @ResponseBody
-    public String test() {
-        return "OK - MonthlySalesController reached";
-    }
+    public String test() { return "OK"; }
 
     @GetMapping("/sales-monthly")
     public String monthly(@RequestParam(required = false) String month,
                           HttpSession session, Model model) {
 
-        // セッションチェック
         if (session.getAttribute("authenticated") == null) return "redirect:/login";
 
-        // デフォルト値をすべて先に設定
-        model.addAttribute("selectedMonth", month);
-        model.addAttribute("rows",          new ArrayList<>());
-        model.addAttribute("totalCount",    0);
-        model.addAttribute("totalWage",     0L);
-        model.addAttribute("totalCommission", 0L);
-        model.addAttribute("totalFees",     0L);
-        model.addAttribute("errorMsg",      null);
+        model.addAttribute("selectedMonth",     month);
+        model.addAttribute("rows",              new ArrayList<>());
+        model.addAttribute("totalCount",        0);
+        model.addAttribute("totalWageStr",      "0");
+        model.addAttribute("totalCommissionStr","0");
+        model.addAttribute("totalFeesStr",      "0");
+        model.addAttribute("errorMsg",          null);
 
-        if (month == null || month.isBlank()) {
-            return "sales-monthly";
-        }
+        if (month == null || month.isBlank()) return "sales-monthly";
 
         try {
-            // ① 人物マップ
             Map<Long, String> personMap = new HashMap<>();
             StreamSupport.stream(personRepository.findAll().spliterator(), false)
                 .forEach(p -> personMap.put(p.getId(),
                     p.getLastNameKanji() + " " + p.getFirstNameKanji()));
 
-            // ② 求人者マップ
             Map<Long, String> customerMap = new HashMap<>();
             StreamSupport.stream(customerRepository.findAll().spliterator(), false)
                 .forEach(c -> customerMap.put(c.getId(),
                     c.getLastNameKanji() + " " + c.getFirstNameKanji()));
 
-            // ③ salesId→personId マップ
             Map<Long, Long> salesPersonMap = new HashMap<>();
             StreamSupport.stream(salesRepository.findAll().spliterator(), false)
                 .forEach(s -> salesPersonMap.put(s.getId(), s.getPersonId()));
 
-            // ④ 月範囲
             YearMonth ym        = YearMonth.parse(month);
             LocalDate startDate = ym.atDay(1);
             LocalDate endDate   = ym.atEndOfMonth();
 
-            // ⑤ 全detail取得してJavaでフィルタ
             List<MonthlyRow> rows = new ArrayList<>();
             long totalWage = 0, totalCommission = 0, totalFees = 0;
 
@@ -91,19 +81,30 @@ public class MonthlySalesController {
                              || isInMonth(d.getWorkEndDate(),      startDate, endDate);
                 if (!match) continue;
 
-                MonthlyRow row    = new MonthlyRow();
-                row.detail        = d;
-                Long pid          = salesPersonMap.get(d.getSalesId());
-                row.personName    = pid != null ? personMap.getOrDefault(pid,   "不明") : "不明";
-                row.customerName  = d.getCustomerId() != null
+                MonthlyRow row   = new MonthlyRow();
+                row.detail       = d;
+                Long pid         = salesPersonMap.get(d.getSalesId());
+                row.personName   = pid != null ? personMap.getOrDefault(pid, "不明") : "不明";
+                row.customerName = d.getCustomerId() != null
                         ? customerMap.getOrDefault(d.getCustomerId(), "不明") : "-";
 
+                // 日給合計
+                long daily = 0;
                 if (d.getDailyWages() != null && !d.getDailyWages().isBlank()) {
                     for (String w : d.getDailyWages().split(",")) {
-                        try { row.dailyTotal += Integer.parseInt(w.trim()); }
+                        try { daily += Long.parseLong(w.trim()); }
                         catch (NumberFormatException ignored) {}
                     }
                 }
+
+                // フォーマット済み文字列をJava側で生成（¥記号の問題を回避）
+                row.hourlyWageStr    = fmt(d.getHourlyWage());
+                row.dailyTotalStr    = daily > 0 ? fmt(daily) : "-";
+                row.monthlyTotalStr  = fmt(d.getMonthlyTotal());
+                row.commissionStr    = fmt(d.getCommission());
+                row.receptionFeeStr  = fmt(d.getReceptionFee());
+                row.customerFeeStr   = fmt(d.getCustomerFee());
+
                 totalWage       += d.getMonthlyTotal()  != null ? d.getMonthlyTotal()  : 0;
                 totalCommission += d.getCommission()     != null ? d.getCommission()    : 0;
                 totalFees       += (d.getReceptionFee() != null ? d.getReceptionFee()  : 0)
@@ -119,20 +120,27 @@ public class MonthlySalesController {
                 return da.compareTo(db);
             });
 
-            model.addAttribute("rows",          rows);
-            model.addAttribute("totalCount",    rows.size());
-            model.addAttribute("totalWage",     totalWage);
-            model.addAttribute("totalCommission", totalCommission);
-            model.addAttribute("totalFees",     totalFees);
+            model.addAttribute("rows",              rows);
+            model.addAttribute("totalCount",        rows.size());
+            model.addAttribute("totalWageStr",      fmt(totalWage));
+            model.addAttribute("totalCommissionStr",fmt(totalCommission));
+            model.addAttribute("totalFeesStr",      fmt(totalFees));
 
         } catch (Exception e) {
-            // スタックトレースをまるごと画面に出す
             java.io.StringWriter sw = new java.io.StringWriter();
             e.printStackTrace(new java.io.PrintWriter(sw));
             model.addAttribute("errorMsg", sw.toString());
         }
 
         return "sales-monthly";
+    }
+
+    /** 数値を「¥1,234」形式にフォーマット（null → "-"） */
+    private String fmt(Number n) {
+        if (n == null) return "-";
+        long v = n.longValue();
+        if (v == 0) return "-";
+        return "\u00a5" + NumberFormat.getNumberInstance(Locale.JAPAN).format(v);
     }
 
     private boolean isInMonth(LocalDate date, LocalDate start, LocalDate end) {
@@ -146,8 +154,13 @@ public class MonthlySalesController {
 
     public static class MonthlyRow {
         public SalesDetail detail;
-        public String personName   = "";
-        public String customerName = "";
-        public long   dailyTotal   = 0;
+        public String personName      = "";
+        public String customerName    = "";
+        public String hourlyWageStr   = "-";
+        public String dailyTotalStr   = "-";
+        public String monthlyTotalStr = "-";
+        public String commissionStr   = "-";
+        public String receptionFeeStr = "-";
+        public String customerFeeStr  = "-";
     }
 }
