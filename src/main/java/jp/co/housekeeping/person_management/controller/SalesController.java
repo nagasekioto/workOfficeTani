@@ -175,6 +175,18 @@ public class SalesController {
         return String.format("%04d", maxNo + 1);
     }
 
+    // ─── デバッグ：受信パラメータ確認 ──────────────────
+    @PostMapping("/person/sales/debug-params")
+    @ResponseBody
+    public String debugParams(jakarta.servlet.http.HttpServletRequest request, HttpSession session) {
+        if (session.getAttribute("authenticated") == null) return "unauthorized";
+        StringBuilder sb = new StringBuilder("<pre>");
+        request.getParameterMap().forEach((k, v) -> {
+            sb.append(k).append(" = ").append(java.util.Arrays.toString(v)).append("\n");
+        });
+        return sb.append("</pre>").toString();
+    }
+
     // ─── デバッグ：DB内容確認 (/person/sales/debug?personId=1) ──
     @GetMapping("/person/sales/debug")
     @ResponseBody

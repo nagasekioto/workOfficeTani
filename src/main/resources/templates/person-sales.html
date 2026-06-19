@@ -76,7 +76,7 @@
                 <div th:with="d=${existingDetails != null and existingDetails.size() >= 1 ? existingDetails.get(0) : null}">
                     <div class="form-group">
                         <label>求人者</label>
-                        <select name="customerIds[0]" id="customerId1" onchange="onCustomerChange(1)">
+                        <select name="customerIds" id="customerId1" onchange="onCustomerChange(1)">
                             <option value="">-- 選択してください --</option>
                             <option th:each="c : ${customers}" th:value="${c.id}"
                                     th:text="${c.lastNameKanji + ' ' + c.firstNameKanji}"
@@ -84,12 +84,12 @@
                         </select>
                     </div>
                     <div class="form-group"><label>紹介年月日</label>
-                        <input type="date" name="introductionDates[0]" id="introDate1" th:value="${d?.introductionDate}"></div>
+                        <input type="date" name="introductionDates" id="introDate1" th:value="${d?.introductionDate}"></div>
                     <div class="form-row">
                         <div class="form-group"><label>就労開始日</label>
-                            <input type="date" name="workStartDates[0]" id="workStart1" th:value="${d?.workStartDate}" oninput="calcDays(1)"></div>
+                            <input type="date" name="workStartDates" id="workStart1" th:value="${d?.workStartDate}" oninput="calcDays(1)"></div>
                         <div class="form-group"><label>就労終了日</label>
-                            <input type="date" name="workEndDates[0]" id="workEnd1" th:value="${d?.workEndDate}" oninput="calcDays(1)"></div>
+                            <input type="date" name="workEndDates" id="workEnd1" th:value="${d?.workEndDate}" oninput="calcDays(1)"></div>
                     </div>
                     <div id="daysDisplay1" style="font-size:13px;color:#555;margin-bottom:10px;"></div>
                     <div class="form-group"><label>受付料</label>
@@ -97,7 +97,7 @@
                             <div style="display:flex;align-items:center;gap:8px;">
                                 <input type="checkbox" id="recFeeCheck1" th:checked="${d != null and d.receptionFee != null and d.receptionFee > 0}" onchange="toggleReceptionFee(1)">
                                 <label for="recFeeCheck1" style="font-weight:normal;margin:0;">適用する</label>
-                                <input type="hidden" name="receptionFees[0]" id="recFeeVal1" th:value="${d != null and d.receptionFee != null ? d.receptionFee : ''}">
+                                <input type="hidden" name="receptionFees" id="recFeeVal1" th:value="${d != null and d.receptionFee != null ? d.receptionFee : ''}">
                             </div>
                         </div>
                     </div>
@@ -106,21 +106,21 @@
                             <div style="display:flex;align-items:center;gap:8px;">
                                 <input type="checkbox" id="cusFeeCheck1" th:checked="${d != null and d.customerFee != null and d.customerFee > 0}" onchange="toggleCustomerFee(1)">
                                 <label for="cusFeeCheck1" style="font-weight:normal;margin:0;">適用する</label>
-                                <input type="hidden" name="customerFees[0]" id="cusFeeVal1" th:value="${d != null and d.customerFee != null ? d.customerFee : ''}">
+                                <input type="hidden" name="customerFees" id="cusFeeVal1" th:value="${d != null and d.customerFee != null ? d.customerFee : ''}">
                             </div>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label>時給（円）</label>
-                            <input type="number" name="hourlyWages[0]" id="wage1" min="0" oninput="calcTotal(1)" th:value="${d?.hourlyWage}"></div>
+                            <input type="number" name="hourlyWages" id="wage1" min="0" oninput="calcTotal(1)" th:value="${d?.hourlyWage}"></div>
                         <div class="form-group"><label>時給（残業）円</label>
-                            <input type="number" name="hourlyWageOvertimes[0]" id="wageOT1" min="0" th:value="${d?.hourlyWageOvertime}"></div>
+                            <input type="number" name="hourlyWageOvertimes" id="wageOT1" min="0" th:value="${d?.hourlyWageOvertime}"></div>
                     </div>
                     <div class="form-group"><label>勤務時間（時間）</label>
-                        <input type="number" step="0.5" name="workingHoursList[0]" id="hours1" min="0" oninput="calcTotal(1)" th:value="${d?.workingHours}"></div>
+                        <input type="number" step="0.5" name="workingHoursList" id="hours1" min="0" oninput="calcTotal(1)" th:value="${d?.workingHours}"></div>
                     <div class="form-group"><label>日給</label>
                         <div class="daily-wages-area" id="dailyWagesArea1"></div>
-                        <input type="hidden" name="dailyWagesList[0]" id="dailyWagesHidden1" th:value="${d?.dailyWages}">
+                        <input type="hidden" name="dailyWagesList" id="dailyWagesHidden1" th:value="${d?.dailyWages}">
                         <button type="button" class="add-daily-btn" onclick="addDailyWage(1)">＋ 日給を追加</button>
                     </div>
                     <div class="calc-box" id="calcBox1" style="display:none;">
@@ -129,7 +129,7 @@
                         <div class="calc-row total"><span>合計:</span><span id="grandTotal1">¥0</span></div>
                     </div>
                     <div class="form-group" style="margin-top:12px;"><label>備考</label>
-                        <textarea name="remarksList[0]" id="remarks1" th:text="${d?.remarks}"></textarea></div>
+                        <textarea name="remarksList" id="remarks1" th:text="${d?.remarks}"></textarea></div>
                 </div>
             </div>
 
@@ -138,7 +138,7 @@
                 <h3>勤務先 2</h3>
                 <div th:with="d=${existingDetails != null and existingDetails.size() >= 2 ? existingDetails.get(1) : null}">
                     <div class="form-group"><label>求人者</label>
-                        <select name="customerIds[1]" id="customerId2" onchange="onCustomerChange(2)">
+                        <select name="customerIds" id="customerId2" onchange="onCustomerChange(2)">
                             <option value="">-- 選択してください --</option>
                             <option th:each="c : ${customers}" th:value="${c.id}"
                                     th:text="${c.lastNameKanji + ' ' + c.firstNameKanji}"
@@ -146,12 +146,12 @@
                         </select>
                     </div>
                     <div class="form-group"><label>紹介年月日</label>
-                        <input type="date" name="introductionDates[1]" id="introDate2" th:value="${d?.introductionDate}"></div>
+                        <input type="date" name="introductionDates" id="introDate2" th:value="${d?.introductionDate}"></div>
                     <div class="form-row">
                         <div class="form-group"><label>就労開始日</label>
-                            <input type="date" name="workStartDates[1]" id="workStart2" th:value="${d?.workStartDate}" oninput="calcDays(2)"></div>
+                            <input type="date" name="workStartDates" id="workStart2" th:value="${d?.workStartDate}" oninput="calcDays(2)"></div>
                         <div class="form-group"><label>就労終了日</label>
-                            <input type="date" name="workEndDates[1]" id="workEnd2" th:value="${d?.workEndDate}" oninput="calcDays(2)"></div>
+                            <input type="date" name="workEndDates" id="workEnd2" th:value="${d?.workEndDate}" oninput="calcDays(2)"></div>
                     </div>
                     <div id="daysDisplay2" style="font-size:13px;color:#555;margin-bottom:10px;"></div>
                     <div class="form-group"><label>受付料</label>
@@ -159,7 +159,7 @@
                             <div style="display:flex;align-items:center;gap:8px;">
                                 <input type="checkbox" id="recFeeCheck2" th:checked="${d != null and d.receptionFee != null and d.receptionFee > 0}" onchange="toggleReceptionFee(2)">
                                 <label for="recFeeCheck2" style="font-weight:normal;margin:0;">適用する</label>
-                                <input type="hidden" name="receptionFees[1]" id="recFeeVal2" th:value="${d != null and d.receptionFee != null ? d.receptionFee : ''}">
+                                <input type="hidden" name="receptionFees" id="recFeeVal2" th:value="${d != null and d.receptionFee != null ? d.receptionFee : ''}">
                             </div>
                         </div>
                     </div>
@@ -168,21 +168,21 @@
                             <div style="display:flex;align-items:center;gap:8px;">
                                 <input type="checkbox" id="cusFeeCheck2" th:checked="${d != null and d.customerFee != null and d.customerFee > 0}" onchange="toggleCustomerFee(2)">
                                 <label for="cusFeeCheck2" style="font-weight:normal;margin:0;">適用する</label>
-                                <input type="hidden" name="customerFees[1]" id="cusFeeVal2" th:value="${d != null and d.customerFee != null ? d.customerFee : ''}">
+                                <input type="hidden" name="customerFees" id="cusFeeVal2" th:value="${d != null and d.customerFee != null ? d.customerFee : ''}">
                             </div>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label>時給（円）</label>
-                            <input type="number" name="hourlyWages[1]" id="wage2" min="0" oninput="calcTotal(2)" th:value="${d?.hourlyWage}"></div>
+                            <input type="number" name="hourlyWages" id="wage2" min="0" oninput="calcTotal(2)" th:value="${d?.hourlyWage}"></div>
                         <div class="form-group"><label>時給（残業）円</label>
-                            <input type="number" name="hourlyWageOvertimes[1]" id="wageOT2" min="0" th:value="${d?.hourlyWageOvertime}"></div>
+                            <input type="number" name="hourlyWageOvertimes" id="wageOT2" min="0" th:value="${d?.hourlyWageOvertime}"></div>
                     </div>
                     <div class="form-group"><label>勤務時間（時間）</label>
-                        <input type="number" step="0.5" name="workingHoursList[1]" id="hours2" min="0" oninput="calcTotal(2)" th:value="${d?.workingHours}"></div>
+                        <input type="number" step="0.5" name="workingHoursList" id="hours2" min="0" oninput="calcTotal(2)" th:value="${d?.workingHours}"></div>
                     <div class="form-group"><label>日給</label>
                         <div class="daily-wages-area" id="dailyWagesArea2"></div>
-                        <input type="hidden" name="dailyWagesList[1]" id="dailyWagesHidden2" th:value="${d?.dailyWages}">
+                        <input type="hidden" name="dailyWagesList" id="dailyWagesHidden2" th:value="${d?.dailyWages}">
                         <button type="button" class="add-daily-btn" onclick="addDailyWage(2)">＋ 日給を追加</button>
                     </div>
                     <div class="calc-box" id="calcBox2" style="display:none;">
@@ -191,7 +191,7 @@
                         <div class="calc-row total"><span>合計:</span><span id="grandTotal2">¥0</span></div>
                     </div>
                     <div class="form-group" style="margin-top:12px;"><label>備考</label>
-                        <textarea name="remarksList[1]" id="remarks2" th:text="${d?.remarks}"></textarea></div>
+                        <textarea name="remarksList" id="remarks2" th:text="${d?.remarks}"></textarea></div>
                 </div>
             </div>
 
@@ -200,7 +200,7 @@
                 <h3>勤務先 3</h3>
                 <div th:with="d=${existingDetails != null and existingDetails.size() >= 3 ? existingDetails.get(2) : null}">
                     <div class="form-group"><label>求人者</label>
-                        <select name="customerIds[2]" id="customerId3" onchange="onCustomerChange(3)">
+                        <select name="customerIds" id="customerId3" onchange="onCustomerChange(3)">
                             <option value="">-- 選択してください --</option>
                             <option th:each="c : ${customers}" th:value="${c.id}"
                                     th:text="${c.lastNameKanji + ' ' + c.firstNameKanji}"
@@ -208,12 +208,12 @@
                         </select>
                     </div>
                     <div class="form-group"><label>紹介年月日</label>
-                        <input type="date" name="introductionDates[2]" id="introDate3" th:value="${d?.introductionDate}"></div>
+                        <input type="date" name="introductionDates" id="introDate3" th:value="${d?.introductionDate}"></div>
                     <div class="form-row">
                         <div class="form-group"><label>就労開始日</label>
-                            <input type="date" name="workStartDates[2]" id="workStart3" th:value="${d?.workStartDate}" oninput="calcDays(3)"></div>
+                            <input type="date" name="workStartDates" id="workStart3" th:value="${d?.workStartDate}" oninput="calcDays(3)"></div>
                         <div class="form-group"><label>就労終了日</label>
-                            <input type="date" name="workEndDates[2]" id="workEnd3" th:value="${d?.workEndDate}" oninput="calcDays(3)"></div>
+                            <input type="date" name="workEndDates" id="workEnd3" th:value="${d?.workEndDate}" oninput="calcDays(3)"></div>
                     </div>
                     <div id="daysDisplay3" style="font-size:13px;color:#555;margin-bottom:10px;"></div>
                     <div class="form-group"><label>受付料</label>
@@ -221,7 +221,7 @@
                             <div style="display:flex;align-items:center;gap:8px;">
                                 <input type="checkbox" id="recFeeCheck3" th:checked="${d != null and d.receptionFee != null and d.receptionFee > 0}" onchange="toggleReceptionFee(3)">
                                 <label for="recFeeCheck3" style="font-weight:normal;margin:0;">適用する</label>
-                                <input type="hidden" name="receptionFees[2]" id="recFeeVal3" th:value="${d != null and d.receptionFee != null ? d.receptionFee : ''}">
+                                <input type="hidden" name="receptionFees" id="recFeeVal3" th:value="${d != null and d.receptionFee != null ? d.receptionFee : ''}">
                             </div>
                         </div>
                     </div>
@@ -230,21 +230,21 @@
                             <div style="display:flex;align-items:center;gap:8px;">
                                 <input type="checkbox" id="cusFeeCheck3" th:checked="${d != null and d.customerFee != null and d.customerFee > 0}" onchange="toggleCustomerFee(3)">
                                 <label for="cusFeeCheck3" style="font-weight:normal;margin:0;">適用する</label>
-                                <input type="hidden" name="customerFees[2]" id="cusFeeVal3" th:value="${d != null and d.customerFee != null ? d.customerFee : ''}">
+                                <input type="hidden" name="customerFees" id="cusFeeVal3" th:value="${d != null and d.customerFee != null ? d.customerFee : ''}">
                             </div>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label>時給（円）</label>
-                            <input type="number" name="hourlyWages[2]" id="wage3" min="0" oninput="calcTotal(3)" th:value="${d?.hourlyWage}"></div>
+                            <input type="number" name="hourlyWages" id="wage3" min="0" oninput="calcTotal(3)" th:value="${d?.hourlyWage}"></div>
                         <div class="form-group"><label>時給（残業）円</label>
-                            <input type="number" name="hourlyWageOvertimes[2]" id="wageOT3" min="0" th:value="${d?.hourlyWageOvertime}"></div>
+                            <input type="number" name="hourlyWageOvertimes" id="wageOT3" min="0" th:value="${d?.hourlyWageOvertime}"></div>
                     </div>
                     <div class="form-group"><label>勤務時間（時間）</label>
-                        <input type="number" step="0.5" name="workingHoursList[2]" id="hours3" min="0" oninput="calcTotal(3)" th:value="${d?.workingHours}"></div>
+                        <input type="number" step="0.5" name="workingHoursList" id="hours3" min="0" oninput="calcTotal(3)" th:value="${d?.workingHours}"></div>
                     <div class="form-group"><label>日給</label>
                         <div class="daily-wages-area" id="dailyWagesArea3"></div>
-                        <input type="hidden" name="dailyWagesList[2]" id="dailyWagesHidden3" th:value="${d?.dailyWages}">
+                        <input type="hidden" name="dailyWagesList" id="dailyWagesHidden3" th:value="${d?.dailyWages}">
                         <button type="button" class="add-daily-btn" onclick="addDailyWage(3)">＋ 日給を追加</button>
                     </div>
                     <div class="calc-box" id="calcBox3" style="display:none;">
@@ -253,7 +253,7 @@
                         <div class="calc-row total"><span>合計:</span><span id="grandTotal3">¥0</span></div>
                     </div>
                     <div class="form-group" style="margin-top:12px;"><label>備考</label>
-                        <textarea name="remarksList[2]" id="remarks3" th:text="${d?.remarks}"></textarea></div>
+                        <textarea name="remarksList" id="remarks3" th:text="${d?.remarks}"></textarea></div>
                 </div>
             </div>
 
@@ -262,7 +262,7 @@
                 <h3>勤務先 4</h3>
                 <div th:with="d=${existingDetails != null and existingDetails.size() >= 4 ? existingDetails.get(3) : null}">
                     <div class="form-group"><label>求人者</label>
-                        <select name="customerIds[3]" id="customerId4" onchange="onCustomerChange(4)">
+                        <select name="customerIds" id="customerId4" onchange="onCustomerChange(4)">
                             <option value="">-- 選択してください --</option>
                             <option th:each="c : ${customers}" th:value="${c.id}"
                                     th:text="${c.lastNameKanji + ' ' + c.firstNameKanji}"
@@ -270,12 +270,12 @@
                         </select>
                     </div>
                     <div class="form-group"><label>紹介年月日</label>
-                        <input type="date" name="introductionDates[3]" id="introDate4" th:value="${d?.introductionDate}"></div>
+                        <input type="date" name="introductionDates" id="introDate4" th:value="${d?.introductionDate}"></div>
                     <div class="form-row">
                         <div class="form-group"><label>就労開始日</label>
-                            <input type="date" name="workStartDates[3]" id="workStart4" th:value="${d?.workStartDate}" oninput="calcDays(4)"></div>
+                            <input type="date" name="workStartDates" id="workStart4" th:value="${d?.workStartDate}" oninput="calcDays(4)"></div>
                         <div class="form-group"><label>就労終了日</label>
-                            <input type="date" name="workEndDates[3]" id="workEnd4" th:value="${d?.workEndDate}" oninput="calcDays(4)"></div>
+                            <input type="date" name="workEndDates" id="workEnd4" th:value="${d?.workEndDate}" oninput="calcDays(4)"></div>
                     </div>
                     <div id="daysDisplay4" style="font-size:13px;color:#555;margin-bottom:10px;"></div>
                     <div class="form-group"><label>受付料</label>
@@ -283,7 +283,7 @@
                             <div style="display:flex;align-items:center;gap:8px;">
                                 <input type="checkbox" id="recFeeCheck4" th:checked="${d != null and d.receptionFee != null and d.receptionFee > 0}" onchange="toggleReceptionFee(4)">
                                 <label for="recFeeCheck4" style="font-weight:normal;margin:0;">適用する</label>
-                                <input type="hidden" name="receptionFees[3]" id="recFeeVal4" th:value="${d != null and d.receptionFee != null ? d.receptionFee : ''}">
+                                <input type="hidden" name="receptionFees" id="recFeeVal4" th:value="${d != null and d.receptionFee != null ? d.receptionFee : ''}">
                             </div>
                         </div>
                     </div>
@@ -292,21 +292,21 @@
                             <div style="display:flex;align-items:center;gap:8px;">
                                 <input type="checkbox" id="cusFeeCheck4" th:checked="${d != null and d.customerFee != null and d.customerFee > 0}" onchange="toggleCustomerFee(4)">
                                 <label for="cusFeeCheck4" style="font-weight:normal;margin:0;">適用する</label>
-                                <input type="hidden" name="customerFees[3]" id="cusFeeVal4" th:value="${d != null and d.customerFee != null ? d.customerFee : ''}">
+                                <input type="hidden" name="customerFees" id="cusFeeVal4" th:value="${d != null and d.customerFee != null ? d.customerFee : ''}">
                             </div>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label>時給（円）</label>
-                            <input type="number" name="hourlyWages[3]" id="wage4" min="0" oninput="calcTotal(4)" th:value="${d?.hourlyWage}"></div>
+                            <input type="number" name="hourlyWages" id="wage4" min="0" oninput="calcTotal(4)" th:value="${d?.hourlyWage}"></div>
                         <div class="form-group"><label>時給（残業）円</label>
-                            <input type="number" name="hourlyWageOvertimes[3]" id="wageOT4" min="0" th:value="${d?.hourlyWageOvertime}"></div>
+                            <input type="number" name="hourlyWageOvertimes" id="wageOT4" min="0" th:value="${d?.hourlyWageOvertime}"></div>
                     </div>
                     <div class="form-group"><label>勤務時間（時間）</label>
-                        <input type="number" step="0.5" name="workingHoursList[3]" id="hours4" min="0" oninput="calcTotal(4)" th:value="${d?.workingHours}"></div>
+                        <input type="number" step="0.5" name="workingHoursList" id="hours4" min="0" oninput="calcTotal(4)" th:value="${d?.workingHours}"></div>
                     <div class="form-group"><label>日給</label>
                         <div class="daily-wages-area" id="dailyWagesArea4"></div>
-                        <input type="hidden" name="dailyWagesList[3]" id="dailyWagesHidden4" th:value="${d?.dailyWages}">
+                        <input type="hidden" name="dailyWagesList" id="dailyWagesHidden4" th:value="${d?.dailyWages}">
                         <button type="button" class="add-daily-btn" onclick="addDailyWage(4)">＋ 日給を追加</button>
                     </div>
                     <div class="calc-box" id="calcBox4" style="display:none;">
@@ -315,7 +315,7 @@
                         <div class="calc-row total"><span>合計:</span><span id="grandTotal4">¥0</span></div>
                     </div>
                     <div class="form-group" style="margin-top:12px;"><label>備考</label>
-                        <textarea name="remarksList[3]" id="remarks4" th:text="${d?.remarks}"></textarea></div>
+                        <textarea name="remarksList" id="remarks4" th:text="${d?.remarks}"></textarea></div>
                 </div>
             </div>
 
@@ -324,7 +324,7 @@
                 <h3>勤務先 5</h3>
                 <div th:with="d=${existingDetails != null and existingDetails.size() >= 5 ? existingDetails.get(4) : null}">
                     <div class="form-group"><label>求人者</label>
-                        <select name="customerIds[4]" id="customerId5" onchange="onCustomerChange(5)">
+                        <select name="customerIds" id="customerId5" onchange="onCustomerChange(5)">
                             <option value="">-- 選択してください --</option>
                             <option th:each="c : ${customers}" th:value="${c.id}"
                                     th:text="${c.lastNameKanji + ' ' + c.firstNameKanji}"
@@ -332,12 +332,12 @@
                         </select>
                     </div>
                     <div class="form-group"><label>紹介年月日</label>
-                        <input type="date" name="introductionDates[4]" id="introDate5" th:value="${d?.introductionDate}"></div>
+                        <input type="date" name="introductionDates" id="introDate5" th:value="${d?.introductionDate}"></div>
                     <div class="form-row">
                         <div class="form-group"><label>就労開始日</label>
-                            <input type="date" name="workStartDates[4]" id="workStart5" th:value="${d?.workStartDate}" oninput="calcDays(5)"></div>
+                            <input type="date" name="workStartDates" id="workStart5" th:value="${d?.workStartDate}" oninput="calcDays(5)"></div>
                         <div class="form-group"><label>就労終了日</label>
-                            <input type="date" name="workEndDates[4]" id="workEnd5" th:value="${d?.workEndDate}" oninput="calcDays(5)"></div>
+                            <input type="date" name="workEndDates" id="workEnd5" th:value="${d?.workEndDate}" oninput="calcDays(5)"></div>
                     </div>
                     <div id="daysDisplay5" style="font-size:13px;color:#555;margin-bottom:10px;"></div>
                     <div class="form-group"><label>受付料</label>
@@ -345,7 +345,7 @@
                             <div style="display:flex;align-items:center;gap:8px;">
                                 <input type="checkbox" id="recFeeCheck5" th:checked="${d != null and d.receptionFee != null and d.receptionFee > 0}" onchange="toggleReceptionFee(5)">
                                 <label for="recFeeCheck5" style="font-weight:normal;margin:0;">適用する</label>
-                                <input type="hidden" name="receptionFees[4]" id="recFeeVal5" th:value="${d != null and d.receptionFee != null ? d.receptionFee : ''}">
+                                <input type="hidden" name="receptionFees" id="recFeeVal5" th:value="${d != null and d.receptionFee != null ? d.receptionFee : ''}">
                             </div>
                         </div>
                     </div>
@@ -354,21 +354,21 @@
                             <div style="display:flex;align-items:center;gap:8px;">
                                 <input type="checkbox" id="cusFeeCheck5" th:checked="${d != null and d.customerFee != null and d.customerFee > 0}" onchange="toggleCustomerFee(5)">
                                 <label for="cusFeeCheck5" style="font-weight:normal;margin:0;">適用する</label>
-                                <input type="hidden" name="customerFees[4]" id="cusFeeVal5" th:value="${d != null and d.customerFee != null ? d.customerFee : ''}">
+                                <input type="hidden" name="customerFees" id="cusFeeVal5" th:value="${d != null and d.customerFee != null ? d.customerFee : ''}">
                             </div>
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label>時給（円）</label>
-                            <input type="number" name="hourlyWages[4]" id="wage5" min="0" oninput="calcTotal(5)" th:value="${d?.hourlyWage}"></div>
+                            <input type="number" name="hourlyWages" id="wage5" min="0" oninput="calcTotal(5)" th:value="${d?.hourlyWage}"></div>
                         <div class="form-group"><label>時給（残業）円</label>
-                            <input type="number" name="hourlyWageOvertimes[4]" id="wageOT5" min="0" th:value="${d?.hourlyWageOvertime}"></div>
+                            <input type="number" name="hourlyWageOvertimes" id="wageOT5" min="0" th:value="${d?.hourlyWageOvertime}"></div>
                     </div>
                     <div class="form-group"><label>勤務時間（時間）</label>
-                        <input type="number" step="0.5" name="workingHoursList[4]" id="hours5" min="0" oninput="calcTotal(5)" th:value="${d?.workingHours}"></div>
+                        <input type="number" step="0.5" name="workingHoursList" id="hours5" min="0" oninput="calcTotal(5)" th:value="${d?.workingHours}"></div>
                     <div class="form-group"><label>日給</label>
                         <div class="daily-wages-area" id="dailyWagesArea5"></div>
-                        <input type="hidden" name="dailyWagesList[4]" id="dailyWagesHidden5" th:value="${d?.dailyWages}">
+                        <input type="hidden" name="dailyWagesList" id="dailyWagesHidden5" th:value="${d?.dailyWages}">
                         <button type="button" class="add-daily-btn" onclick="addDailyWage(5)">＋ 日給を追加</button>
                     </div>
                     <div class="calc-box" id="calcBox5" style="display:none;">
@@ -377,7 +377,7 @@
                         <div class="calc-row total"><span>合計:</span><span id="grandTotal5">¥0</span></div>
                     </div>
                     <div class="form-group" style="margin-top:12px;"><label>備考</label>
-                        <textarea name="remarksList[4]" id="remarks5" th:text="${d?.remarks}"></textarea></div>
+                        <textarea name="remarksList" id="remarks5" th:text="${d?.remarks}"></textarea></div>
                 </div>
             </div>
 
