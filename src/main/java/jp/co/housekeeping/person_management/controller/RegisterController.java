@@ -37,10 +37,12 @@ import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 
+import jp.co.housekeeping.person_management.model.Customer;
 import jp.co.housekeeping.person_management.model.Person;
 import jp.co.housekeeping.person_management.model.RegisterRecord;
 import jp.co.housekeeping.person_management.model.Sales;
 import jp.co.housekeeping.person_management.model.SalesDetail;
+import jp.co.housekeeping.person_management.repository.CustomerRepository;
 import jp.co.housekeeping.person_management.repository.PersonRepository;
 import jp.co.housekeeping.person_management.repository.RegisterRecordRepository;
 import jp.co.housekeeping.person_management.repository.SalesDetailRepository;
@@ -54,6 +56,7 @@ public class RegisterController {
     @Autowired private RegisterRecordRepository registerRecordRepository;
     @Autowired private SalesRepository salesRepository;
     @Autowired private SalesDetailRepository salesDetailRepository;
+    @Autowired private CustomerRepository customerRepository;
 
     private boolean checkAuth(HttpSession session) {
         return session.getAttribute("authenticated") != null;
@@ -324,13 +327,17 @@ public class RegisterController {
 
         List<RegisterRecord> raw = registerRecordRepository.findByWorkMonth(month);
 
-        // 求職者名マップ
-        Map<Long, String> personMap = new HashMap<>();
-        StreamSupport.stream(personRepository.findAll().spliterator(), false).forEach(p ->
-            personMap.put(p.getId(), p.getLastNameKanji() + " " + p.getFirstNameKanji()));
+        // 求人者名マップを構築：customer_id → 氏名
+        Map<Long, String> customerMap = new HashMap<>();
+        StreamSupport.stream(customerRepository.findAll().spliterator(), false).forEach(c ->
+            customerMap.put(c.getId(), c.getLastNameKanji() + " " + c.getFirstNameKanji()));
+
+        // person_id + work_month → 求人者名 を解決するマップ
+        // sales → sales_details の customer_id を参照
+        Map<Long, String> personToCustomerName = buildPersonToCustomerMap(month, customerMap);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        createFeeLedgerPdf(month, raw, personMap, baos);
+        createFeeLedgerPdf(month, raw, personToCustomerName, baos);
 
         response.setContentType("application/pdf");
         response.setHeader("Content-Disposition", "inline; filename=fee-ledger-" + month + ".pdf");
@@ -339,8 +346,46 @@ public class RegisterController {
         response.getOutputStream().flush();
     }
 
+    /**
+     * person_id をキーに、その求職者が該当月に担当した求人者名を返すマップを構築する。
+     * 同一月・同一求職者に複数の求人者が存在する場合は「, 」で連結する。
+     */
+    private Map<Long, String> buildPersonToCustomerMap(String workMonth, Map<Long, String> customerMap) {
+        java.time.YearMonth ym;
+        try { ym = java.time.YearMonth.parse(workMonth); }
+        catch (Exception e) { return new HashMap<>(); }
+
+        LocalDate monthStart = ym.atDay(1);
+        LocalDate monthEnd   = ym.atEndOfMonth();
+
+        // person_id → 求人者名セット
+        Map<Long, java.util.LinkedHashSet<String>> result = new HashMap<>();
+
+        Iterable<Sales> allSales = salesRepository.findAll();
+        for (Sales s : allSales) {
+            List<SalesDetail> details = salesDetailRepository.findBySalesId(s.getId());
+            for (SalesDetail d : details) {
+                // 就労終了月（なければ開始月）で対象月を判定
+                LocalDate endDate = d.getWorkEndDate() != null ? d.getWorkEndDate() : d.getWorkStartDate();
+                if (endDate == null) continue;
+                if (!java.time.YearMonth.from(endDate).equals(ym)) continue;
+
+                Long personId = s.getPersonId();
+                String customerName = d.getCustomerId() != null
+                    ? customerMap.getOrDefault(d.getCustomerId(), "不明")
+                    : "不明";
+
+                result.computeIfAbsent(personId, k -> new java.util.LinkedHashSet<>()).add(customerName);
+            }
+        }
+
+        Map<Long, String> personToCustomer = new HashMap<>();
+        result.forEach((pid, names) -> personToCustomer.put(pid, String.join(", ", names)));
+        return personToCustomer;
+    }
+
     private void createFeeLedgerPdf(String month, List<RegisterRecord> records,
-                                     Map<Long, String> personMap,
+                                     Map<Long, String> payerMap,
                                      ByteArrayOutputStream baos) throws DocumentException, IOException {
         Document doc = new Document(PageSize.A4.rotate());
         PdfWriter.getInstance(doc, baos);
@@ -384,7 +429,7 @@ public class RegisterController {
             String displayDate = parts[0] + "/" + parts[1];
 
             addLedgerCell(table, displayDate, normalFont, Element.ALIGN_CENTER);
-            addLedgerCell(table, personMap.getOrDefault(r.getPersonId(), ""), normalFont, Element.ALIGN_LEFT);
+            addLedgerCell(table, payerMap.getOrDefault(r.getPersonId(), ""), normalFont, Element.ALIGN_LEFT);
             addLedgerCell(table, r.getSalary() != null ? String.format("%,d", r.getSalary()) : "0", normalFont, Element.ALIGN_RIGHT);
             addLedgerCell(table, r.getFee() != null ? String.format("%,d", r.getFee()) : "0", boldFont, Element.ALIGN_RIGHT);
             addLedgerCell(table, "", normalFont, Element.ALIGN_RIGHT); // ※2
