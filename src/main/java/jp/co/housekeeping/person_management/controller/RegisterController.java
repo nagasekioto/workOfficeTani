@@ -332,12 +332,11 @@ public class RegisterController {
         StreamSupport.stream(customerRepository.findAll().spliterator(), false).forEach(c ->
             customerMap.put(c.getId(), c.getLastNameKanji() + " " + c.getFirstNameKanji()));
 
-        // person_id + work_month → 求人者名 を解決するマップ
-        // sales → sales_details の customer_id を参照
-        Map<Long, String> personToCustomerName = buildPersonToCustomerMap(month, customerMap);
+        // person_id → 求人者名リスト（求職者1人が複数の求人者で働いた場合に対応）
+        Map<Long, List<String>> personToCustomerNames = buildPersonToCustomerListMap(month, customerMap);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        createFeeLedgerPdf(month, raw, personToCustomerName, baos);
+        createFeeLedgerPdf(month, raw, personToCustomerNames, baos);
 
         response.setContentType("application/pdf");
         response.setHeader("Content-Disposition", "inline; filename=fee-ledger-" + month + ".pdf");
@@ -347,25 +346,21 @@ public class RegisterController {
     }
 
     /**
-     * person_id をキーに、その求職者が該当月に担当した求人者名を返すマップを構築する。
-     * 同一月・同一求職者に複数の求人者が存在する場合は「, 」で連結する。
+     * person_id をキーに、その求職者が該当月に担当した求人者名リストを返すマップ。
+     * 求人者ごとに別行で出力するためリストのまま保持する。
      */
-    private Map<Long, String> buildPersonToCustomerMap(String workMonth, Map<Long, String> customerMap) {
+    private Map<Long, List<String>> buildPersonToCustomerListMap(String workMonth, Map<Long, String> customerMap) {
         java.time.YearMonth ym;
         try { ym = java.time.YearMonth.parse(workMonth); }
         catch (Exception e) { return new HashMap<>(); }
 
-        LocalDate monthStart = ym.atDay(1);
-        LocalDate monthEnd   = ym.atEndOfMonth();
-
-        // person_id → 求人者名セット
+        // person_id → 求人者名リスト（順序保持・重複除去）
         Map<Long, java.util.LinkedHashSet<String>> result = new HashMap<>();
 
         Iterable<Sales> allSales = salesRepository.findAll();
         for (Sales s : allSales) {
             List<SalesDetail> details = salesDetailRepository.findBySalesId(s.getId());
             for (SalesDetail d : details) {
-                // 就労終了月（なければ開始月）で対象月を判定
                 LocalDate endDate = d.getWorkEndDate() != null ? d.getWorkEndDate() : d.getWorkStartDate();
                 if (endDate == null) continue;
                 if (!java.time.YearMonth.from(endDate).equals(ym)) continue;
@@ -374,18 +369,17 @@ public class RegisterController {
                 String customerName = d.getCustomerId() != null
                     ? customerMap.getOrDefault(d.getCustomerId(), "不明")
                     : "不明";
-
                 result.computeIfAbsent(personId, k -> new java.util.LinkedHashSet<>()).add(customerName);
             }
         }
 
-        Map<Long, String> personToCustomer = new HashMap<>();
-        result.forEach((pid, names) -> personToCustomer.put(pid, String.join(", ", names)));
-        return personToCustomer;
+        Map<Long, List<String>> out = new HashMap<>();
+        result.forEach((pid, names) -> out.put(pid, new ArrayList<>(names)));
+        return out;
     }
 
     private void createFeeLedgerPdf(String month, List<RegisterRecord> records,
-                                     Map<Long, String> payerMap,
+                                     Map<Long, List<String>> payerListMap,
                                      ByteArrayOutputStream baos) throws DocumentException, IOException {
         Document doc = new Document(PageSize.A4.rotate());
         PdfWriter.getInstance(doc, baos);
@@ -419,8 +413,7 @@ public class RegisterController {
             table.addCell(c);
         }
 
-        // データ行（月ごとにグループ）
-        String currentMonth = "";
+        // データ行：求職者1人が複数の求人者で働いた場合は求人者ごとに行を分ける
         long pageSalary = 0, pageFee = 0;
 
         for (RegisterRecord r : records) {
@@ -428,19 +421,36 @@ public class RegisterController {
             String[] parts = wm.split("-");
             String displayDate = parts[0] + "/" + parts[1];
 
-            addLedgerCell(table, displayDate, normalFont, Element.ALIGN_CENTER);
-            addLedgerCell(table, payerMap.getOrDefault(r.getPersonId(), ""), normalFont, Element.ALIGN_LEFT);
-            addLedgerCell(table, r.getSalary() != null ? String.format("%,d", r.getSalary()) : "0", normalFont, Element.ALIGN_RIGHT);
-            addLedgerCell(table, r.getFee() != null ? String.format("%,d", r.getFee()) : "0", boldFont, Element.ALIGN_RIGHT);
-            addLedgerCell(table, "", normalFont, Element.ALIGN_RIGHT); // ※2
-            addLedgerCell(table, "", normalFont, Element.ALIGN_RIGHT); // 求人受付
-            addLedgerCell(table, "15%", normalFont, Element.ALIGN_CENTER);
-            addLedgerCell(table, r.getMemo() != null ? r.getMemo() : "", normalFont, Element.ALIGN_LEFT);
-            addLedgerCell(table, "0", normalFont, Element.ALIGN_RIGHT);
-            addLedgerCell(table, "0", normalFont, Element.ALIGN_RIGHT);
+            List<String> customerNames = payerListMap.getOrDefault(r.getPersonId(), new ArrayList<>());
+            if (customerNames.isEmpty()) customerNames = List.of("");
 
-            pageSalary += r.getSalary() != null ? r.getSalary() : 0;
-            pageFee += r.getFee() != null ? r.getFee() : 0;
+            long recSalary = r.getSalary() != null ? r.getSalary() : 0;
+            long recFee    = r.getFee()    != null ? r.getFee()    : 0;
+            int  nameCount = customerNames.size();
+
+            // 求人者が複数の場合、給料・手数料を均等分割して各行に出力
+            for (int ni = 0; ni < nameCount; ni++) {
+                long rowSalary = (ni == nameCount - 1)
+                    ? recSalary - (recSalary / nameCount) * ni   // 端数は最終行
+                    : recSalary / nameCount;
+                long rowFee = (ni == nameCount - 1)
+                    ? recFee - (recFee / nameCount) * ni
+                    : recFee / nameCount;
+
+                addLedgerCell(table, ni == 0 ? displayDate : "", normalFont, Element.ALIGN_CENTER);
+                addLedgerCell(table, customerNames.get(ni), normalFont, Element.ALIGN_LEFT);
+                addLedgerCell(table, String.format("%,d", rowSalary), normalFont, Element.ALIGN_RIGHT);
+                addLedgerCell(table, String.format("%,d", rowFee), boldFont, Element.ALIGN_RIGHT);
+                addLedgerCell(table, "", normalFont, Element.ALIGN_RIGHT); // ※2
+                addLedgerCell(table, "", normalFont, Element.ALIGN_RIGHT); // 求人受付
+                addLedgerCell(table, "15%", normalFont, Element.ALIGN_CENTER);
+                addLedgerCell(table, ni == 0 ? (r.getMemo() != null ? r.getMemo() : "") : "", normalFont, Element.ALIGN_LEFT);
+                addLedgerCell(table, "0", normalFont, Element.ALIGN_RIGHT);
+                addLedgerCell(table, "0", normalFont, Element.ALIGN_RIGHT);
+            }
+
+            pageSalary += recSalary;
+            pageFee    += recFee;
         }
 
         // ページ計

@@ -13,12 +13,11 @@
         th { background: #4CAF50; color: white; padding: 10px; text-align: left; }
         td { padding: 10px; border-bottom: 1px solid #e0e0e0; vertical-align: middle; }
         tr:hover { background: #e8f5e9; }
-        .print-btn { background: #FF9800; color: white; border: none; border-radius: 4px; padding: 6px 14px; cursor: pointer; font-size: 13px; }
-        .print-btn:hover { background: #F57C00; }
-        .pdf-btn { background: #4CAF50; color: white; border: none; border-radius: 4px; padding: 6px 14px; cursor: pointer; font-size: 13px; text-decoration: none; display: inline-block; margin-left: 5px; }
+        .pdf-btn { background: #4CAF50; color: white; border: none; border-radius: 4px; padding: 6px 14px; cursor: pointer; font-size: 13px; text-decoration: none; display: inline-block; }
         .badge { padding: 2px 8px; border-radius: 10px; font-size: 12px; }
         .badge-done { background: #e8f5e9; color: #2e7d32; }
         .badge-pending { background: #fff8e1; color: #f57f17; }
+        .receipt-no { font-weight: bold; color: #2e7d32; }
         .empty { text-align: center; padding: 40px; color: #999; }
         .info-box { background: #e8f5e9; padding: 12px 16px; border-radius: 5px; margin-bottom: 15px; font-size: 14px; color: #1b5e20; }
     </style>
@@ -30,7 +29,7 @@
 </div>
 <div class="container">
     <div class="info-box">
-        &#9432; 受付料（710円）が登録されている求職者の一覧です。印刷ボタンを押すと発行済みフラグが立ちます。
+        &#9432; 受付料（710円）が登録されている求職者の一覧です。PDF出力すると領収番号が自動採番されます。
     </div>
 
     <table th:if="${not #lists.isEmpty(items)}">
@@ -39,7 +38,7 @@
                 <th>求職者</th>
                 <th>紹介年月日</th>
                 <th>受付手数料</th>
-                <th>領収書No</th>
+                <th>領収番号</th>
                 <th>状態</th>
                 <th>操作</th>
             </tr>
@@ -49,16 +48,16 @@
                 <td th:text="${item.person.lastNameKanji + ' ' + item.person.firstNameKanji}"></td>
                 <td th:text="${item.detail.introductionDate}"></td>
                 <td th:text="${item.detail.receptionFee != null ? item.detail.receptionFee + '円' : '-'}"></td>
-                <td th:text="${item.detail.receiptNo}"></td>
                 <td>
-                    <span th:if="${item.detail.receiptNo != null}" class="badge badge-done">発行済</span>
-                    <span th:unless="${item.detail.receiptNo != null}" class="badge badge-pending">未発行</span>
+                    <span th:if="${item.issued}" class="receipt-no"
+                          th:text="${#strings.toString(item.receiptNumber) != null ? String.format('%04d', item.receiptNumber) : '-'}"></span>
+                    <span th:unless="${item.issued}">未採番</span>
                 </td>
                 <td>
-                    <form th:action="@{/receipt-menu/jobseeker-receipt/print}" method="post" style="display:inline;">
-                        <input type="hidden" name="detailId" th:value="${item.detail.id}">
-                        <button type="submit" class="print-btn">&#128438; 発行済みにする</button>
-                    </form>
+                    <span th:if="${item.issued}" class="badge badge-done">発行済</span>
+                    <span th:unless="${item.issued}" class="badge badge-pending">未発行</span>
+                </td>
+                <td>
                     <a th:href="@{/receipt-menu/jobseeker-receipt/pdf(detailId=${item.detail.id})}" target="_blank" class="pdf-btn">&#128196; PDF出力</a>
                 </td>
             </tr>

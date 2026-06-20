@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>発行済み領収書一覧 - 家政婦紹介事務所</title>
+    <style>
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; color: #333; }
+        .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .filter-row { display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px; }
+        .filter-row label { font-weight: bold; color: #555; font-size: 14px; display: block; margin-bottom: 4px; }
+        .filter-row input[type="month"] { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .filter-btn { background: #7B1FA2; color: white; border: none; border-radius: 4px; padding: 9px 20px; cursor: pointer; font-size: 14px; }
+        .filter-btn:hover { background: #4A148C; }
+        .month-label { font-size: 18px; font-weight: bold; color: #4A148C; margin-bottom: 16px; }
+        .summary-box { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
+        .summary-card { background: #f3e5f5; border-radius: 8px; padding: 15px; text-align: center; }
+        .summary-card .label { font-size: 13px; color: #7b1fa2; margin-bottom: 5px; }
+        .summary-card .value { font-size: 22px; font-weight: bold; color: #4a148c; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { background: #7B1FA2; color: white; padding: 10px; text-align: left; }
+        td { padding: 9px 10px; border-bottom: 1px solid #e0e0e0; vertical-align: middle; }
+        tr:hover { background: #f3e5f5; }
+        .total-row { background: #e1bee7; font-weight: bold; }
+        .total-row td { border-top: 2px solid #7B1FA2; }
+        .badge-customer { background: #e3f2fd; color: #1565c0; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+        .badge-jobseeker { background: #e8f5e9; color: #2e7d32; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+        .empty { text-align: center; padding: 40px; color: #999; }
+        .pdf-link { color: #7B1FA2; font-size: 12px; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>&#128203; 発行済み領収書一覧（1-7-1 / 1-7-2）</h1>
+    <a href="/receipt-menu" class="back-btn">&#8592; 戻る</a>
+</div>
+<div class="container">
+    <form method="get" action="/receipt-menu/issued-list">
+        <div class="filter-row">
+            <div>
+                <label for="month">表示月</label>
+                <input type="month" id="month" name="month" th:value="${selectedMonth}">
+            </div>
+            <button type="submit" class="filter-btn">&#128269; 表示</button>
+        </div>
+    </form>
+
+    <div th:if="${selectedMonth != null}">
+        <div class="month-label" th:text="${selectedMonth + ' の発行済み領収書'}"></div>
+
+        <div class="summary-box">
+            <div class="summary-card">
+                <div class="label">発行件数</div>
+                <div class="value" th:text="${totalCount + '件'}"></div>
+            </div>
+            <div class="summary-card">
+                <div class="label">合計金額</div>
+                <div class="value" th:text="${totalAmountStr}"></div>
+            </div>
+        </div>
+
+        <table th:if="${not #lists.isEmpty(rows)}">
+            <thead>
+                <tr>
+                    <th>領収番号</th>
+                    <th>種別</th>
+                    <th>相手先</th>
+                    <th>金額</th>
+                    <th>発行日時</th>
+                    <th>PDF再発行</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="r : ${rows}">
+                    <td th:text="${#strings.toString(r.receiptNumber) != null ? String.format('%04d', r.receiptNumber) : '-'}"></td>
+                    <td>
+                        <span th:if="${r.receiptType.contains('1-7-1')}" class="badge-customer" th:text="${r.receiptType}"></span>
+                        <span th:unless="${r.receiptType.contains('1-7-1')}" class="badge-jobseeker" th:text="${r.receiptType}"></span>
+                    </td>
+                    <td th:text="${r.partyName}"></td>
+                    <td th:text="${r.amountStr}"></td>
+                    <td th:text="${r.issuedAt != null ? #temporals.format(r.issuedAt, 'MM/dd HH:mm') : '-'}"></td>
+                    <td>
+                        <a th:if="${r.receiptType.contains('1-7-1')}"
+                           th:href="@{/receipt-menu/customer-receipt/pdf(detailId=${r.salesDetailId})}"
+                           target="_blank" class="pdf-link">&#128196; PDF</a>
+                        <a th:unless="${r.receiptType.contains('1-7-1')}"
+                           th:href="@{/receipt-menu/jobseeker-receipt/pdf(detailId=${r.salesDetailId})}"
+                           target="_blank" class="pdf-link">&#128196; PDF</a>
+                    </td>
+                </tr>
+                <tr class="total-row">
+                    <td colspan="3">合計</td>
+                    <td th:text="${totalAmountStr}"></td>
+                    <td colspan="2"></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="empty" th:if="${#lists.isEmpty(rows)}">
+            <span th:text="${selectedMonth + ' に発行された領収書はありません。'}"></span>
+        </div>
+    </div>
+</div>
+</body>
+</html>
