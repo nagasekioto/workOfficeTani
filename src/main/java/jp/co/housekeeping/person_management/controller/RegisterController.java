@@ -2,7 +2,9 @@ package jp.co.housekeeping.person_management.controller;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,8 +39,12 @@ import com.itextpdf.text.pdf.PdfWriter;
 
 import jp.co.housekeeping.person_management.model.Person;
 import jp.co.housekeeping.person_management.model.RegisterRecord;
+import jp.co.housekeeping.person_management.model.Sales;
+import jp.co.housekeeping.person_management.model.SalesDetail;
 import jp.co.housekeeping.person_management.repository.PersonRepository;
 import jp.co.housekeeping.person_management.repository.RegisterRecordRepository;
+import jp.co.housekeeping.person_management.repository.SalesDetailRepository;
+import jp.co.housekeeping.person_management.repository.SalesRepository;
 
 @Controller
 @RequestMapping("/register")
@@ -46,6 +52,8 @@ public class RegisterController {
 
     @Autowired private PersonRepository personRepository;
     @Autowired private RegisterRecordRepository registerRecordRepository;
+    @Autowired private SalesRepository salesRepository;
+    @Autowired private SalesDetailRepository salesDetailRepository;
 
     private boolean checkAuth(HttpSession session) {
         return session.getAttribute("authenticated") != null;
@@ -91,50 +99,169 @@ public class RegisterController {
         return "redirect:/register/list";
     }
 
+    // ─── 修正（編集画面）───────────────────────────────
+    @GetMapping("/calc/edit")
+    public String editForm(@RequestParam Long id, @RequestParam(required = false) String month,
+                           HttpSession session, Model model) {
+        if (!checkAuth(session)) return "redirect:/login";
+        RegisterRecord record = registerRecordRepository.findById(id).orElse(null);
+        if (record == null) return "redirect:/register/list";
+        model.addAttribute("record", record);
+        model.addAttribute("selectedMonth", month);
+        model.addAttribute("persons", personRepository.findAll());
+        return "register-edit";
+    }
+
+    @PostMapping("/calc/edit")
+    public String editSave(@RequestParam Long id,
+                           @RequestParam Integer salary,
+                           @RequestParam Integer fee,
+                           @RequestParam(required = false) String memo,
+                           @RequestParam(required = false) String month,
+                           HttpSession session) {
+        if (!checkAuth(session)) return "redirect:/login";
+        registerRecordRepository.findById(id).ifPresent(r -> {
+            r.setSalary(salary);
+            r.setFee(fee);
+            r.setMemo(memo);
+            registerRecordRepository.save(r);
+        });
+        if (month != null && !month.isBlank()) {
+            return "redirect:/register/list?month=" + month;
+        }
+        return "redirect:/register/list";
+    }
+
     // ─── 1-8-2 レジ一覧 ────────────────────────────────
     @GetMapping("/list")
     public String list(@RequestParam(required = false) String month,
                        HttpSession session, Model model) {
         if (!checkAuth(session)) return "redirect:/login";
 
+        // monthパラメータがない場合は現在月にリダイレクト
+        if (month == null || month.isBlank()) {
+            String currentMonth = LocalDateTime.now().getYear() + "-"
+                + String.format("%02d", LocalDateTime.now().getMonthValue());
+            return "redirect:/register/list?month=" + currentMonth;
+        }
+
         // 求職者名マップ
         Map<Long, String> personMap = new HashMap<>();
         StreamSupport.stream(personRepository.findAll().spliterator(), false).forEach(p ->
             personMap.put(p.getId(), p.getLastNameKanji() + " " + p.getFirstNameKanji()));
 
-        if (month != null && !month.isBlank()) {
-            List<RegisterRecord> raw = registerRecordRepository.findByWorkMonth(month);
-            List<RegisterRow> records = new ArrayList<>();
-            long totalSalary = 0, totalFee = 0;
-            for (RegisterRecord r : raw) {
-                RegisterRow row = new RegisterRow();
-                row.id = r.getId();
-                row.personName = personMap.getOrDefault(r.getPersonId(), "不明");
-                row.workMonth = r.getWorkMonth();
-                row.salary = r.getSalary() != null ? r.getSalary() : 0;
-                row.fee = r.getFee() != null ? r.getFee() : 0;
-                row.salaryStr = fmtYen(row.salary);
-                row.feeStr    = fmtYen(row.fee);
-                row.memo = r.getMemo();
-                row.createdAt = r.getCreatedAt();
-                records.add(row);
-                totalSalary += row.salary;
-                totalFee += row.fee;
-            }
-            model.addAttribute("records", records);
-            model.addAttribute("totalSalary", totalSalary);
-            model.addAttribute("totalFee", totalFee);
-            model.addAttribute("totalSalaryStr", fmtYen(totalSalary));
-            model.addAttribute("totalFeeStr",    fmtYen(totalFee));
-            model.addAttribute("selectedMonth", month);
-        } else {
-            model.addAttribute("records", new ArrayList<>());
-            model.addAttribute("totalSalary", 0);
-            model.addAttribute("totalFee", 0);
-            model.addAttribute("selectedMonth", null);
+        List<RegisterRecord> raw = registerRecordRepository.findByWorkMonth(month);
+        List<RegisterRow> records = new ArrayList<>();
+        long totalSalary = 0, totalFee = 0;
+        for (RegisterRecord r : raw) {
+            RegisterRow row = new RegisterRow();
+            row.id = r.getId();
+            row.personId = r.getPersonId();
+            row.personName = personMap.getOrDefault(r.getPersonId(), "不明");
+            row.workMonth = r.getWorkMonth();
+            row.salary = r.getSalary() != null ? r.getSalary() : 0;
+            row.fee = r.getFee() != null ? r.getFee() : 0;
+            row.salaryStr = fmtYen(row.salary);
+            row.feeStr    = fmtYen(row.fee);
+            row.memo = r.getMemo();
+            row.createdAt = r.getCreatedAt();
+
+            // 稼働台帳との照合
+            MatchResult match = checkMatch(r.getPersonId(), month, row.salary, row.fee);
+            row.matchStatus = match.status;
+            row.matchDetail = match.detail;
+            row.ledgerSalary = match.ledgerSalary;
+            row.ledgerFee = match.ledgerFee;
+            row.ledgerSalaryStr = match.ledgerSalary >= 0 ? fmtYen(match.ledgerSalary) : "-";
+            row.ledgerFeeStr = match.ledgerFee >= 0 ? fmtYen(match.ledgerFee) : "-";
+
+            records.add(row);
+            totalSalary += row.salary;
+            totalFee += row.fee;
         }
+        model.addAttribute("records", records);
+        model.addAttribute("totalSalary", totalSalary);
+        model.addAttribute("totalFee", totalFee);
+        model.addAttribute("totalSalaryStr", fmtYen(totalSalary));
+        model.addAttribute("totalFeeStr",    fmtYen(totalFee));
+        model.addAttribute("selectedMonth", month);
 
         return "register-list";
+    }
+
+    /** 稼働台帳との照合ロジック */
+    private MatchResult checkMatch(Long personId, String workMonth, long regSalary, long regFee) {
+        MatchResult result = new MatchResult();
+        result.ledgerSalary = -1;
+        result.ledgerFee = -1;
+        result.status = "unknown";
+        result.detail = "稼働台帳データなし";
+
+        if (personId == null) return result;
+
+        // sales → sales_details を取得し、workMonthに対応するものを探す
+        List<Sales> salesList = salesRepository.findByPersonId(personId);
+        // workMonth: "2026-06" → 就労期間が該当月に含まれるdetailを集計
+        YearMonth ym;
+        try { ym = YearMonth.parse(workMonth); }
+        catch (Exception e) { return result; }
+
+        LocalDate monthStart = ym.atDay(1);
+        LocalDate monthEnd   = ym.atEndOfMonth();
+
+        long totalLedgerSalary = 0;
+        long totalLedgerFee = 0;
+        boolean found = false;
+
+        for (Sales s : salesList) {
+            List<SalesDetail> details = salesDetailRepository.findBySalesId(s.getId());
+            for (SalesDetail d : details) {
+                // 就労終了月が対象月に含まれるかチェック
+                LocalDate endDate = d.getWorkEndDate();
+                if (endDate == null) endDate = d.getWorkStartDate();
+                if (endDate == null) continue;
+
+                YearMonth detailYm = YearMonth.from(endDate);
+                if (!detailYm.equals(ym)) continue;
+
+                found = true;
+                long wageTotal = d.getMonthlyTotal() != null ? d.getMonthlyTotal() : 0;
+                long fee15 = Math.round(wageTotal * 0.15);
+                totalLedgerSalary += wageTotal;
+                totalLedgerFee += fee15;
+            }
+        }
+
+        if (!found) {
+            result.status = "unknown";
+            result.detail = "稼働台帳に該当月のデータなし";
+            return result;
+        }
+
+        result.ledgerSalary = totalLedgerSalary;
+        result.ledgerFee = totalLedgerFee;
+
+        boolean salaryMatch = (regSalary == totalLedgerSalary);
+        boolean feeMatch = Math.abs(regFee - totalLedgerFee) <= 1; // 丸め誤差許容
+
+        if (salaryMatch && feeMatch) {
+            result.status = "ok";
+            result.detail = "一致";
+        } else {
+            result.status = "ng";
+            StringBuilder sb = new StringBuilder("不一致：");
+            if (!salaryMatch) sb.append("給料 レジ=").append(fmtYen(regSalary)).append(" 台帳=").append(fmtYen(totalLedgerSalary)).append(" ");
+            if (!feeMatch) sb.append("手数料 レジ=").append(fmtYen(regFee)).append(" 台帳=").append(fmtYen(totalLedgerFee));
+            result.detail = sb.toString().trim();
+        }
+        return result;
+    }
+
+    static class MatchResult {
+        String status;  // "ok", "ng", "unknown"
+        String detail;
+        long ledgerSalary;
+        long ledgerFee;
     }
 
     // ─── 1-8-3 手数料管理簿 ─────────────────────────────
@@ -345,6 +472,7 @@ public class RegisterController {
     // ─── 内部クラス ────────────────────────────────────
     public static class RegisterRow {
         public Long id;
+        public Long personId;
         public String personName;
         public String workMonth;
         public long salary;
@@ -353,6 +481,13 @@ public class RegisterController {
         public String feeStr;
         public String memo;
         public LocalDateTime createdAt;
+        // 照合フィールド
+        public String matchStatus;   // "ok", "ng", "unknown"
+        public String matchDetail;
+        public long ledgerSalary;
+        public long ledgerFee;
+        public String ledgerSalaryStr;
+        public String ledgerFeeStr;
     }
 
     public static class MonthlyRow {

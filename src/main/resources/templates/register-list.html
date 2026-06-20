@@ -8,22 +8,30 @@
         .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         h1 { margin: 0; color: #333; }
         .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
-        .container { max-width: 1100px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .filter-row { display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px; }
         .filter-row label { font-weight: bold; color: #555; font-size: 14px; display: block; margin-bottom: 4px; }
         .filter-row input[type="month"] { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
         .filter-btn { background: #FF9800; color: white; border: none; border-radius: 4px; padding: 9px 20px; cursor: pointer; font-size: 14px; }
         .filter-btn:hover { background: #F57C00; }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        th { background: #FF9800; color: white; padding: 10px; text-align: left; }
-        td { padding: 10px; border-bottom: 1px solid #e0e0e0; vertical-align: middle; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #FF9800; color: white; padding: 10px; text-align: left; white-space: nowrap; }
+        td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; vertical-align: middle; }
         tr:hover { background: #fff8e1; }
         .total-row { background: #fff3e0; font-weight: bold; font-size: 15px; }
         .total-row td { border-top: 2px solid #FF9800; }
         .empty { text-align: center; padding: 40px; color: #999; }
         .delete-btn { background: #f44336; color: white; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
         .delete-btn:hover { background: #c62828; }
+        .edit-btn { background: #4CAF50; color: white; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 12px; text-decoration: none; display: inline-block; }
+        .edit-btn:hover { background: #388E3C; }
         .month-label { font-size: 18px; font-weight: bold; color: #e65100; margin-bottom: 10px; }
+        /* 照合バッジ */
+        .match-ok  { display: inline-block; background: #4CAF50; color: white; border-radius: 12px; padding: 2px 10px; font-size: 12px; font-weight: bold; }
+        .match-ng  { display: inline-block; background: #f44336; color: white; border-radius: 12px; padding: 2px 10px; font-size: 12px; font-weight: bold; }
+        .match-unk { display: inline-block; background: #9E9E9E; color: white; border-radius: 12px; padding: 2px 10px; font-size: 12px; }
+        .match-detail { font-size: 11px; color: #555; margin-top: 3px; }
+        .ledger-val { font-size: 11px; color: #777; }
     </style>
 </head>
 <body>
@@ -53,6 +61,7 @@
                     <th>対象月</th>
                     <th>給料</th>
                     <th>手数料（15%）</th>
+                    <th>照合（稼働台帳）</th>
                     <th>備考</th>
                     <th>登録日</th>
                     <th>操作</th>
@@ -65,9 +74,24 @@
                     <td th:text="${r.workMonth}"></td>
                     <td th:text="${r.salaryStr}"></td>
                     <td th:text="${r.feeStr}"></td>
+                    <td>
+                        <!-- 照合結果バッジ -->
+                        <span th:if="${r.matchStatus == 'ok'}" class="match-ok">✓ 一致</span>
+                        <span th:if="${r.matchStatus == 'ng'}" class="match-ng">✗ 不一致</span>
+                        <span th:if="${r.matchStatus == 'unknown'}" class="match-unk">― データなし</span>
+                        <!-- 台帳の値（不一致時に参考表示） -->
+                        <div th:if="${r.matchStatus == 'ng'}" class="match-detail">
+                            台帳: 給料 <span th:text="${r.ledgerSalaryStr}"></span>
+                            　手数料 <span th:text="${r.ledgerFeeStr}"></span>
+                        </div>
+                    </td>
                     <td th:text="${r.memo}"></td>
                     <td th:text="${#temporals.format(r.createdAt, 'MM/dd HH:mm')}"></td>
-                    <td>
+                    <td style="white-space:nowrap;">
+                        <!-- 修正ボタン -->
+                        <a th:href="@{/register/calc/edit(id=${r.id},month=${selectedMonth})}" class="edit-btn">修正</a>
+                        &nbsp;
+                        <!-- 削除ボタン -->
                         <form th:action="@{/register/calc/delete}" method="post" style="display:inline;" onsubmit="return confirm('削除しますか？');">
                             <input type="hidden" name="id" th:value="${r.id}">
                             <input type="hidden" name="month" th:value="${selectedMonth}">
@@ -79,7 +103,7 @@
                     <td colspan="3">合計</td>
                     <td th:text="${totalSalaryStr}"></td>
                     <td th:text="${totalFeeStr}"></td>
-                    <td colspan="3"></td>
+                    <td colspan="4"></td>
                 </tr>
             </tbody>
         </table>
@@ -87,10 +111,6 @@
         <div class="empty" th:if="${#lists.isEmpty(records)}">
             この月の記録はありません。
         </div>
-    </div>
-
-    <div class="empty" th:if="${selectedMonth == null}">
-        表示したい月を選択してください。
     </div>
 </div>
 </body>
