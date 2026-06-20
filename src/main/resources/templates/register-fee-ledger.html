@@ -8,22 +8,25 @@
         .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         h1 { margin: 0; color: #333; }
         .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .filter-row { display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px; }
         .filter-row label { font-weight: bold; color: #555; font-size: 14px; display: block; margin-bottom: 4px; }
-        .filter-row select { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .filter-row input[type="month"] { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
         .filter-btn { background: #673AB7; color: white; border: none; border-radius: 4px; padding: 9px 20px; cursor: pointer; font-size: 14px; }
+        .filter-btn:hover { background: #4527A0; }
         .pdf-btn { background: #4CAF50; color: white; border: none; border-radius: 4px; padding: 9px 20px; cursor: pointer; font-size: 14px; text-decoration: none; display: inline-block; }
-        h2 { color: #673AB7; border-bottom: 2px solid #673AB7; padding-bottom: 8px; margin-top: 30px; }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 20px; }
-        th { background: #673AB7; color: white; padding: 10px; text-align: center; }
-        td { padding: 9px 10px; border: 1px solid #e0e0e0; text-align: center; }
-        tr:nth-child(even) { background: #f3e5f5; }
-        .grand-total-row { background: #d1c4e9 !important; font-weight: bold; font-size: 15px; }
+        .pdf-btn:hover { background: #388E3C; }
+        .month-label { font-size: 18px; font-weight: bold; color: #4527A0; margin-bottom: 16px; }
         .summary-box { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
         .summary-card { background: #f3e5f5; border-radius: 8px; padding: 18px; text-align: center; }
         .summary-card .label { font-size: 13px; color: #7b1fa2; margin-bottom: 6px; }
         .summary-card .value { font-size: 22px; font-weight: bold; color: #4a148c; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { background: #673AB7; color: white; padding: 10px; text-align: left; }
+        td { padding: 9px 10px; border-bottom: 1px solid #e0e0e0; vertical-align: middle; }
+        tr:hover { background: #f3e5f5; }
+        .total-row { background: #d1c4e9; font-weight: bold; font-size: 15px; }
+        .total-row td { border-top: 2px solid #673AB7; }
         .empty { text-align: center; padding: 40px; color: #999; }
     </style>
 </head>
@@ -36,60 +39,66 @@
     <form method="get" action="/register/fee-ledger">
         <div class="filter-row">
             <div>
-                <label for="year">年</label>
-                <select id="year" name="year">
-                    <option th:each="y : ${years}" th:value="${y}" th:text="${y + '年'}" th:selected="${y == selectedYear}"></option>
-                </select>
+                <label for="month">表示月</label>
+                <input type="month" id="month" name="month" th:value="${selectedMonth}">
             </div>
             <button type="submit" class="filter-btn">&#128269; 表示</button>
-            <a th:if="${selectedYear != null}" th:href="@{/register/fee-ledger/pdf(year=${selectedYear})}" target="_blank" class="pdf-btn">&#128196; PDF出力</a>
+            <a th:if="${selectedMonth != null}" th:href="@{/register/fee-ledger/pdf(month=${selectedMonth})}" target="_blank" class="pdf-btn">&#128196; PDF出力</a>
         </div>
     </form>
 
-    <div th:if="${selectedYear != null}">
+    <div th:if="${selectedMonth != null}">
+        <div class="month-label" th:text="${selectedMonth + ' の手数料管理簿'}"></div>
+
         <div class="summary-box">
             <div class="summary-card">
-                <div class="label">年間 総振込額合計</div>
-                <div class="value" th:text="${yearTotalSalaryStr}"></div>
+                <div class="label">振込額合計</div>
+                <div class="value" th:text="${totalSalaryStr}"></div>
             </div>
             <div class="summary-card">
-                <div class="label">年間 手数料合計（15%）</div>
-                <div class="value" th:text="${yearTotalFeeStr}"></div>
+                <div class="label">手数料合計（15%）</div>
+                <div class="value" th:text="${totalFeeStr}"></div>
             </div>
             <div class="summary-card">
                 <div class="label">記録件数</div>
-                <div class="value" th:text="${yearTotalCount + '件'}"></div>
+                <div class="value" th:text="${totalCount + '件'}"></div>
             </div>
         </div>
 
-        <h2 th:text="${selectedYear + '年 手数料管理簿'}"></h2>
-
-        <table th:if="${not #lists.isEmpty(monthlyRows)}">
+        <table th:if="${not #lists.isEmpty(rows)}">
             <thead>
                 <tr>
-                    <th>月</th>
-                    <th>件数</th>
-                    <th>振込額合計</th>
-                    <th>手数料合計（15%）</th>
+                    <th>No</th>
+                    <th>求職者</th>
+                    <th>対象月</th>
+                    <th>振込額（給料）</th>
+                    <th>手数料（15%）</th>
+                    <th>備考</th>
+                    <th>登録日</th>
                 </tr>
             </thead>
             <tbody>
-                <tr th:each="row : ${monthlyRows}" th:classappend="${row.isTotal ? 'grand-total-row' : ''}">
-                    <td th:text="${row.monthLabel}"></td>
-                    <td th:text="${row.count + '件'}"></td>
-                    <td th:text="${row.salaryStr}"></td>
-                    <td th:text="${row.feeStr}"></td>
+                <tr th:each="r, stat : ${rows}">
+                    <td th:text="${stat.count}"></td>
+                    <td th:text="${r.personName}"></td>
+                    <td th:text="${r.workMonth}"></td>
+                    <td th:text="${r.salaryStr}"></td>
+                    <td th:text="${r.feeStr}"></td>
+                    <td th:text="${r.memo}"></td>
+                    <td th:text="${#temporals.format(r.createdAt, 'MM/dd HH:mm')}"></td>
+                </tr>
+                <tr class="total-row">
+                    <td colspan="3">合計</td>
+                    <td th:text="${totalSalaryStr}"></td>
+                    <td th:text="${totalFeeStr}"></td>
+                    <td colspan="2"></td>
                 </tr>
             </tbody>
         </table>
 
-        <div class="empty" th:if="${#lists.isEmpty(monthlyRows)}">
-            <span th:text="${selectedYear + '年の記録はありません。'}"></span>
+        <div class="empty" th:if="${#lists.isEmpty(rows)}">
+            <span th:text="${selectedMonth + ' の記録はありません。'}"></span>
         </div>
-    </div>
-
-    <div class="empty" th:if="${selectedYear == null}">
-        表示したい年を選択してください。
     </div>
 </div>
 </body>

@@ -266,71 +266,47 @@ public class RegisterController {
 
     // ─── 1-8-3 手数料管理簿 ─────────────────────────────
     @GetMapping("/fee-ledger")
-    public String feeLedger(@RequestParam(required = false) Integer year,
+    public String feeLedger(@RequestParam(required = false) String month,
                             HttpSession session, Model model) {
         if (!checkAuth(session)) return "redirect:/login";
 
-        int currentYear = LocalDateTime.now().getYear();
-        List<Integer> years = new ArrayList<>();
-        for (int y = 2020; y <= currentYear + 1; y++) years.add(y);
-        model.addAttribute("years", years);
-
-        if (year != null) {
-            List<RegisterRecord> raw = registerRecordRepository.findByYear(year + "-%");
-            Map<String, long[]> monthly = new HashMap<>();
-            for (int m = 1; m <= 12; m++) {
-                monthly.put(String.format("%02d", m), new long[]{0, 0, 0});
-            }
-            for (RegisterRecord r : raw) {
-                String m = r.getWorkMonth().substring(5, 7);
-                long[] vals = monthly.get(m);
-                if (vals != null) {
-                    vals[0]++;
-                    vals[1] += r.getSalary() != null ? r.getSalary() : 0;
-                    vals[2] += r.getFee()    != null ? r.getFee()    : 0;
-                }
-            }
-
-            List<MonthlyRow> monthlyRows = new ArrayList<>();
-            long yearSalary = 0, yearFee = 0, yearCount = 0;
-            for (int m = 1; m <= 12; m++) {
-                long[] vals = monthly.get(String.format("%02d", m));
-                if (vals[0] > 0) {
-                    MonthlyRow row  = new MonthlyRow();
-                    row.monthLabel  = m + "月";
-                    row.count       = vals[0];
-                    row.salaryStr   = fmtYen(vals[1]);
-                    row.feeStr      = fmtYen(vals[2]);
-                    row.isTotal     = false;
-                    monthlyRows.add(row);
-                    yearSalary += vals[1];
-                    yearFee    += vals[2];
-                    yearCount  += vals[0];
-                }
-            }
-            // 合計行
-            if (!monthlyRows.isEmpty()) {
-                MonthlyRow total = new MonthlyRow();
-                total.monthLabel = "合　計";
-                total.count      = yearCount;
-                total.salaryStr  = fmtYen(yearSalary);
-                total.feeStr     = fmtYen(yearFee);
-                total.isTotal    = true;
-                monthlyRows.add(total);
-            }
-
-            model.addAttribute("monthlyRows",       monthlyRows);
-            model.addAttribute("yearTotalSalaryStr",fmtYen(yearSalary));
-            model.addAttribute("yearTotalFeeStr",   fmtYen(yearFee));
-            model.addAttribute("yearTotalCount",    yearCount);
-            model.addAttribute("selectedYear",      year);
-        } else {
-            model.addAttribute("monthlyRows",        new ArrayList<>());
-            model.addAttribute("yearTotalSalaryStr", "0");
-            model.addAttribute("yearTotalFeeStr",    "0");
-            model.addAttribute("yearTotalCount",     0L);
-            model.addAttribute("selectedYear",       null);
+        // monthパラメータがない場合は現在月にリダイレクト
+        if (month == null || month.isBlank()) {
+            String currentMonth = LocalDateTime.now().getYear() + "-"
+                + String.format("%02d", LocalDateTime.now().getMonthValue());
+            return "redirect:/register/fee-ledger?month=" + currentMonth;
         }
+
+        // 求職者名マップ
+        Map<Long, String> personMap = new HashMap<>();
+        StreamSupport.stream(personRepository.findAll().spliterator(), false).forEach(p ->
+            personMap.put(p.getId(), p.getLastNameKanji() + " " + p.getFirstNameKanji()));
+
+        List<RegisterRecord> raw = registerRecordRepository.findByWorkMonth(month);
+        List<FeeLedgerRow> rows = new ArrayList<>();
+        long totalSalary = 0, totalFee = 0;
+
+        for (RegisterRecord r : raw) {
+            FeeLedgerRow row = new FeeLedgerRow();
+            row.id         = r.getId();
+            row.personName = personMap.getOrDefault(r.getPersonId(), "不明");
+            row.workMonth  = r.getWorkMonth();
+            row.salary     = r.getSalary() != null ? r.getSalary() : 0;
+            row.fee        = r.getFee()    != null ? r.getFee()    : 0;
+            row.salaryStr  = fmtYen(row.salary);
+            row.feeStr     = fmtYen(row.fee);
+            row.memo       = r.getMemo();
+            row.createdAt  = r.getCreatedAt();
+            rows.add(row);
+            totalSalary += row.salary;
+            totalFee    += row.fee;
+        }
+
+        model.addAttribute("rows",           rows);
+        model.addAttribute("totalSalaryStr", fmtYen(totalSalary));
+        model.addAttribute("totalFeeStr",    fmtYen(totalFee));
+        model.addAttribute("totalCount",     rows.size());
+        model.addAttribute("selectedMonth",  month);
 
         return "register-fee-ledger";
     }
@@ -341,12 +317,12 @@ public class RegisterController {
 
     // ─── 1-8-3 手数料管理簿 PDF出力 ─────────────────────
     @GetMapping("/fee-ledger/pdf")
-    public void feeLedgerPdf(@RequestParam Integer year,
+    public void feeLedgerPdf(@RequestParam String month,
                               HttpSession session,
                               HttpServletResponse response) throws IOException, DocumentException {
         if (!checkAuth(session)) { response.sendError(401); return; }
 
-        List<RegisterRecord> raw = registerRecordRepository.findByYear(year + "-%");
+        List<RegisterRecord> raw = registerRecordRepository.findByWorkMonth(month);
 
         // 求職者名マップ
         Map<Long, String> personMap = new HashMap<>();
@@ -354,16 +330,16 @@ public class RegisterController {
             personMap.put(p.getId(), p.getLastNameKanji() + " " + p.getFirstNameKanji()));
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        createFeeLedgerPdf(year, raw, personMap, baos);
+        createFeeLedgerPdf(month, raw, personMap, baos);
 
         response.setContentType("application/pdf");
-        response.setHeader("Content-Disposition", "inline; filename=fee-ledger-" + year + ".pdf");
+        response.setHeader("Content-Disposition", "inline; filename=fee-ledger-" + month + ".pdf");
         response.setContentLength(baos.size());
         response.getOutputStream().write(baos.toByteArray());
         response.getOutputStream().flush();
     }
 
-    private void createFeeLedgerPdf(int year, List<RegisterRecord> records,
+    private void createFeeLedgerPdf(String month, List<RegisterRecord> records,
                                      Map<Long, String> personMap,
                                      ByteArrayOutputStream baos) throws DocumentException, IOException {
         Document doc = new Document(PageSize.A4.rotate());
@@ -377,7 +353,7 @@ public class RegisterController {
         Font smallFont  = new Font(bf, 7);
 
         // タイトル
-        Paragraph title = new Paragraph("手数料管理簿　[届出制手数料用]　" + year + "年", titleFont);
+        Paragraph title = new Paragraph("手数料管理簿　[届出制手数料用]　" + month, titleFont);
         title.setAlignment(Element.ALIGN_CENTER);
         title.setSpacingAfter(8);
         doc.add(title);
@@ -403,8 +379,8 @@ public class RegisterController {
         long pageSalary = 0, pageFee = 0;
 
         for (RegisterRecord r : records) {
-            String month = r.getWorkMonth(); // "2025-03"
-            String[] parts = month.split("-");
+            String wm = r.getWorkMonth(); // "2025-03"
+            String[] parts = wm.split("-");
             String displayDate = parts[0] + "/" + parts[1];
 
             addLedgerCell(table, displayDate, normalFont, Element.ALIGN_CENTER);
@@ -426,7 +402,7 @@ public class RegisterController {
         BaseColor totalColor = new BaseColor(240, 240, 200);
         addLedgerTotalRow(table, "ページ計", pageSalary, pageFee, boldFont, totalColor);
         // 累計
-        addLedgerTotalRow(table, year + "年分累計", pageSalary, pageFee, boldFont, totalColor);
+        addLedgerTotalRow(table, month + "分累計", pageSalary, pageFee, boldFont, totalColor);
 
         doc.add(table);
 
@@ -496,5 +472,17 @@ public class RegisterController {
         public String  salaryStr;
         public String  feeStr;
         public boolean isTotal;
+    }
+
+    public static class FeeLedgerRow {
+        public Long          id;
+        public String        personName;
+        public String        workMonth;
+        public long          salary;
+        public long          fee;
+        public String        salaryStr;
+        public String        feeStr;
+        public String        memo;
+        public LocalDateTime createdAt;
     }
 }
