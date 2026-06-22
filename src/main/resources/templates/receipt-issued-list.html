@@ -74,7 +74,7 @@
             </thead>
             <tbody>
                 <tr th:each="r : ${rows}">
-                    <td th:text="${#strings.toString(r.receiptNumber) != null ? String.format('%04d', r.receiptNumber) : '-'}"></td>
+                    <td th:text="${r.receiptNumber}"></td>
                     <td>
                         <span th:if="${r.receiptType.contains('1-7-1')}" class="badge-customer" th:text="${r.receiptType}"></span>
                         <span th:unless="${r.receiptType.contains('1-7-1')}" class="badge-jobseeker" th:text="${r.receiptType}"></span>

@@ -49,9 +49,8 @@
                 <td th:text="${item.detail.introductionDate}"></td>
                 <td th:text="${item.detail.receptionFee != null ? item.detail.receptionFee + '円' : '-'}"></td>
                 <td>
-                    <span th:if="${item.issued}" class="receipt-no"
-                          th:text="${#strings.toString(item.receiptNumber) != null ? String.format('%04d', item.receiptNumber) : '-'}"></span>
-                    <span th:unless="${item.issued}">未採番</span>
+                    <span th:if="${item.issued}" class="receipt-no" th:text="${item.receiptNumber}"></span>
+                    <span th:unless="${item.issued}">未発行</span>
                 </td>
                 <td>
                     <span th:if="${item.issued}" class="badge badge-done">発行済</span>
