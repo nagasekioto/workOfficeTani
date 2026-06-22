@@ -26,7 +26,7 @@
     <script>
         function calcFee() {
             var salary = parseInt(document.getElementById('salary').value) || 0;
-            var fee = Math.round(salary * 0.15);
+            var fee = Math.round(salary * 0.165);
             document.getElementById('fee').value = fee;
         }
     </script>
@@ -56,7 +56,7 @@
             <label>手数料（円）</label>
             <input type="number" id="fee" name="fee" th:value="${record.fee}"
                    min="0" step="1" required>
-            <div class="fee-hint">※ 給料を入力すると15%で自動計算されます（手動変更も可）</div>
+            <div class="fee-hint">※ 給料を入力すると16.5%で自動計算されます（手動変更も可）</div>
         </div>
 
         <div class="form-group">

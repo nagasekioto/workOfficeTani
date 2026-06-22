@@ -439,7 +439,7 @@ function calcTotal(idx) {
         total += parseFloat(inp.value) || 0;
     });
     if (total > 0) {
-        const commission = Math.floor(total * 0.15);
+        const commission = Math.floor(total * 0.165);
         document.getElementById('totalWage'  + idx).textContent = '¥' + total.toLocaleString();
         document.getElementById('commission' + idx).textContent = '¥' + commission.toLocaleString();
         document.getElementById('grandTotal' + idx).textContent = '¥' + (total + commission).toLocaleString();

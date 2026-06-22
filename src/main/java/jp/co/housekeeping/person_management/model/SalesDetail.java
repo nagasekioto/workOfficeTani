@@ -59,7 +59,7 @@ public class SalesDetail {
             }
         }
         this.monthlyTotal = total;
-        this.commission = (int)(total * 0.15);
+        this.commission = (int)(total * 0.165);
         this.tax = (int)(commission * 0.10);
     }
 

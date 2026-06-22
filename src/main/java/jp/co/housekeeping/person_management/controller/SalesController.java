@@ -315,12 +315,12 @@ public class SalesController {
                     try { totalWage += Integer.parseInt(dw.trim()); } catch (NumberFormatException ignored) {}
                 }
             }
-            int commission = (int)(totalWage * 0.15);
+            int commission = (int)(totalWage * 0.165);
             int tax        = (int)(commission * 0.10);
             int grandTotal = totalWage + commission + tax + (recFee != null ? recFee : 0) + (cusFee != null ? cusFee : 0);
 
             addCell2(block, "賃金総額", "¥" + String.format("%,d", totalWage), headerFont, normalFont);
-            addCell2(block, "手数料（15%）", "¥" + String.format("%,d", commission), headerFont, normalFont);
+            addCell2(block, "手数料（16.5%）", "¥" + String.format("%,d", commission), headerFont, normalFont);
             addCell2(block, "消費税（10%）", "¥" + String.format("%,d", tax), headerFont, normalFont);
             addCell2(block, "合計金額", "¥" + String.format("%,d", grandTotal), headerFont, headerFont);
 

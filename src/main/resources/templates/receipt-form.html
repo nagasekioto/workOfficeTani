@@ -300,7 +300,7 @@
                     <span id="totalAmount">¥0</span>
                 </div>
                 <div class="calc-row">
-                    <span>手数料（15%）:</span>
+                    <span>手数料（16.5%）:</span>
                     <span id="commission">¥0</span>
                 </div>
                 <div class="calc-row">
@@ -351,7 +351,7 @@
             
             if (hourlyWage > 0 && workingHours > 0) {
                 const totalAmount = Math.floor(hourlyWage * workingHours);
-                const commission = Math.floor(totalAmount * 0.15);
+                const commission = Math.floor(totalAmount * 0.165);
                 const tax = Math.floor(commission * 0.10);
                 const grandTotal = totalAmount + commission + tax;
                 

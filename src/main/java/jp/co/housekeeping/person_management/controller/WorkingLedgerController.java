@@ -120,8 +120,8 @@ public class WorkingLedgerController {
                 row.wageTotal    = d.getMonthlyTotal() != null ? d.getMonthlyTotal() : 0;
                 row.wageTotalStr = fmt(row.wageTotal);
 
-                // 手数料率（固定15%）
-                row.commissionRate = "15%";
+                // 手数料率（固定16.5%）
+                row.commissionRate = "16.5%";
 
                 // 時給・日給・受付料フォーマット
                 row.hourlyWageStr     = fmt(d.getHourlyWage());
@@ -193,7 +193,7 @@ public class WorkingLedgerController {
         public LocalDate   receiptDate;
         public int         wageTotal      = 0;
         public String      wageTotalStr   = "-";
-        public String      commissionRate = "15%";
+        public String      commissionRate = "16.5%";
         public String      hourlyWageStr  = "-";
         public String      hourlyWageOTStr = "-";
         public String      receptionFeeStr = "-";

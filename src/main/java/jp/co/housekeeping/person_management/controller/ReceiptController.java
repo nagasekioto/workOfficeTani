@@ -146,7 +146,7 @@ public class ReceiptController {
                    headerFont, normalFont);
         addTableRow(table, "勤務給与", "¥" + String.format("%,d", receipt.getTotalAmount()), 
                    headerFont, normalFont);
-        addTableRow(table, "手数料（15%）", "¥" + String.format("%,d", receipt.getCommission()), 
+        addTableRow(table, "手数料（16.5%）", "¥" + String.format("%,d", receipt.getCommission()), 
                    headerFont, normalFont);
         addTableRow(table, "消費税（10%）", "¥" + String.format("%,d", receipt.getTax()), 
                    headerFont, normalFont);

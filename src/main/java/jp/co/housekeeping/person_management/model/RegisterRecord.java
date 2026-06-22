@@ -14,7 +14,7 @@ public class RegisterRecord {
     private Long personId;
     private String workMonth;   // "2025-01" format
     private Integer salary;
-    private Integer fee;        // salary * 0.15
+    private Integer fee;        // salary * 0.165
     private String memo;
     private LocalDateTime createdAt;
 

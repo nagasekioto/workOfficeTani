@@ -243,7 +243,7 @@ public class RegisterController {
         } catch (Exception ignored) {}
 
         result.ledgerSalary = ledgerTotal > 0 ? ledgerTotal : totalSalary;
-        result.ledgerFee    = (long)(result.ledgerSalary * 0.15);
+        result.ledgerFee    = (long)(result.ledgerSalary * 0.165);
 
         // 判定：振込合計 = 稼働台帳合計 なら一致
         // 稼働台帳データがない場合は振込レコードが1件のみなら「確認不可」
@@ -254,7 +254,7 @@ public class RegisterController {
         }
 
         boolean salaryMatch = (totalSalary == ledgerTotal);
-        long    ledgerFee15 = (long)(ledgerTotal * 0.15);
+        long    ledgerFee15 = (long)(ledgerTotal * 0.165);
         boolean feeMatch    = Math.abs(totalFee - ledgerFee15) <= 1;
 
         result.ledgerSalary = ledgerTotal;
@@ -458,7 +458,7 @@ public class RegisterController {
                 addLedgerCell(table, String.format("%,d", rowFee), boldFont, Element.ALIGN_RIGHT);
                 addLedgerCell(table, "", normalFont, Element.ALIGN_RIGHT); // ※2
                 addLedgerCell(table, "", normalFont, Element.ALIGN_RIGHT); // 求人受付
-                addLedgerCell(table, "15%", normalFont, Element.ALIGN_CENTER);
+                addLedgerCell(table, "16.5%", normalFont, Element.ALIGN_CENTER);
                 addLedgerCell(table, ni == 0 ? (r.getMemo() != null ? r.getMemo() : "") : "", normalFont, Element.ALIGN_LEFT);
                 addLedgerCell(table, "0", normalFont, Element.ALIGN_RIGHT);
                 addLedgerCell(table, "0", normalFont, Element.ALIGN_RIGHT);

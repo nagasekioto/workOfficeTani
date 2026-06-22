@@ -29,7 +29,7 @@
 </div>
 <div class="container">
     <div class="info-box">
-        &#9432; 求職者が受け取った振込額の15%が手数料です。
+        &#9432; 求職者が受け取った振込額の16.5%が手数料です。
     </div>
 
     <div class="success-msg" id="successMsg">&#10003; 記録しました！</div>
@@ -77,7 +77,7 @@ function save() {
     if (!workMonth)                       { alert('対象月を選択してください'); return; }
     if (!salary || parseInt(salary) <= 0) { alert('振込額を入力してください'); return; }
 
-    const fee = Math.floor(parseInt(salary) * 0.15);
+    const fee = Math.floor(parseInt(salary) * 0.165);
 
     fetch('/register/calc/save', {
         method: 'POST',

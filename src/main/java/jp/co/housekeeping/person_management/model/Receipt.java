@@ -30,7 +30,7 @@ public class Receipt {
     
     // 計算項目
     private Integer totalAmount;   // 時給 × 時間数
-    private Integer commission;    // 手数料（15%）
+    private Integer commission;    // 手数料（16.5%）
     private Integer tax;           // 消費税（10%）
     
     private LocalDate issuedDate;  // 発行日
@@ -188,7 +188,7 @@ public class Receipt {
     public void calculateAmounts() {
         if (hourlyWage != null && workingHours != null) {
             this.totalAmount = (int) (hourlyWage * workingHours);
-            this.commission = (int) (totalAmount * 0.15);
+            this.commission = (int) (totalAmount * 0.165);
             this.tax = (int) (commission * 0.10);
         }
     }
