@@ -142,6 +142,7 @@ public class ReceiptMenuController {
 
         List<JobseekerReceiptItem> items = new ArrayList<>();
         for (Sales s : salesRepository.findAll()) {
+            if (s.getPersonId() == null) continue;
             Person person = personRepository.findById(s.getPersonId()).orElse(null);
             if (person == null) continue;
             for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {

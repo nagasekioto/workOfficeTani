@@ -192,69 +192,84 @@ public class RegisterController {
         return "register-list";
     }
 
-    /** 稼働台帳との照合ロジック */
-    private MatchResult checkMatch(Long personId, String workMonth, long regSalary, long regFee) {
+    /** 
+     * 照合ロジック：振込金入力（1-8-1）の同一人物・同一月の register_records 合計と比較
+     * レジ一覧の1行（register_records の1レコード）に対して、
+     * 同じ person_id・同じ work_month の register_records 全件の salary 合計を「振込金合計」とし、
+     * その合計が自分自身の salary と一致するかを確認する。
+     * ※同一人物・同月に複数レコードがある場合は合計で判定
+     */
+    private MatchResult checkMatch(Long personId, String workMonth, long thisSalary, long thisFee) {
         MatchResult result = new MatchResult();
         result.ledgerSalary = -1;
-        result.ledgerFee = -1;
+        result.ledgerFee    = -1;
         result.status = "unknown";
-        result.detail = "稼働台帳データなし";
+        result.detail = "データなし";
 
         if (personId == null) return result;
 
-        // sales → sales_details を取得し、workMonthに対応するものを探す
-        List<Sales> salesList = salesRepository.findByPersonId(personId);
-        // workMonth: "2026-06" → 就労期間が該当月に含まれるdetailを集計
-        YearMonth ym;
-        try { ym = YearMonth.parse(workMonth); }
-        catch (Exception e) { return result; }
-
-        LocalDate monthStart = ym.atDay(1);
-        LocalDate monthEnd   = ym.atEndOfMonth();
-
-        long totalLedgerSalary = 0;
-        long totalLedgerFee = 0;
-        boolean found = false;
-
-        for (Sales s : salesList) {
-            List<SalesDetail> details = salesDetailRepository.findBySalesId(s.getId());
-            for (SalesDetail d : details) {
-                // 就労終了月が対象月に含まれるかチェック
-                LocalDate endDate = d.getWorkEndDate();
-                if (endDate == null) endDate = d.getWorkStartDate();
-                if (endDate == null) continue;
-
-                YearMonth detailYm = YearMonth.from(endDate);
-                if (!detailYm.equals(ym)) continue;
-
-                found = true;
-                long wageTotal = d.getMonthlyTotal() != null ? d.getMonthlyTotal() : 0;
-                long fee15 = Math.round(wageTotal * 0.15);
-                totalLedgerSalary += wageTotal;
-                totalLedgerFee += fee15;
+        // 同一人物・同月の全振込レコードを取得して合計
+        List<RegisterRecord> allRecords = registerRecordRepository.findByWorkMonth(workMonth);
+        long totalSalary = 0;
+        long totalFee    = 0;
+        int  count       = 0;
+        for (RegisterRecord r : allRecords) {
+            if (personId.equals(r.getPersonId())) {
+                totalSalary += r.getSalary() != null ? r.getSalary() : 0;
+                totalFee    += r.getFee()    != null ? r.getFee()    : 0;
+                count++;
             }
         }
 
-        if (!found) {
+        if (count == 0) {
             result.status = "unknown";
-            result.detail = "稼働台帳に該当月のデータなし";
+            result.detail = "振込記録なし";
             return result;
         }
 
-        result.ledgerSalary = totalLedgerSalary;
-        result.ledgerFee = totalLedgerFee;
+        // 稼働台帳（sales_details）の賃金総額も取得（参考表示用）
+        long ledgerTotal = 0;
+        try {
+            YearMonth ym = YearMonth.parse(workMonth);
+            List<Sales> salesList = salesRepository.findByPersonId(personId);
+            for (Sales s : salesList) {
+                for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {
+                    LocalDate endDate = d.getWorkEndDate() != null ? d.getWorkEndDate() : d.getWorkStartDate();
+                    if (endDate == null) continue;
+                    if (!YearMonth.from(endDate).equals(ym)) continue;
+                    ledgerTotal += d.getMonthlyTotal() != null ? d.getMonthlyTotal() : 0;
+                }
+            }
+        } catch (Exception ignored) {}
 
-        boolean salaryMatch = (regSalary == totalLedgerSalary);
-        boolean feeMatch = Math.abs(regFee - totalLedgerFee) <= 1; // 丸め誤差許容
+        result.ledgerSalary = ledgerTotal > 0 ? ledgerTotal : totalSalary;
+        result.ledgerFee    = (long)(result.ledgerSalary * 0.15);
+
+        // 判定：振込合計 = 稼働台帳合計 なら一致
+        // 稼働台帳データがない場合は振込レコードが1件のみなら「確認不可」
+        if (ledgerTotal == 0) {
+            result.status = "unknown";
+            result.detail = "稼働台帳に該当月データなし（振込合計: " + fmtYen(totalSalary) + "）";
+            return result;
+        }
+
+        boolean salaryMatch = (totalSalary == ledgerTotal);
+        long    ledgerFee15 = (long)(ledgerTotal * 0.15);
+        boolean feeMatch    = Math.abs(totalFee - ledgerFee15) <= 1;
+
+        result.ledgerSalary = ledgerTotal;
+        result.ledgerFee    = ledgerFee15;
 
         if (salaryMatch && feeMatch) {
             result.status = "ok";
-            result.detail = "一致";
+            result.detail = "一致（振込合計: " + fmtYen(totalSalary) + "）";
         } else {
             result.status = "ng";
             StringBuilder sb = new StringBuilder("不一致：");
-            if (!salaryMatch) sb.append("給料 レジ=").append(fmtYen(regSalary)).append(" 台帳=").append(fmtYen(totalLedgerSalary)).append(" ");
-            if (!feeMatch) sb.append("手数料 レジ=").append(fmtYen(regFee)).append(" 台帳=").append(fmtYen(totalLedgerFee));
+            if (!salaryMatch) sb.append("振込合計=").append(fmtYen(totalSalary))
+                                .append(" 台帳=").append(fmtYen(ledgerTotal)).append(" ");
+            if (!feeMatch) sb.append("手数料=").append(fmtYen(totalFee))
+                             .append(" 台帳手数料=").append(fmtYen(ledgerFee15));
             result.detail = sb.toString().trim();
         }
         return result;
