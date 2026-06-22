@@ -162,7 +162,6 @@ public class SalesController {
                 detail.setRemarks(remarksList[i]);
             }
 
-            detail.setReceiptNo(generateReceiptNo());
             detail.calculateAmounts();
             salesDetailRepository.save(detail);
         }
