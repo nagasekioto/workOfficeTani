@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>求人者管理名簿入力（1-2-1） - 家政婦紹介事務所</title>
+    <title>求人者新規登録（1-2-1） - 家政婦紹介事務所</title>
     <style>
         body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
         .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
@@ -44,11 +44,20 @@
         /* 頻度詳細 */
         .freq-detail { display: none; margin-top: 8px; padding: 10px; background: #FFF3E0; border-radius: 4px; }
         .freq-detail.show { display: block; }
+        /* 頻度：曜日縦並び＋右に時間 */
+        .freq-days-list { display: flex; flex-direction: column; gap: 5px; margin-top: 6px; }
+        .freq-day-row { display: flex; align-items: center; gap: 8px; }
+        .freq-day-label { font-size: 13px; font-weight: bold; color: #333; width: 22px; text-align: center; flex-shrink: 0; }
+        .freq-day-cb { width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
+        .freq-day-time { display: none; align-items: center; gap: 4px; }
+        .freq-day-time.show { display: flex; }
+        .freq-day-time input[type="time"] { padding: 3px 6px; font-size: 12px; width: 88px; border: 1px solid #FFCC80; border-radius: 4px; background: #FFF8E1; }
+        .freq-day-time span { font-size: 12px; color: #555; }
     </style>
 </head>
 <body>
 <div class="header">
-    <h1>&#128101; 求人者管理名簿入力（1-2-1）</h1>
+    <h1>&#128101; 求人者新規登録（1-2-1）</h1>
     <a href="/customer-menu" class="back-btn">&#8592; 求人者管理に戻る</a>
 </div>
 
@@ -162,9 +171,9 @@
                 <div class="section-box-title">&#128196; 仕事内容（複数選択可）</div>
                 <div class="checkbox-group">
                     <div class="checkbox-item">
-                        <input type="checkbox" id="job食事" value="食事"
-                               th:checked="${customer.jobContents != null and #strings.contains(customer.jobContents,'食事')}">
-                        <label for="job食事">食事</label>
+                        <input type="checkbox" id="job料理" value="料理"
+                               th:checked="${customer.jobContents != null and #strings.contains(customer.jobContents,'料理')}">
+                        <label for="job料理">料理</label>
                     </div>
                     <div class="checkbox-item">
                         <input type="checkbox" id="job洗濯" value="洗濯"
@@ -237,54 +246,79 @@
                 <div id="freqWeeklyArea" class="freq-detail"
                      th:classappend="${customer.freqType == 'weekly'} ? 'show' : ''">
                     <div class="form-group">
-                        <label>曜日（複数選択可）</label>
-                        <div class="checkbox-group">
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="fw月" value="月"
-                                       th:checked="${customer.freqWeeklyDays != null and #strings.contains(customer.freqWeeklyDays,'月')}">
-                                <label for="fw月">月</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="fw火" value="火"
-                                       th:checked="${customer.freqWeeklyDays != null and #strings.contains(customer.freqWeeklyDays,'火')}">
-                                <label for="fw火">火</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="fw水" value="水"
-                                       th:checked="${customer.freqWeeklyDays != null and #strings.contains(customer.freqWeeklyDays,'水')}">
-                                <label for="fw水">水</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="fw木" value="木"
-                                       th:checked="${customer.freqWeeklyDays != null and #strings.contains(customer.freqWeeklyDays,'木')}">
-                                <label for="fw木">木</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="fw金" value="金"
-                                       th:checked="${customer.freqWeeklyDays != null and #strings.contains(customer.freqWeeklyDays,'金')}">
-                                <label for="fw金">金</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="fw土" value="土"
-                                       th:checked="${customer.freqWeeklyDays != null and #strings.contains(customer.freqWeeklyDays,'土')}">
-                                <label for="fw土">土</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="fw日" value="日"
-                                       th:checked="${customer.freqWeeklyDays != null and #strings.contains(customer.freqWeeklyDays,'日')}">
-                                <label for="fw日">日</label>
-                            </div>
-                        </div>
+                        <label>曜日（チェックすると右に時間入力欄が表示されます）</label>
                         <input type="hidden" th:field="*{freqWeeklyDays}" id="freqWeeklyDaysHidden">
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>開始時刻</label>
-                            <input type="time" th:field="*{freqWeeklyStart}">
-                        </div>
-                        <div class="form-group" style="margin-bottom:0;">
-                            <label>終了時刻</label>
-                            <input type="time" th:field="*{freqWeeklyEnd}">
+                        <div class="freq-days-list">
+                            <!-- 月 -->
+                            <div class="freq-day-row">
+                                <span class="freq-day-label">月</span>
+                                <input type="checkbox" class="freq-day-cb" id="fw月" value="月" onchange="toggleFreqDay(this)">
+                                <div class="freq-day-time" id="fwt月">
+                                    <input type="time" id="fwfrom月" step="900" onchange="collectFreqWeeklyDays()">
+                                    <span>〜</span>
+                                    <input type="time" id="fwto月" step="900" onchange="collectFreqWeeklyDays()">
+                                </div>
+                            </div>
+                            <!-- 火 -->
+                            <div class="freq-day-row">
+                                <span class="freq-day-label">火</span>
+                                <input type="checkbox" class="freq-day-cb" id="fw火" value="火" onchange="toggleFreqDay(this)">
+                                <div class="freq-day-time" id="fwt火">
+                                    <input type="time" id="fwfrom火" step="900" onchange="collectFreqWeeklyDays()">
+                                    <span>〜</span>
+                                    <input type="time" id="fwto火" step="900" onchange="collectFreqWeeklyDays()">
+                                </div>
+                            </div>
+                            <!-- 水 -->
+                            <div class="freq-day-row">
+                                <span class="freq-day-label">水</span>
+                                <input type="checkbox" class="freq-day-cb" id="fw水" value="水" onchange="toggleFreqDay(this)">
+                                <div class="freq-day-time" id="fwt水">
+                                    <input type="time" id="fwfrom水" step="900" onchange="collectFreqWeeklyDays()">
+                                    <span>〜</span>
+                                    <input type="time" id="fwto水" step="900" onchange="collectFreqWeeklyDays()">
+                                </div>
+                            </div>
+                            <!-- 木 -->
+                            <div class="freq-day-row">
+                                <span class="freq-day-label">木</span>
+                                <input type="checkbox" class="freq-day-cb" id="fw木" value="木" onchange="toggleFreqDay(this)">
+                                <div class="freq-day-time" id="fwt木">
+                                    <input type="time" id="fwfrom木" step="900" onchange="collectFreqWeeklyDays()">
+                                    <span>〜</span>
+                                    <input type="time" id="fwto木" step="900" onchange="collectFreqWeeklyDays()">
+                                </div>
+                            </div>
+                            <!-- 金 -->
+                            <div class="freq-day-row">
+                                <span class="freq-day-label">金</span>
+                                <input type="checkbox" class="freq-day-cb" id="fw金" value="金" onchange="toggleFreqDay(this)">
+                                <div class="freq-day-time" id="fwt金">
+                                    <input type="time" id="fwfrom金" step="900" onchange="collectFreqWeeklyDays()">
+                                    <span>〜</span>
+                                    <input type="time" id="fwto金" step="900" onchange="collectFreqWeeklyDays()">
+                                </div>
+                            </div>
+                            <!-- 土 -->
+                            <div class="freq-day-row">
+                                <span class="freq-day-label">土</span>
+                                <input type="checkbox" class="freq-day-cb" id="fw土" value="土" onchange="toggleFreqDay(this)">
+                                <div class="freq-day-time" id="fwt土">
+                                    <input type="time" id="fwfrom土" step="900" onchange="collectFreqWeeklyDays()">
+                                    <span>〜</span>
+                                    <input type="time" id="fwto土" step="900" onchange="collectFreqWeeklyDays()">
+                                </div>
+                            </div>
+                            <!-- 日 -->
+                            <div class="freq-day-row">
+                                <span class="freq-day-label">日</span>
+                                <input type="checkbox" class="freq-day-cb" id="fw日" value="日" onchange="toggleFreqDay(this)">
+                                <div class="freq-day-time" id="fwt日">
+                                    <input type="time" id="fwfrom日" step="900" onchange="collectFreqWeeklyDays()">
+                                    <span>〜</span>
+                                    <input type="time" id="fwto日" step="900" onchange="collectFreqWeeklyDays()">
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -529,14 +563,69 @@ function syncFreqType() {
     document.getElementById('freqTypeHidden').value = r ? r.value : '';
 }
 
-// 毎週曜日収集
-function collectFreqWeeklyDays() {
-    const days = ['月','火','水','木','金','土','日'].filter(d => {
-        const el = document.getElementById('fw' + d);
-        return el && el.checked;
-    });
-    document.getElementById('freqWeeklyDaysHidden').value = days.join(',');
+// 毎週曜日：チェックで右に時間欄表示
+var FREQ_DAYS = ['月','火','水','木','金','土','日'];
+
+function toggleFreqDay(cb) {
+    var day = cb.value;
+    var timeBox = document.getElementById('fwt' + day);
+    if (cb.checked) {
+        timeBox.classList.add('show');
+    } else {
+        timeBox.classList.remove('show');
+        document.getElementById('fwfrom' + day).value = '';
+        document.getElementById('fwto' + day).value = '';
+    }
+    collectFreqWeeklyDays();
 }
+
+// JSON形式で保存: {"月":"09:00-17:00","火":"10:00-15:00",...}
+function collectFreqWeeklyDays() {
+    var result = {};
+    FREQ_DAYS.forEach(function(day) {
+        var cb = document.getElementById('fw' + day);
+        if (cb && cb.checked) {
+            var from = document.getElementById('fwfrom' + day).value;
+            var to   = document.getElementById('fwto' + day).value;
+            result[day] = (from || '') + '-' + (to || '');
+        }
+    });
+    document.getElementById('freqWeeklyDaysHidden').value =
+        Object.keys(result).length > 0 ? JSON.stringify(result) : '';
+}
+
+// 既存データの復元（編集時）
+(function restoreFreqDays() {
+    var jsonStr = document.getElementById('freqWeeklyDaysHidden').value;
+    if (!jsonStr) return;
+    try {
+        var data = JSON.parse(jsonStr);
+        FREQ_DAYS.forEach(function(day) {
+            if (data[day] !== undefined) {
+                var cb = document.getElementById('fw' + day);
+                if (cb) {
+                    cb.checked = true;
+                    var timeBox = document.getElementById('fwt' + day);
+                    if (timeBox) timeBox.classList.add('show');
+                    var parts = data[day].split('-');
+                    if (parts.length >= 2) {
+                        var f = document.getElementById('fwfrom' + day);
+                        var t = document.getElementById('fwto' + day);
+                        if (f) f.value = parts[0];
+                        if (t) t.value = parts[1];
+                    }
+                }
+            }
+        });
+    } catch(e) {
+        // 旧形式（カンマ区切り）の場合はチェックのみ復元
+        var days = jsonStr.split(',');
+        days.forEach(function(day) {
+            var cb = document.getElementById('fw' + day.trim());
+            if (cb) cb.checked = true;
+        });
+    }
+})();
 
 // 仕事内容収集
 function collectJobContents() {
