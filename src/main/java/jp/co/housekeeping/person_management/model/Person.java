@@ -59,6 +59,20 @@ public class Person {
     /** 労働開始時期（文字列） */
     private String workStartPeriod;
 
+    // ─── 緊急連絡先 ─────────────────────────────────
+    /** 緊急連絡先：続柄 */
+    private String emergencyRelation;
+
+    /** 緊急連絡先：電話番号 */
+    private String emergencyPhone;
+
+    // ─── ベビーシッター ──────────────────────────────
+    /** ベビーシッター経験 (あり/なし) */
+    private String babysitterExp;
+
+    /** ベビーシッター可否 (できる/できない) */
+    private String babysitterAvail;
+
     public Person() {}
 
     // ─── getters / setters ──────────────────────────────
@@ -140,4 +154,12 @@ public class Person {
     public void setWorkAvailableHours(String workAvailableHours) { this.workAvailableHours = workAvailableHours; }
     public String getWorkStartPeriod() { return workStartPeriod; }
     public void setWorkStartPeriod(String workStartPeriod) { this.workStartPeriod = workStartPeriod; }
+    public String getEmergencyRelation() { return emergencyRelation; }
+    public void setEmergencyRelation(String emergencyRelation) { this.emergencyRelation = emergencyRelation; }
+    public String getEmergencyPhone() { return emergencyPhone; }
+    public void setEmergencyPhone(String emergencyPhone) { this.emergencyPhone = emergencyPhone; }
+    public String getBabysitterExp() { return babysitterExp; }
+    public void setBabysitterExp(String babysitterExp) { this.babysitterExp = babysitterExp; }
+    public String getBabysitterAvail() { return babysitterAvail; }
+    public void setBabysitterAvail(String babysitterAvail) { this.babysitterAvail = babysitterAvail; }
 }

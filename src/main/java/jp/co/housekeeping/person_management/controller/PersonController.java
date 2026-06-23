@@ -66,6 +66,10 @@ public class PersonController {
             @RequestParam(required = false) String workAvailableHoursFrom,
             @RequestParam(required = false) String workAvailableHoursTo,
             @RequestParam(required = false) String workStartPeriod,
+            @RequestParam(required = false) String emergencyRelation,
+            @RequestParam(required = false) String emergencyPhone,
+            @RequestParam(required = false) String babysitterExp,
+            @RequestParam(required = false) String babysitterAvail,
             HttpSession session) {
 
         if (!checkAuth(session)) return "redirect:/login";
@@ -73,7 +77,8 @@ public class PersonController {
         applyCheckboxes(person, qualNursery, qualCook, qualCareWorker, qualCareHelper,
                 animalDogOk, animalCatOk, animalDogAllergy, animalCatAllergy, lineWorks);
         applyJobPrefs(person, workLocationList, workDutiesList, desiredTypeList,
-                specificDaysJson, workAvailableHoursFrom, workAvailableHoursTo, workStartPeriod);
+                specificDaysJson, workAvailableHoursFrom, workAvailableHoursTo, workStartPeriod,
+                emergencyRelation, emergencyPhone, babysitterExp, babysitterAvail);
 
         if (person.getRegisteredDate() == null) {
             person.setRegisteredDate(LocalDate.now());
@@ -123,6 +128,10 @@ public class PersonController {
             @RequestParam(required = false) String workAvailableHoursFrom,
             @RequestParam(required = false) String workAvailableHoursTo,
             @RequestParam(required = false) String workStartPeriod,
+            @RequestParam(required = false) String emergencyRelation,
+            @RequestParam(required = false) String emergencyPhone,
+            @RequestParam(required = false) String babysitterExp,
+            @RequestParam(required = false) String babysitterAvail,
             HttpSession session) {
 
         if (!checkAuth(session)) return "redirect:/login";
@@ -130,7 +139,8 @@ public class PersonController {
         applyCheckboxes(person, qualNursery, qualCook, qualCareWorker, qualCareHelper,
                 animalDogOk, animalCatOk, animalDogAllergy, animalCatAllergy, lineWorks);
         applyJobPrefs(person, workLocationList, workDutiesList, desiredTypeList,
-                specificDaysJson, workAvailableHoursFrom, workAvailableHoursTo, workStartPeriod);
+                specificDaysJson, workAvailableHoursFrom, workAvailableHoursTo, workStartPeriod,
+                emergencyRelation, emergencyPhone, babysitterExp, babysitterAvail);
 
         personRepository.findById(person.getId()).ifPresent(existing -> {
             if (person.getRegisteredDate() == null) person.setRegisteredDate(existing.getRegisteredDate());
@@ -169,7 +179,11 @@ public class PersonController {
             String specificDaysJson,
             String workAvailableHoursFrom,
             String workAvailableHoursTo,
-            String workStartPeriod) {
+            String workStartPeriod,
+            String emergencyRelation,
+            String emergencyPhone,
+            String babysitterExp,
+            String babysitterAvail) {
 
         // 就労場所
         person.setWorkLocation(listToStr(workLocationList));
@@ -199,6 +213,18 @@ public class PersonController {
         // 労働開始時期
         person.setWorkStartPeriod(workStartPeriod != null && !workStartPeriod.isBlank()
                 ? workStartPeriod : null);
+
+        // 緊急連絡先
+        person.setEmergencyRelation(emergencyRelation != null && !emergencyRelation.isBlank()
+                ? emergencyRelation : null);
+        person.setEmergencyPhone(emergencyPhone != null && !emergencyPhone.isBlank()
+                ? emergencyPhone : null);
+
+        // ベビーシッター
+        person.setBabysitterExp(babysitterExp != null && !babysitterExp.isBlank()
+                ? babysitterExp : null);
+        person.setBabysitterAvail(babysitterAvail != null && !babysitterAvail.isBlank()
+                ? babysitterAvail : null);
     }
 
     private String listToStr(List<String> list) {

@@ -40,6 +40,15 @@ public class DatabaseMigrationRunner implements ApplicationRunner {
             stmt.execute(
                 "ALTER TABLE persons ADD COLUMN IF NOT EXISTS work_start_period TEXT");
 
+            stmt.execute(
+                "ALTER TABLE persons ADD COLUMN IF NOT EXISTS emergency_relation TEXT");
+            stmt.execute(
+                "ALTER TABLE persons ADD COLUMN IF NOT EXISTS emergency_phone TEXT");
+            stmt.execute(
+                "ALTER TABLE persons ADD COLUMN IF NOT EXISTS babysitter_exp TEXT");
+            stmt.execute(
+                "ALTER TABLE persons ADD COLUMN IF NOT EXISTS babysitter_avail TEXT");
+
             System.out.println("[Migration] persons テーブルのカラム追加完了（IF NOT EXISTS）");
 
         } catch (SQLException e) {

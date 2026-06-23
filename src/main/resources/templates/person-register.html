@@ -12,7 +12,6 @@
         .form-section, .list-section { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         h2 { color: #4CAF50; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; margin-top: 0; }
         h2.edit { color: #FF9800; border-color: #FF9800; }
-        h3 { color: #1976D2; background: #E3F2FD; padding: 8px 12px; border-radius: 4px; margin: 20px 0 12px; font-size: 14px; border-left: 4px solid #1976D2; }
         .form-group { margin-bottom: 14px; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         label { display: block; margin-bottom: 4px; font-weight: bold; color: #555; font-size: 13px; }
@@ -43,27 +42,19 @@
         .badge-yes { background: #e8f5e9; color: #2e7d32; }
         .badge-no  { background: #fafafa; color: #999; }
 
-        /* 特定日スタイル */
-        .specific-days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 8px; }
-        .day-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .day-label { font-size: 12px; font-weight: bold; color: #555; }
-        .day-checkbox { width: 18px; height: 18px; cursor: pointer; }
-        .day-time-box { display: none; flex-direction: column; gap: 3px; margin-top: 4px; padding: 6px; background: #E3F2FD; border-radius: 4px; border: 1px solid #90CAF9; width: 100%; box-sizing: border-box; }
-        .day-time-box.show { display: flex; }
-        .day-time-box label { font-size: 10px; color: #1565C0; margin-bottom: 1px; font-weight: bold; }
-        .day-time-box input[type="time"] { padding: 3px 4px; font-size: 11px; width: 100%; }
-        .time-range-row { display: flex; gap: 4px; align-items: center; font-size: 11px; }
-        .time-range-row span { white-space: nowrap; color: #555; }
-        .time-range-row input { flex: 1; }
-
-        /* 就業可能時間 */
-        .hours-row { display: flex; gap: 8px; align-items: center; }
-        .hours-row input[type="time"] { flex: 1; }
-        .hours-row span { color: #555; font-size: 14px; white-space: nowrap; }
-
         /* 就職希望条件セクション */
         .section-box { border: 2px solid #1976D2; border-radius: 6px; padding: 15px; margin-bottom: 16px; }
         .section-box-title { color: #1976D2; font-size: 14px; font-weight: bold; margin: 0 0 12px 0; display: flex; align-items: center; gap: 6px; }
+
+        /* 特定日スタイル：縦並び＋右に時間 */
+        .specific-days-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+        .day-row { display: flex; align-items: center; gap: 10px; }
+        .day-label { font-size: 13px; font-weight: bold; color: #333; width: 24px; text-align: center; flex-shrink: 0; }
+        .day-checkbox { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
+        .day-time-box { display: none; align-items: center; gap: 4px; }
+        .day-time-box.show { display: flex; }
+        .day-time-box input[type="time"] { padding: 4px 6px; font-size: 12px; width: 90px; border: 1px solid #90CAF9; border-radius: 4px; background: #E3F2FD; }
+        .day-time-box span { font-size: 12px; color: #555; }
     </style>
 </head>
 <body>
@@ -81,11 +72,10 @@
               th:object="${person}" method="post" id="personForm">
 
             <input th:if="${editMode}" type="hidden" th:field="*{id}">
-            <!-- 特定日JSON隠しフィールド -->
             <input type="hidden" id="specificDaysJson" name="specificDaysJson"
                    th:value="${person.specificDays != null ? person.specificDays : ''}">
 
-            <!-- ─── 氏名 ─────────────────────────────── -->
+            <!-- ─── 氏名 ─────────────────────────────────────── -->
             <div class="form-row">
                 <div class="form-group">
                     <label>姓（カタカナ）<span class="required">*</span></label>
@@ -107,7 +97,28 @@
                 </div>
             </div>
 
-            <!-- ─── 郵便番号・住所 ─────────────────────── -->
+            <!-- ─── 生年月日（郵便番号の上） ─────────────────── -->
+            <div class="form-group">
+                <label>生年月日</label>
+                <div style="display:flex;gap:6px;align-items:center;">
+                    <select id="birthYear" onchange="updateBirthDate()" style="padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+                        <option value="">年</option>
+                    </select>
+                    <span>年</span>
+                    <select id="birthMonth" onchange="updateBirthDate()" style="padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+                        <option value="">月</option>
+                    </select>
+                    <span>月</span>
+                    <select id="birthDay" onchange="updateBirthDate()" style="padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
+                        <option value="">日</option>
+                    </select>
+                    <span>日</span>
+                    <span id="ageDisplay" style="font-size:14px;color:#2e7d32;font-weight:bold;margin-left:8px;"></span>
+                    <input type="hidden" th:field="*{birthDate}" id="birthDateHidden">
+                </div>
+            </div>
+
+            <!-- ─── 郵便番号・住所 ─────────────────────────────── -->
             <div class="form-group">
                 <label>郵便番号（ハイフンなし7桁）</label>
                 <div class="postal-row">
@@ -130,7 +141,7 @@
                 <div class="addr-note">※部屋番号のみの場合は「101号室」のように入力してください</div>
             </div>
 
-            <!-- ─── 最寄り駅 ───────────────────────────── -->
+            <!-- ─── 最寄り駅 ──────────────────────────────────── -->
             <div class="form-group">
                 <label>最寄り駅名</label>
                 <input type="text" th:field="*{nearestStation}" id="nearestStation"
@@ -143,7 +154,7 @@
                 <div class="station-hint" id="stationHint"></div>
             </div>
 
-            <!-- ─── 電話番号 ──────────────────────────── -->
+            <!-- ─── 電話番号 ─────────────────────────────────── -->
             <div class="form-group">
                 <label>自宅電話番号</label>
                 <input type="text" th:field="*{homePhone}" placeholder="例：03-1234-5678" onblur="formatPhone(this)">
@@ -157,12 +168,27 @@
                 <input type="text" th:field="*{mobilePhone}" required placeholder="例：090-1234-5678" onblur="formatPhone(this)">
             </div>
 
-            <!-- ─── 希望職種 ──────────────────────────── -->
+            <!-- ─── 緊急連絡先 ────────────────────────────────── -->
             <div class="form-group">
-                <label>希望職種 <span class="required">*</span></label>
+                <label>緊急連絡先</label>
+                <div class="form-row">
+                    <div>
+                        <label style="font-weight:normal;font-size:12px;color:#777;">続柄</label>
+                        <input type="text" th:field="*{emergencyRelation}" placeholder="例：夫、長女">
+                    </div>
+                    <div>
+                        <label style="font-weight:normal;font-size:12px;color:#777;">電話番号</label>
+                        <input type="text" th:field="*{emergencyPhone}" placeholder="例：090-0000-0000" onblur="formatPhone(this)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─── 希望職種（* 削除） ───────────────────────── -->
+            <div class="form-group">
+                <label>希望職種</label>
                 <div class="checkbox-group">
                     <div class="checkbox-item">
-                        <input type="radio" name="desiredJob" value="家事" th:checked="${person.desiredJob == '家事'}" required>
+                        <input type="radio" name="desiredJob" value="家事" th:checked="${person.desiredJob == '家事'}">
                         <label>家事</label>
                     </div>
                     <div class="checkbox-item">
@@ -172,13 +198,13 @@
                 </div>
             </div>
 
-            <!-- ─── 紹介者 ────────────────────────────── -->
+            <!-- ─── 紹介者 ─────────────────────────────────── -->
             <div class="form-group">
                 <label>紹介者</label>
                 <input type="text" th:field="*{introducer}" placeholder="例：山田太郎">
             </div>
 
-            <!-- ─── 資格 ──────────────────────────────── -->
+            <!-- ─── 資格 ────────────────────────────────────── -->
             <div class="form-group">
                 <label>資格（複数可）</label>
                 <div class="checkbox-group">
@@ -197,7 +223,7 @@
                 </div>
             </div>
 
-            <!-- ─── 動物 ──────────────────────────────── -->
+            <!-- ─── 動物 ────────────────────────────────────── -->
             <div class="form-group">
                 <label>動物（複数可）</label>
                 <div class="checkbox-group">
@@ -220,7 +246,7 @@
                 </div>
             </div>
 
-            <!-- ─── 料理・タバコ・子育て ──────────────── -->
+            <!-- ─── 料理・タバコ・子育て ──────────────────────── -->
             <div class="form-group">
                 <label>料理 <span class="required">*</span></label>
                 <div class="checkbox-group">
@@ -244,7 +270,7 @@
                 </div>
             </div>
 
-            <!-- ─── LINE WORKS ────────────────────────── -->
+            <!-- ─── LINE WORKS ─────────────────────────────── -->
             <div class="form-group">
                 <label>LINE WORKS登録</label>
                 <div class="checkbox-group">
@@ -255,9 +281,9 @@
                 </div>
             </div>
 
-            <!-- ════════════════════════════════════════ -->
-            <!--  就職希望条件（新規追加セクション）       -->
-            <!-- ════════════════════════════════════════ -->
+            <!-- ════════════════════════════════════════════════ -->
+            <!--  就職希望条件                                    -->
+            <!-- ════════════════════════════════════════════════ -->
             <div class="section-box">
                 <div class="section-box-title">&#127775; 就職希望条件</div>
 
@@ -300,9 +326,9 @@
                     </div>
                 </div>
 
-                <!-- 希望形態（複数可） -->
+                <!-- 就労形態（複数可） -->
                 <div class="form-group">
-                    <label>希望形態（複数可）</label>
+                    <label>就労形態（複数可）</label>
                     <div class="checkbox-group">
                         <div class="checkbox-item">
                             <input type="checkbox" name="desiredTypeList" value="通勤"
@@ -322,107 +348,80 @@
                     </div>
                 </div>
 
-                <!-- 特定日 -->
+                <!-- 特定日：縦並び、チェックで右に時間欄 -->
                 <div class="form-group">
-                    <label>特定日（曜日を選択すると時間入力欄が表示されます）</label>
-                    <div class="specific-days-grid" id="specificDaysGrid">
+                    <label>特定日（チェックすると右に時間入力欄が表示されます）</label>
+                    <div class="specific-days-list">
                         <!-- 月 -->
-                        <div class="day-item">
+                        <div class="day-row">
                             <span class="day-label">月</span>
                             <input type="checkbox" class="day-checkbox" id="day_月" value="月" onchange="toggleDayTime(this)">
                             <div class="day-time-box" id="time_月">
-                                <div class="time-range-row">
-                                    <input type="time" id="from_月" step="900" onchange="updateSpecificDaysJson()">
-                                    <span>〜</span>
-                                    <input type="time" id="to_月" step="900" onchange="updateSpecificDaysJson()">
-                                </div>
+                                <input type="time" id="from_月" step="900" onchange="updateSpecificDaysJson()">
+                                <span>〜</span>
+                                <input type="time" id="to_月" step="900" onchange="updateSpecificDaysJson()">
                             </div>
                         </div>
                         <!-- 火 -->
-                        <div class="day-item">
+                        <div class="day-row">
                             <span class="day-label">火</span>
                             <input type="checkbox" class="day-checkbox" id="day_火" value="火" onchange="toggleDayTime(this)">
                             <div class="day-time-box" id="time_火">
-                                <div class="time-range-row">
-                                    <input type="time" id="from_火" step="900" onchange="updateSpecificDaysJson()">
-                                    <span>〜</span>
-                                    <input type="time" id="to_火" step="900" onchange="updateSpecificDaysJson()">
-                                </div>
+                                <input type="time" id="from_火" step="900" onchange="updateSpecificDaysJson()">
+                                <span>〜</span>
+                                <input type="time" id="to_火" step="900" onchange="updateSpecificDaysJson()">
                             </div>
                         </div>
                         <!-- 水 -->
-                        <div class="day-item">
+                        <div class="day-row">
                             <span class="day-label">水</span>
                             <input type="checkbox" class="day-checkbox" id="day_水" value="水" onchange="toggleDayTime(this)">
                             <div class="day-time-box" id="time_水">
-                                <div class="time-range-row">
-                                    <input type="time" id="from_水" step="900" onchange="updateSpecificDaysJson()">
-                                    <span>〜</span>
-                                    <input type="time" id="to_水" step="900" onchange="updateSpecificDaysJson()">
-                                </div>
+                                <input type="time" id="from_水" step="900" onchange="updateSpecificDaysJson()">
+                                <span>〜</span>
+                                <input type="time" id="to_水" step="900" onchange="updateSpecificDaysJson()">
                             </div>
                         </div>
                         <!-- 木 -->
-                        <div class="day-item">
+                        <div class="day-row">
                             <span class="day-label">木</span>
                             <input type="checkbox" class="day-checkbox" id="day_木" value="木" onchange="toggleDayTime(this)">
                             <div class="day-time-box" id="time_木">
-                                <div class="time-range-row">
-                                    <input type="time" id="from_木" step="900" onchange="updateSpecificDaysJson()">
-                                    <span>〜</span>
-                                    <input type="time" id="to_木" step="900" onchange="updateSpecificDaysJson()">
-                                </div>
+                                <input type="time" id="from_木" step="900" onchange="updateSpecificDaysJson()">
+                                <span>〜</span>
+                                <input type="time" id="to_木" step="900" onchange="updateSpecificDaysJson()">
                             </div>
                         </div>
                         <!-- 金 -->
-                        <div class="day-item">
+                        <div class="day-row">
                             <span class="day-label">金</span>
                             <input type="checkbox" class="day-checkbox" id="day_金" value="金" onchange="toggleDayTime(this)">
                             <div class="day-time-box" id="time_金">
-                                <div class="time-range-row">
-                                    <input type="time" id="from_金" step="900" onchange="updateSpecificDaysJson()">
-                                    <span>〜</span>
-                                    <input type="time" id="to_金" step="900" onchange="updateSpecificDaysJson()">
-                                </div>
+                                <input type="time" id="from_金" step="900" onchange="updateSpecificDaysJson()">
+                                <span>〜</span>
+                                <input type="time" id="to_金" step="900" onchange="updateSpecificDaysJson()">
                             </div>
                         </div>
                         <!-- 土 -->
-                        <div class="day-item">
+                        <div class="day-row">
                             <span class="day-label">土</span>
                             <input type="checkbox" class="day-checkbox" id="day_土" value="土" onchange="toggleDayTime(this)">
                             <div class="day-time-box" id="time_土">
-                                <div class="time-range-row">
-                                    <input type="time" id="from_土" step="900" onchange="updateSpecificDaysJson()">
-                                    <span>〜</span>
-                                    <input type="time" id="to_土" step="900" onchange="updateSpecificDaysJson()">
-                                </div>
+                                <input type="time" id="from_土" step="900" onchange="updateSpecificDaysJson()">
+                                <span>〜</span>
+                                <input type="time" id="to_土" step="900" onchange="updateSpecificDaysJson()">
                             </div>
                         </div>
                         <!-- 日 -->
-                        <div class="day-item">
+                        <div class="day-row">
                             <span class="day-label">日</span>
                             <input type="checkbox" class="day-checkbox" id="day_日" value="日" onchange="toggleDayTime(this)">
                             <div class="day-time-box" id="time_日">
-                                <div class="time-range-row">
-                                    <input type="time" id="from_日" step="900" onchange="updateSpecificDaysJson()">
-                                    <span>〜</span>
-                                    <input type="time" id="to_日" step="900" onchange="updateSpecificDaysJson()">
-                                </div>
+                                <input type="time" id="from_日" step="900" onchange="updateSpecificDaysJson()">
+                                <span>〜</span>
+                                <input type="time" id="to_日" step="900" onchange="updateSpecificDaysJson()">
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- 就業可能時間 -->
-                <div class="form-group">
-                    <label>就業可能時間</label>
-                    <div class="hours-row">
-                        <input type="time" id="workHoursFrom" name="workAvailableHoursFrom" step="900"
-                               th:value="${person.workAvailableHours != null ? #strings.substringBefore(person.workAvailableHours, '-') : ''}">
-                        <span>時から</span>
-                        <input type="time" id="workHoursTo" name="workAvailableHoursTo" step="900"
-                               th:value="${person.workAvailableHours != null ? #strings.substringAfter(person.workAvailableHours, '-') : ''}">
-                        <span>時まで</span>
                     </div>
                 </div>
 
@@ -444,31 +443,48 @@
                         </div>
                     </div>
                 </div>
-            </div>
-            <!-- ════════════════════════════════════════ -->
 
-            <!-- ─── 生年月日 ──────────────────────────── -->
-            <div class="form-group">
-                <label>生年月日</label>
-                <div style="display:flex;gap:6px;align-items:center;">
-                    <select id="birthYear" onchange="updateBirthDate()" style="padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
-                        <option value="">年</option>
-                    </select>
-                    <span>年</span>
-                    <select id="birthMonth" onchange="updateBirthDate()" style="padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
-                        <option value="">月</option>
-                    </select>
-                    <span>月</span>
-                    <select id="birthDay" onchange="updateBirthDate()" style="padding:8px;border:1px solid #ddd;border-radius:4px;font-size:14px;">
-                        <option value="">日</option>
-                    </select>
-                    <span>日</span>
-                    <span id="ageDisplay" style="font-size:14px;color:#2e7d32;font-weight:bold;margin-left:8px;"></span>
-                    <input type="hidden" th:field="*{birthDate}" id="birthDateHidden">
+                <!-- ベビーシッター -->
+                <div class="form-group">
+                    <label>ベビーシッター</label>
+                    <div class="form-row">
+                        <div>
+                            <label style="font-weight:normal;font-size:12px;color:#777;">経験</label>
+                            <div class="checkbox-group" style="margin-top:4px;">
+                                <div class="checkbox-item">
+                                    <input type="radio" name="babysitterExp" value="あり"
+                                           th:checked="${person.babysitterExp == 'あり'}">
+                                    <label>あり</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="radio" name="babysitterExp" value="なし"
+                                           th:checked="${person.babysitterExp == 'なし'}">
+                                    <label>なし</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label style="font-weight:normal;font-size:12px;color:#777;">可否</label>
+                            <div class="checkbox-group" style="margin-top:4px;">
+                                <div class="checkbox-item">
+                                    <input type="radio" name="babysitterAvail" value="できる"
+                                           th:checked="${person.babysitterAvail == 'できる'}">
+                                    <label>できる</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="radio" name="babysitterAvail" value="できない"
+                                           th:checked="${person.babysitterAvail == 'できない'}">
+                                    <label>できない</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <!-- ─── 登録日 ──────────────────────────── -->
+            </div>
+            <!-- ════════════════════════════════════════════════ -->
+
+            <!-- ─── 登録日 ────────────────────────────────── -->
             <div class="form-group">
                 <label>登録日</label>
                 <div style="display:flex;gap:6px;align-items:center;">
@@ -504,7 +520,7 @@
                     <th>氏名</th>
                     <th>年齢</th>
                     <th>携帯電話</th>
-                    <th>希望</th>
+                    <th>就労形態</th>
                     <th>就労場所</th>
                     <th>LINE</th>
                     <th>登録日</th>
@@ -543,19 +559,16 @@
 </div>
 
 <script>
-// Enterキー送信無効
 document.getElementById('personForm').addEventListener('keydown', function(e) {
     if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') e.preventDefault();
 });
-
-// フォーム送信前に更新
 document.getElementById('personForm').addEventListener('submit', function() {
     updateBirthDate();
     updateRegDate();
     updateSpecificDaysJson();
 });
 
-// ─── 特定日JSON ────────────────────────────────────────
+// ─── 特定日 ─────────────────────────────────────────
 var DAYS = ['月','火','水','木','金','土','日'];
 
 function toggleDayTime(checkbox) {
@@ -585,7 +598,6 @@ function updateSpecificDaysJson() {
         Object.keys(result).length > 0 ? JSON.stringify(result) : '';
 }
 
-// 既存データの特定日を復元
 (function() {
     var jsonStr = document.getElementById('specificDaysJson').value;
     if (!jsonStr) return;
@@ -611,36 +623,31 @@ function updateSpecificDaysJson() {
     } catch(e) {}
 })();
 
-// ─── 生年月日セレクト ────────────────────────────────
+// ─── 生年月日 ─────────────────────────────────────────
 (function() {
     var yearSel  = document.getElementById('birthYear');
     var monthSel = document.getElementById('birthMonth');
     var daySel   = document.getElementById('birthDay');
     var hidden   = document.getElementById('birthDateHidden');
-    var existingBirth = hidden.value || '';
+    var existing = hidden.value || '';
     var cy = new Date().getFullYear();
     for (var y = cy; y >= 1920; y--) {
-        var o = document.createElement('option');
-        o.value = y; o.textContent = y; yearSel.appendChild(o);
+        var o = document.createElement('option'); o.value = y; o.textContent = y; yearSel.appendChild(o);
     }
     for (var m = 1; m <= 12; m++) {
-        var o2 = document.createElement('option');
-        o2.value = String(m).padStart(2,'0'); o2.textContent = m; monthSel.appendChild(o2);
+        var o2 = document.createElement('option'); o2.value = String(m).padStart(2,'0'); o2.textContent = m; monthSel.appendChild(o2);
     }
     for (var d = 1; d <= 31; d++) {
-        var o3 = document.createElement('option');
-        o3.value = String(d).padStart(2,'0'); o3.textContent = d; daySel.appendChild(o3);
+        var o3 = document.createElement('option'); o3.value = String(d).padStart(2,'0'); o3.textContent = d; daySel.appendChild(o3);
     }
-    if (existingBirth && existingBirth.length >= 8) {
-        var parts = existingBirth.substring(0,10).split('-');
-        if (parts.length === 3) {
-            yearSel.value = parts[0]; monthSel.value = parts[1]; daySel.value = parts[2];
-        }
+    if (existing && existing.length >= 8) {
+        var parts = existing.substring(0,10).split('-');
+        if (parts.length === 3) { yearSel.value = parts[0]; monthSel.value = parts[1]; daySel.value = parts[2]; }
     }
     updateBirthDate();
 })();
 
-// ─── 登録日セレクト ──────────────────────────────────
+// ─── 登録日 ───────────────────────────────────────────
 (function() {
     var yearSel  = document.getElementById('regYear');
     var monthSel = document.getElementById('regMonth');
@@ -649,23 +656,18 @@ function updateSpecificDaysJson() {
     var existing = hidden.value || '';
     var cy = new Date().getFullYear();
     for (var y = cy; y >= 2000; y--) {
-        var o = document.createElement('option');
-        o.value = y; o.textContent = y; yearSel.appendChild(o);
+        var o = document.createElement('option'); o.value = y; o.textContent = y; yearSel.appendChild(o);
     }
     for (var m = 1; m <= 12; m++) {
-        var o2 = document.createElement('option');
-        o2.value = String(m).padStart(2,'0'); o2.textContent = m; monthSel.appendChild(o2);
+        var o2 = document.createElement('option'); o2.value = String(m).padStart(2,'0'); o2.textContent = m; monthSel.appendChild(o2);
     }
     for (var d = 1; d <= 31; d++) {
-        var o3 = document.createElement('option');
-        o3.value = String(d).padStart(2,'0'); o3.textContent = d; daySel.appendChild(o3);
+        var o3 = document.createElement('option'); o3.value = String(d).padStart(2,'0'); o3.textContent = d; daySel.appendChild(o3);
     }
     var target = existing || new Date().toISOString().split('T')[0];
     if (target && target.length >= 8) {
         var parts = target.substring(0,10).split('-');
-        if (parts.length === 3) {
-            yearSel.value = parts[0]; monthSel.value = parts[1]; daySel.value = parts[2];
-        }
+        if (parts.length === 3) { yearSel.value = parts[0]; monthSel.value = parts[1]; daySel.value = parts[2]; }
     }
     updateRegDate();
 })();
@@ -687,36 +689,26 @@ function updateBirthDate() {
         var today = new Date();
         var birth = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
         var age = today.getFullYear() - birth.getFullYear();
-        var monthDiff = today.getMonth() - birth.getMonth();
-        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
+        var md = today.getMonth() - birth.getMonth();
+        if (md < 0 || (md === 0 && today.getDate() < birth.getDate())) age--;
         ageEl.textContent = '（' + age + '歳）';
-    } else {
-        ageEl.textContent = '';
-    }
+    } else { ageEl.textContent = ''; }
 }
 
-// 電話番号ハイフン自動付与
 function formatPhone(input) {
     var raw = input.value.replace(/[^\d]/g, '');
     if (!raw) return;
     var f = '';
     if (raw.length === 10) {
-        if (/^(0120|0800|0570)/.test(raw)) {
-            f = raw.slice(0,4) + '-' + raw.slice(4,7) + '-' + raw.slice(7);
-        } else if (/^0[3-9]/.test(raw)) {
-            f = raw.slice(0,2) + '-' + raw.slice(2,6) + '-' + raw.slice(6);
-        } else {
-            f = raw.slice(0,3) + '-' + raw.slice(3,6) + '-' + raw.slice(6);
-        }
-    } else if (raw.length === 11) {
-        f = raw.slice(0,3) + '-' + raw.slice(3,7) + '-' + raw.slice(7);
-    } else if (raw.length === 12) {
-        f = raw.slice(0,4) + '-' + raw.slice(4,8) + '-' + raw.slice(8);
+        if (/^(0120|0800|0570)/.test(raw)) f = raw.slice(0,4)+'-'+raw.slice(4,7)+'-'+raw.slice(7);
+        else if (/^0[3-9]/.test(raw)) f = raw.slice(0,2)+'-'+raw.slice(2,6)+'-'+raw.slice(6);
+        else f = raw.slice(0,3)+'-'+raw.slice(3,6)+'-'+raw.slice(6);
+    } else if (raw.length === 11) { f = raw.slice(0,3)+'-'+raw.slice(3,7)+'-'+raw.slice(7);
+    } else if (raw.length === 12) { f = raw.slice(0,4)+'-'+raw.slice(4,8)+'-'+raw.slice(8);
     } else { return; }
     input.value = f;
 }
 
-// 住所自動入力
 function searchAddress() {
     var code = document.getElementById('postalCode').value.replace(/-/g, '');
     if (code.length !== 7) { alert('郵便番号はハイフンなし7桁で入力してください'); return; }
@@ -730,22 +722,18 @@ function searchAddress() {
         });
 }
 
-// 削除確認
 function confirmDelete(id, el) {
     var row = el.closest('tr');
     var name = row.cells[1].textContent.trim();
     if (confirm('「' + name + '」を削除してもいいですか？\nこの操作は元に戻せません。')) {
         var form = document.createElement('form');
-        form.method = 'post';
-        form.action = '/person/delete/' + id;
-        document.body.appendChild(form);
-        form.submit();
+        form.method = 'post'; form.action = '/person/delete/' + id;
+        document.body.appendChild(form); form.submit();
     }
     return false;
 }
 
-// 駅名→路線自動補完
-var STATION_LINES = {"東京":["JR東海道新幹線","JR横須賀線","JR京浜東北線","JR山手線","JR上越新幹線","JR総武本線","JR中央本線","JR北陸新幹線","JR東海道本線","JR東北新幹線","JR宇都宮線","東京メトロ丸ノ内線"],"品川":["JR東海道新幹線","JR横須賀線","JR京浜東北線","JR山手線","JR東海道本線","京急本線"],"新橋":["JR横須賀線","JR京浜東北線","JR山手線","ゆりかもめ","東京メトロ銀座線","都営浅草線"],"武蔵小杉":["JR横須賀線","JR埼京線","JR南武線","JR湘南新宿ライン","東京メトロ南北線","東急東横線","東急目黒線"],"横浜":["JR横須賀線","JR京浜東北線","JR東海道本線","JR湘南新宿ライン","京急本線","東急東横線"],"大宮":["JR京浜東北線","JR埼京線","JR上越新幹線","JR北陸新幹線","JR東北新幹線","JR宇都宮線","JR湘南新宿ライン"],"浦和":["JR京浜東北線","JR宇都宮線","JR湘南新宿ライン"],"赤羽":["JR京浜東北線","JR埼京線","JR宇都宮線","JR湘南新宿ライン"],"王子":["JR京浜東北線","東京メトロ南北線"],"池袋":["JR埼京線","JR山手線","JR湘南新宿ライン","西武池袋線","東京メトロ丸ノ内線","東京メトロ有楽町線","東京メトロ副都心線","東武東上線"],"新宿":["JR埼京線","JR山手線","JR中央本線","JR湘南新宿ライン","京王線","小田急小田原線","東京メトロ丸ノ内線","都営大江戸線","都営新宿線"],"渋谷":["JR埼京線","JR山手線","JR湘南新宿ライン","京王井の頭線","東京メトロ銀座線","東京メトロ半蔵門線","東京メトロ副都心線","東急田園都市線","東急東横線"],"恵比寿":["JR埼京線","JR山手線","JR湘南新宿ライン","東京メトロ日比谷線"],"大崎":["JR埼京線","JR山手線","JR湘南新宿ライン","りんかい線"],"五反田":["JR山手線","東急池上線","都営浅草線"],"目黒":["JR山手線","東京メトロ南北線","東急目黒線","都営三田線"],"上野":["JR京浜東北線","JR山手線","JR上越新幹線","JR常磐線","JR北陸新幹線","JR東北新幹線","JR宇都宮線","東京メトロ銀座線","東京メトロ日比谷線"],"秋葉原":["JR京浜東北線","JR山手線","JR総武線各停","東京メトロ日比谷線","つくばエクスプレス"],"神田":["JR京浜東北線","JR山手線","JR中央本線","東京メトロ銀座線"],"有楽町":["JR京浜東北線","JR山手線","東京メトロ有楽町線"],"浜松町":["JR京浜東北線","JR山手線","東京モノレール","都営大江戸線"],"表参道":["東京メトロ銀座線","東京メトロ千代田線","東京メトロ半蔵門線"],"銀座":["東京メトロ丸ノ内線","東京メトロ銀座線","東京メトロ日比谷線"],"浅草":["東京メトロ銀座線","都営浅草線","東武伊勢崎線","つくばエクスプレス"],"大手町":["東京メトロ丸ノ内線","東京メトロ千代田線","東京メトロ東西線","東京メトロ半蔵門線","都営三田線"],"六本木":["東京メトロ日比谷線","都営大江戸線"],"麻布十番":["東京メトロ南北線","都営大江戸線"],"月島":["東京メトロ有楽町線","都営大江戸線"],"豊洲":["ゆりかもめ","東京メトロ有楽町線"],"北千住":["JR常磐線","東京メトロ千代田線","東京メトロ日比谷線","東武伊勢崎線","つくばエクスプレス"],"立川":["JR青梅線","JR中央本線","JR南武線"],"吉祥寺":["JR中央本線","京王井の頭線"],"下北沢":["京王井の頭線","小田急小田原線"],"調布":["京王線","京王相模原線"],"町田":["JR横浜線","小田急小田原線"],"所沢":["西武新宿線","西武池袋線"],"成田空港":["京成本線","京成成田スカイアクセス線・北総線"]};
+var STATION_LINES = {"東京":["JR東海道新幹線","JR横須賀線","JR京浜東北線","JR山手線","JR上越新幹線","JR総武本線","JR中央本線","JR北陸新幹線","JR東海道本線","JR東北新幹線","JR宇都宮線","東京メトロ丸ノ内線"],"品川":["JR東海道新幹線","JR横須賀線","JR京浜東北線","JR山手線","JR東海道本線","京急本線"],"新橋":["JR横須賀線","JR京浜東北線","JR山手線","ゆりかもめ","東京メトロ銀座線","都営浅草線"],"武蔵小杉":["JR横須賀線","JR埼京線","JR南武線","JR湘南新宿ライン","東京メトロ南北線","東急東横線","東急目黒線"],"横浜":["JR横須賀線","JR京浜東北線","JR東海道本線","JR湘南新宿ライン","京急本線","東急東横線"],"大宮":["JR京浜東北線","JR埼京線","JR上越新幹線","JR北陸新幹線","JR東北新幹線","JR宇都宮線","JR湘南新宿ライン"],"池袋":["JR埼京線","JR山手線","JR湘南新宿ライン","西武池袋線","東京メトロ丸ノ内線","東京メトロ有楽町線","東京メトロ副都心線","東武東上線"],"新宿":["JR埼京線","JR山手線","JR中央本線","JR湘南新宿ライン","京王線","小田急小田原線","東京メトロ丸ノ内線","都営大江戸線","都営新宿線"],"渋谷":["JR埼京線","JR山手線","JR湘南新宿ライン","京王井の頭線","東京メトロ銀座線","東京メトロ半蔵門線","東京メトロ副都心線","東急田園都市線","東急東横線"],"恵比寿":["JR埼京線","JR山手線","JR湘南新宿ライン","東京メトロ日比谷線"],"上野":["JR京浜東北線","JR山手線","JR上越新幹線","JR常磐線","JR北陸新幹線","JR東北新幹線","JR宇都宮線","東京メトロ銀座線","東京メトロ日比谷線"],"秋葉原":["JR京浜東北線","JR山手線","JR総武線各停","東京メトロ日比谷線","つくばエクスプレス"],"表参道":["東京メトロ銀座線","東京メトロ千代田線","東京メトロ半蔵門線"],"銀座":["東京メトロ丸ノ内線","東京メトロ銀座線","東京メトロ日比谷線"],"浅草":["東京メトロ銀座線","都営浅草線","東武伊勢崎線","つくばエクスプレス"],"大手町":["東京メトロ丸ノ内線","東京メトロ千代田線","東京メトロ東西線","東京メトロ半蔵門線","都営三田線"],"六本木":["東京メトロ日比谷線","都営大江戸線"],"麻布十番":["東京メトロ南北線","都営大江戸線"],"月島":["東京メトロ有楽町線","都営大江戸線"],"豊洲":["ゆりかもめ","東京メトロ有楽町線"],"北千住":["JR常磐線","東京メトロ千代田線","東京メトロ日比谷線","東武伊勢崎線","つくばエクスプレス"],"立川":["JR青梅線","JR中央本線","JR南武線"],"吉祥寺":["JR中央本線","京王井の頭線"],"下北沢":["京王井の頭線","小田急小田原線"],"調布":["京王線","京王相模原線"],"町田":["JR横浜線","小田急小田原線"]};
 
 function lookupLines(stationName) {
     var hint = document.getElementById('stationHint');
@@ -754,19 +742,15 @@ function lookupLines(stationName) {
     if (!name) { lineInput.value = ''; hint.textContent = ''; return; }
     if (STATION_LINES[name]) {
         lineInput.value = STATION_LINES[name].join('・');
-        hint.textContent = '✓ 路線を自動入力しました';
-        hint.style.color = '#4CAF50';
-        return;
+        hint.textContent = '✓ 路線を自動入力しました'; hint.style.color = '#4CAF50'; return;
     }
     var match = Object.keys(STATION_LINES).find(function(k) { return k.includes(name) || name.includes(k); });
     if (match) {
         lineInput.value = STATION_LINES[match].join('・');
-        hint.textContent = '✓ 路線を自動入力しました（' + match + '駅）';
-        hint.style.color = '#4CAF50';
+        hint.textContent = '✓ 路線を自動入力しました（' + match + '駅）'; hint.style.color = '#4CAF50';
     } else {
         lineInput.value = '';
-        hint.textContent = '路線情報が見つかりませんでした。手動で入力してください。';
-        hint.style.color = '#FF9800';
+        hint.textContent = '路線情報が見つかりませんでした。手動で入力してください。'; hint.style.color = '#FF9800';
     }
 }
 </script>
