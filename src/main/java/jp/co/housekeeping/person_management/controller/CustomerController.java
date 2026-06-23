@@ -98,8 +98,6 @@ public class CustomerController {
                 customer.setNo(existing.getNo());
             if (customer.getRegisteredDate() == null)
                 customer.setRegisteredDate(existing.getRegisteredDate());
-            if (customer.getBirthDate() == null)
-                customer.setBirthDate(existing.getBirthDate());
             if (customer.getHomePhone() == null)
                 customer.setHomePhone(existing.getHomePhone());
             if (customer.getMobilePhone() == null)
