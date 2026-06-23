@@ -131,11 +131,19 @@ public class IntroductionController {
         return "introduction-list";
     }
 
-    // 削除
+    // 削除（個別）
     @PostMapping("/delete/{id}")
     public String delete(@PathVariable Long id, HttpSession session) {
         if (!checkAuth(session)) return "redirect:/login";
         introductionRepository.deleteById(id);
+        return "redirect:/introduction/list";
+    }
+
+    // ─── 一括削除 ──────────────────────────────────────
+    @PostMapping("/delete-all")
+    public String deleteAll(HttpSession session) {
+        if (!checkAuth(session)) return "redirect:/login";
+        introductionRepository.deleteAll();
         return "redirect:/introduction/list";
     }
 
