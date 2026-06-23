@@ -504,6 +504,14 @@
                 </div>
             </div>
 
+            <!-- ─── 備考 ────────────────────────────────── -->
+            <div class="form-group">
+                <label>備考</label>
+                <textarea th:field="*{notes}" rows="4"
+                          placeholder="特記事項・注意事項など自由に入力してください"
+                          style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box;font-size:14px;resize:vertical;font-family:inherit;"></textarea>
+            </div>
+
             <button type="submit" th:classappend="${editMode} ? 'edit-btn' : ''"
                     th:text="${editMode} ? '更新する' : '登録する'">登録する</button>
             <a th:if="${editMode}" href="/person/register" class="cancel-btn">キャンセル</a>

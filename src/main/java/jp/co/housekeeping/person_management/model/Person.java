@@ -73,6 +73,9 @@ public class Person {
     /** ベビーシッター可否 (できる/できない) */
     private String babysitterAvail;
 
+    /** 備考 */
+    private String notes;
+
     public Person() {}
 
     // ─── getters / setters ──────────────────────────────
@@ -162,4 +165,6 @@ public class Person {
     public void setBabysitterExp(String babysitterExp) { this.babysitterExp = babysitterExp; }
     public String getBabysitterAvail() { return babysitterAvail; }
     public void setBabysitterAvail(String babysitterAvail) { this.babysitterAvail = babysitterAvail; }
+    public String getNotes() { return notes; }
+    public void setNotes(String notes) { this.notes = notes; }
 }
