@@ -535,13 +535,71 @@ function update(){
     ['doc1','doc2','doc3'].forEach(function(id){g(id).style.display='block';});
 }
 
+function collectFormData(){
+    // 全フィールドをJSONオブジェクトとして収集
+    return {
+        jobKaji:        g('jobKaji').checked,
+        jobKaigo:       g('jobKaigo').checked,
+        jobOther:       g('jobOther').checked,
+        jobOtherText:   g('jobOtherText').value,
+        workPostal:     g('workPostal').value,
+        workPlace:      g('workPlace').value,
+        workStation:    g('workStation').value,
+        workLine:       g('workLine').value,
+        workAccess:     g('workAccess').value,
+        smoking:        g('smoking').value,
+        empPeriod:      gc('empPeriod'),
+        empFrom:        g('empFrom').value,
+        empTo:          g('empTo').value,
+        trialPeriod:    gc('trialPeriod'),
+        trialFrom:      g('trialFrom').value,
+        trialTo:        g('trialTo').value,
+        workStyle:      gc('workStyle'),
+        dow:            getDow('dow'),
+        wSH:            g('wSH').value,
+        wSM:            g('wSM').value,
+        wEH:            g('wEH').value,
+        wEM:            g('wEM').value,
+        actualHours:    g('actualHours').value,
+        overtime:       gc('overtime'),
+        breakTime:      g('breakTime').value,
+        holWeekly:      g('holWeekly').checked,
+        holBiWeekly:    g('holBiWeekly').checked,
+        holHoliday:     g('holHoliday').checked,
+        holOther:       g('holOther').checked,
+        holDow:         getDow('hol-dow'),
+        wageType:       gc('wageType'),
+        baseWage:       g('baseWage').value,
+        overtimeWage:   g('overtimeWage').value,
+        transNone:      g('transNone').checked,
+        transReal:      g('transReal').checked,
+        transYes:       g('transYes').checked,
+        transportAmt:   g('transportAmt').value,
+        raise:          gc('raise'),
+        payDaily:       g('payDaily').checked,
+        payWeekly:      g('payWeekly').checked,
+        payWeeklyDay:   g('payWeeklyDay').value,
+        payMonthly:     g('payMonthly').checked,
+        payMonthlyDay:  g('payMonthlyDay').value,
+        payMethod:      gc('payMethod'),
+        insHealth:      g('insHealth').checked,
+        insPension:     g('insPension').checked,
+        insEmploy:      g('insEmploy').checked,
+        insWork:        g('insWork').checked,
+        insWorkSpecial: g('insWorkSpecial').checked,
+        insOther:       g('insOther').checked,
+        insOtherText:   g('insOtherText').value,
+        remarks:        g('remarksField').value
+    };
+}
+
 function saveIntro(){
     var pSel=g('personSelect'),cSel=g('customerSelect');
     var params=new URLSearchParams();
     if(pSel.value) params.append('personId',pSel.value);
     if(cSel.value) params.append('customerId',cSel.value);
     params.append('introDate',g('introDate').value||'');
-    params.append('formData','{}');
+    params.append('formData', JSON.stringify(collectFormData()));
     fetch('/introduction/save',{method:'POST',body:params})
         .then(function(r){return r.text();})
         .then(function(refNo){
