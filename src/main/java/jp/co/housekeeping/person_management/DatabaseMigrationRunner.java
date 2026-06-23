@@ -1,0 +1,50 @@
+package jp.co.housekeeping.person_management;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+import javax.sql.DataSource;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.stereotype.Component;
+
+/**
+ * アプリ起動時にDBマイグレーションを自動実行する。
+ * IF NOT EXISTS を使うため冪等（何度実行しても安全）。
+ */
+@Component
+public class DatabaseMigrationRunner implements ApplicationRunner {
+
+    @Autowired
+    private DataSource dataSource;
+
+    @Override
+    public void run(ApplicationArguments args) throws Exception {
+        try (Connection conn = dataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
+
+            // ─── schema-update-6: persons テーブル拡張（就職希望条件） ───
+            stmt.execute(
+                "ALTER TABLE persons ADD COLUMN IF NOT EXISTS work_location TEXT");
+            stmt.execute(
+                "ALTER TABLE persons ADD COLUMN IF NOT EXISTS work_duties TEXT");
+            stmt.execute(
+                "ALTER TABLE persons ADD COLUMN IF NOT EXISTS desired_types TEXT");
+            stmt.execute(
+                "ALTER TABLE persons ADD COLUMN IF NOT EXISTS specific_days TEXT");
+            stmt.execute(
+                "ALTER TABLE persons ADD COLUMN IF NOT EXISTS work_available_hours TEXT");
+            stmt.execute(
+                "ALTER TABLE persons ADD COLUMN IF NOT EXISTS work_start_period TEXT");
+
+            System.out.println("[Migration] persons テーブルのカラム追加完了（IF NOT EXISTS）");
+
+        } catch (SQLException e) {
+            System.err.println("[Migration] エラー: " + e.getMessage());
+            throw e;
+        }
+    }
+}

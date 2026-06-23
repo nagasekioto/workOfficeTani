@@ -326,19 +326,87 @@
                 <div class="form-group">
                     <label>特定日（曜日を選択すると時間入力欄が表示されます）</label>
                     <div class="specific-days-grid" id="specificDaysGrid">
-                        <div class="day-item" th:each="day : ${ {'月','火','水','木','金','土','日'} }">
-                            <span class="day-label" th:text="${day}">月</span>
-                            <input type="checkbox" class="day-checkbox"
-                                   th:id="'day_' + ${day}"
-                                   th:value="${day}"
-                                   onchange="toggleDayTime(this)">
-                            <div class="day-time-box" th:id="'time_' + ${day}">
+                        <!-- 月 -->
+                        <div class="day-item">
+                            <span class="day-label">月</span>
+                            <input type="checkbox" class="day-checkbox" id="day_月" value="月" onchange="toggleDayTime(this)">
+                            <div class="day-time-box" id="time_月">
                                 <div class="time-range-row">
-                                    <input type="time" th:id="'from_' + ${day}" step="900"
-                                           onchange="updateSpecificDaysJson()">
+                                    <input type="time" id="from_月" step="900" onchange="updateSpecificDaysJson()">
                                     <span>〜</span>
-                                    <input type="time" th:id="'to_' + ${day}" step="900"
-                                           onchange="updateSpecificDaysJson()">
+                                    <input type="time" id="to_月" step="900" onchange="updateSpecificDaysJson()">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 火 -->
+                        <div class="day-item">
+                            <span class="day-label">火</span>
+                            <input type="checkbox" class="day-checkbox" id="day_火" value="火" onchange="toggleDayTime(this)">
+                            <div class="day-time-box" id="time_火">
+                                <div class="time-range-row">
+                                    <input type="time" id="from_火" step="900" onchange="updateSpecificDaysJson()">
+                                    <span>〜</span>
+                                    <input type="time" id="to_火" step="900" onchange="updateSpecificDaysJson()">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 水 -->
+                        <div class="day-item">
+                            <span class="day-label">水</span>
+                            <input type="checkbox" class="day-checkbox" id="day_水" value="水" onchange="toggleDayTime(this)">
+                            <div class="day-time-box" id="time_水">
+                                <div class="time-range-row">
+                                    <input type="time" id="from_水" step="900" onchange="updateSpecificDaysJson()">
+                                    <span>〜</span>
+                                    <input type="time" id="to_水" step="900" onchange="updateSpecificDaysJson()">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 木 -->
+                        <div class="day-item">
+                            <span class="day-label">木</span>
+                            <input type="checkbox" class="day-checkbox" id="day_木" value="木" onchange="toggleDayTime(this)">
+                            <div class="day-time-box" id="time_木">
+                                <div class="time-range-row">
+                                    <input type="time" id="from_木" step="900" onchange="updateSpecificDaysJson()">
+                                    <span>〜</span>
+                                    <input type="time" id="to_木" step="900" onchange="updateSpecificDaysJson()">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 金 -->
+                        <div class="day-item">
+                            <span class="day-label">金</span>
+                            <input type="checkbox" class="day-checkbox" id="day_金" value="金" onchange="toggleDayTime(this)">
+                            <div class="day-time-box" id="time_金">
+                                <div class="time-range-row">
+                                    <input type="time" id="from_金" step="900" onchange="updateSpecificDaysJson()">
+                                    <span>〜</span>
+                                    <input type="time" id="to_金" step="900" onchange="updateSpecificDaysJson()">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 土 -->
+                        <div class="day-item">
+                            <span class="day-label">土</span>
+                            <input type="checkbox" class="day-checkbox" id="day_土" value="土" onchange="toggleDayTime(this)">
+                            <div class="day-time-box" id="time_土">
+                                <div class="time-range-row">
+                                    <input type="time" id="from_土" step="900" onchange="updateSpecificDaysJson()">
+                                    <span>〜</span>
+                                    <input type="time" id="to_土" step="900" onchange="updateSpecificDaysJson()">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 日 -->
+                        <div class="day-item">
+                            <span class="day-label">日</span>
+                            <input type="checkbox" class="day-checkbox" id="day_日" value="日" onchange="toggleDayTime(this)">
+                            <div class="day-time-box" id="time_日">
+                                <div class="time-range-row">
+                                    <input type="time" id="from_日" step="900" onchange="updateSpecificDaysJson()">
+                                    <span>〜</span>
+                                    <input type="time" id="to_日" step="900" onchange="updateSpecificDaysJson()">
                                 </div>
                             </div>
                         </div>
