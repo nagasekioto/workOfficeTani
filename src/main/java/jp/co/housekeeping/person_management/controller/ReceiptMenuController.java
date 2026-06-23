@@ -561,7 +561,7 @@ public class ReceiptMenuController {
         nameTable.setWidthPercentage(100);
         nameTable.addCell(cell("求職者名", smallFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT));
         PdfPCell nameLine = cell(personName + "　様", boldFont, Rectangle.BOTTOM, Element.ALIGN_LEFT);
-        nameLine.setSpacingBefore(20);
+        nameLine.setPaddingTop(16);
         nameTable.addCell(nameLine);
         PdfPCell nameWrap = new PdfPCell(nameTable);
         nameWrap.setBorder(Rectangle.NO_BORDER);
