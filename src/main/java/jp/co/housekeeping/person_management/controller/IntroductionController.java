@@ -35,7 +35,6 @@ import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.FillPatternType;
-import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
@@ -510,7 +509,7 @@ public class IntroductionController {
             hStyle.setBorderTop(BorderStyle.THIN);
             hStyle.setBorderLeft(BorderStyle.THIN);
             hStyle.setBorderRight(BorderStyle.THIN);
-            Font hFont = wb.createFont();
+            org.apache.poi.ss.usermodel.Font hFont = wb.createFont();
             hFont.setBold(true);
             hFont.setColor(IndexedColors.WHITE.getIndex());
             hFont.setFontName("メイリオ");
@@ -522,7 +521,7 @@ public class IntroductionController {
             dStyle.setBorderTop(BorderStyle.THIN);
             dStyle.setBorderLeft(BorderStyle.THIN);
             dStyle.setBorderRight(BorderStyle.THIN);
-            Font dFont = wb.createFont();
+            org.apache.poi.ss.usermodel.Font dFont = wb.createFont();
             dFont.setFontName("メイリオ");
             dStyle.setFont(dFont);
 
