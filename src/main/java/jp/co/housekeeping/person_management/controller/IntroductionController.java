@@ -222,8 +222,8 @@ public class IntroductionController {
                 for (String[] docType : docTypes) {
                     String corner = docType[0];
                     String title  = docType[1];
-                    String safePersonName   = personName.replaceAll("[\\/:*?"<>|]", "_");
-                    String safeCustomerName = customerName.replaceAll("[\\/:*?"<>|]", "_");
+                    String safePersonName   = personName.replaceAll("[/:*?<>|]", "_");
+                    String safeCustomerName = customerName.replaceAll("[/:*?<>|]", "_");
                     String fileName = refNo + "_" + title + "_" + safePersonName
                         + "_" + safeCustomerName + ".pdf";
 
@@ -258,10 +258,9 @@ public class IntroductionController {
             Font normalFont = new Font(bf, 9);
             Font smallFont  = new Font(bf, 8);
 
-            // ── ヘッダー行（角枠 + 紹介番号） ────────────
+            // ── ヘッダー行 ────────────────────────────────
             PdfPTable hdr = new PdfPTable(new float[]{1, 3});
-            hdr.setWidthPercentage(100);
-            hdr.setSpacingAfter(4);
+            hdr.setWidthPercentage(100); hdr.setSpacingAfter(4);
             PdfPCell cornerCell = new PdfPCell(new Phrase(corner, boldFont));
             cornerCell.setBorder(Rectangle.BOX); cornerCell.setPadding(3);
             cornerCell.setHorizontalAlignment(Element.ALIGN_CENTER);
@@ -273,61 +272,38 @@ public class IntroductionController {
             doc.add(hdr);
 
             // ── タイトル ──────────────────────────────────
-            String titleSpaced = title.replace("", "　").trim();
-            // 文字間スペース（簡易）
             String[] tc = title.split("");
-            StringBuilder sb = new StringBuilder();
-            for (String ch : tc) { if (sb.length() > 0) sb.append("　"); sb.append(ch); }
-            Paragraph titleP = new Paragraph(sb.toString(), titleFont);
-            titleP.setAlignment(Element.ALIGN_CENTER);
-            titleP.setSpacingAfter(4);
+            StringBuilder tsb = new StringBuilder();
+            for (String ch : tc) { if (tsb.length() > 0) tsb.append("　"); tsb.append(ch); }
+            Paragraph titleP = new Paragraph(tsb.toString(), titleFont);
+            titleP.setAlignment(Element.ALIGN_CENTER); titleP.setSpacingAfter(4);
             doc.add(titleP);
 
             // ── 紹介年月日 ────────────────────────────────
             Paragraph dateP = new Paragraph("紹介年月日：" + introDate, normalFont);
-            dateP.setAlignment(Element.ALIGN_RIGHT);
-            dateP.setSpacingAfter(3);
+            dateP.setAlignment(Element.ALIGN_RIGHT); dateP.setSpacingAfter(3);
             doc.add(dateP);
 
             // ── 求人者 ────────────────────────────────────
             Paragraph kyuninP = new Paragraph("求人者　" + customerName + "　様", boldFont);
-            kyuninP.setSpacingAfter(2);
-            doc.add(kyuninP);
-
+            kyuninP.setSpacingAfter(2); doc.add(kyuninP);
             Paragraph noticeP = new Paragraph("お申込みにより下記の者を紹介いたします。", smallFont);
-            noticeP.setSpacingAfter(3);
-            doc.add(noticeP);
+            noticeP.setSpacingAfter(3); doc.add(noticeP);
 
             // ── 求職者氏名 ────────────────────────────────
             PdfPTable personBox = new PdfPTable(new float[]{1, 3});
             personBox.setWidthPercentage(100); personBox.setSpacingAfter(3);
             PdfPCell pLabel = new PdfPCell(new Phrase("求職者氏名", boldFont));
-            pLabel.setBorder(Rectangle.NO_BORDER); pLabel.setPadding(3);
-            personBox.addCell(pLabel);
+            pLabel.setBorder(Rectangle.NO_BORDER); pLabel.setPadding(3); personBox.addCell(pLabel);
             PdfPCell pName = new PdfPCell(new Phrase(personName, boldFont));
-            pName.setBorder(Rectangle.BOTTOM); pName.setPadding(3);
-            personBox.addCell(pName);
+            pName.setBorder(Rectangle.BOTTOM); pName.setPadding(3); personBox.addCell(pName);
             doc.add(personBox);
-
             Paragraph subTitle = new Paragraph("ご依頼の内容及び雇用条件", smallFont);
-            subTitle.setSpacingAfter(3);
-            doc.add(subTitle);
+            subTitle.setSpacingAfter(3); doc.add(subTitle);
 
             // ── 雇用条件テーブル ──────────────────────────
             PdfPTable tbl = new PdfPTable(new float[]{2, 5});
             tbl.setWidthPercentage(100);
-
-            // ヘルパー
-            java.util.function.BiConsumer<String, String> addRow = (key, val) -> {
-                PdfPCell k = new PdfPCell(new Phrase(key, boldFont));
-                k.setBackgroundColor(new BaseColor(240,240,240));
-                k.setBorder(Rectangle.BOX); k.setPadding(3);
-                k.setVerticalAlignment(Element.ALIGN_MIDDLE);
-                tbl.addCell(k);
-                PdfPCell v = new PdfPCell(new Phrase(val != null ? val : "", normalFont));
-                v.setBorder(Rectangle.BOX); v.setPadding(3);
-                tbl.addCell(v);
-            };
 
             // 職務内容
             StringBuilder jobSb = new StringBuilder();
@@ -338,29 +314,28 @@ public class IntroductionController {
                 String ot = fd.path("jobOtherText").asText("");
                 if (!ot.isBlank()) jobSb.append("：").append(ot);
             }
-            addRow.accept("職務内容", jobSb.toString());
+            addPdfRow(tbl, "職務内容", jobSb.toString(), boldFont, normalFont);
 
             // 就業場所
-            String postal    = fd.path("workPostal").asText("");
-            String place     = fd.path("workPlace").asText("");
-            String station   = fd.path("workStation").asText("");
-            String line      = fd.path("workLine").asText("");
-            String access    = fd.path("workAccess").asText("");
-            String smokingV  = fd.path("smoking").asText("");
-            addRow.accept("就業場所",
-                "〒" + postal + "　" + place + "
-"
-                + "最寄り駅　" + station + "　" + line + "線　徒歩・バス " + access + "
-"
-                + "受動喫煙防止措置状況　" + smokingV);
+            String postal  = fd.path("workPostal").asText("");
+            String place   = fd.path("workPlace").asText("");
+            String station = fd.path("workStation").asText("");
+            String line2   = fd.path("workLine").asText("");
+            String access  = fd.path("workAccess").asText("");
+            String smokingV = fd.path("smoking").asText("");
+            addPdfRow(tbl, "就業場所",
+                "〒" + postal + "\u3000" + place + "\n"
+                + "最寄り駅\u3000" + station + "\u3000" + line2 + "線\u3000徒歩・バス " + access + "\n"
+                + "受動喫煙防止措置状況\u3000" + smokingV,
+                boldFont, normalFont);
 
             // 雇用期間
             String empType = fd.path("empPeriod").asText("無期");
             String empPeriod = "";
-            if ("有期".equals(empType)) {
+            if ("有期".equals(empType))
                 empPeriod = fd.path("empFrom").asText("") + " 〜 " + fd.path("empTo").asText("");
-            }
-            addRow.accept("雇用期間", empType + (empPeriod.isBlank() ? "" : "　" + empPeriod));
+            addPdfRow(tbl, "雇用期間",
+                empType + (empPeriod.isBlank() ? "" : "　" + empPeriod), boldFont, normalFont);
 
             // 試用期間
             String trial = fd.path("trialPeriod").asText("無");
@@ -370,21 +345,24 @@ public class IntroductionController {
                 trialStr += "（詳細は備考欄）";
                 if (!tf.isBlank() || !tt.isBlank()) trialStr += "　" + tf + " 〜 " + tt;
             }
-            addRow.accept("試用期間", trialStr);
+            addPdfRow(tbl, "試用期間", trialStr, boldFont, normalFont);
 
             // 勤務日
-            addRow.accept("勤務日",
-                fd.path("workStyle").asText("通勤") + "　" + fd.path("dow").asText(""));
+            addPdfRow(tbl, "勤務日",
+                fd.path("workStyle").asText("通勤") + "　" + fd.path("dow").asText(""),
+                boldFont, normalFont);
 
             // 勤務時間
             String sh = fd.path("wSH").asText(""), sm = fd.path("wSM").asText("");
             String eh = fd.path("wEH").asText(""), em = fd.path("wEM").asText("");
-            String hoursStr = (sh.isBlank() || sm.isBlank()) ? "" : sh + ":" + sm + " 〜 " + eh + ":" + em;
+            String hoursStr = (!sh.isBlank() && !sm.isBlank()) ? sh + ":" + sm + " 〜 " + eh + ":" + em : "";
             String actual = fd.path("actualHours").asText("");
-            addRow.accept("勤務時間", hoursStr + (actual.isBlank() ? "" : "　〔実働　" + actual + "〕"));
+            addPdfRow(tbl, "勤務時間",
+                hoursStr + (actual.isBlank() ? "" : "　〔実働　" + actual + "〕"),
+                boldFont, normalFont);
 
-            addRow.accept("時間外労働", fd.path("overtime").asText("無"));
-            addRow.accept("休憩時間",   fd.path("breakTime").asText(""));
+            addPdfRow(tbl, "時間外労働", fd.path("overtime").asText("無"), boldFont, normalFont);
+            addPdfRow(tbl, "休憩時間",   fd.path("breakTime").asText(""),  boldFont, normalFont);
 
             // 休日
             StringBuilder holSb = new StringBuilder();
@@ -394,23 +372,20 @@ public class IntroductionController {
             if (!holDow.isBlank()) holSb.append(holDow).append("曜日　");
             if (fd.path("holHoliday").asBoolean())   holSb.append("祝日　");
             if (fd.path("holOther").asBoolean())     holSb.append("その他");
-            addRow.accept("休　日", holSb.toString().trim());
+            addPdfRow(tbl, "休　日", holSb.toString().trim(), boldFont, normalFont);
 
             // 賃金
             String wageType = fd.path("wageType").asText("時給");
             String baseWage = fd.path("baseWage").asText("");
-            try {
-                if (!baseWage.isBlank())
-                    baseWage = String.format("%,d", Long.parseLong(baseWage));
-            } catch (NumberFormatException ignored) {}
-            addRow.accept("賃金形態", wageType + "　　基本給　" + baseWage + "　円");
+            try { if (!baseWage.isBlank()) baseWage = String.format("%,d", Long.parseLong(baseWage)); }
+            catch (NumberFormatException ignored) {}
+            addPdfRow(tbl, "賃金形態",
+                wageType + "　　基本給　" + baseWage + "　円", boldFont, normalFont);
 
             String owage = fd.path("overtimeWage").asText("");
-            try {
-                if (!owage.isBlank())
-                    owage = String.format("%,d", Long.parseLong(owage));
-            } catch (NumberFormatException ignored) {}
-            addRow.accept("諸手当", "時間外手当　" + owage + "　円");
+            try { if (!owage.isBlank()) owage = String.format("%,d", Long.parseLong(owage)); }
+            catch (NumberFormatException ignored) {}
+            addPdfRow(tbl, "諸手当", "時間外手当　" + owage + "　円", boldFont, normalFont);
 
             // 交通費
             StringBuilder trSb = new StringBuilder();
@@ -421,18 +396,19 @@ public class IntroductionController {
                 String ta = fd.path("transportAmt").asText("");
                 if (!ta.isBlank()) trSb.append("　").append(ta).append("円");
             }
-            addRow.accept("交通費", trSb.toString().trim());
-
-            addRow.accept("昇給", fd.path("raise").asText("無"));
+            addPdfRow(tbl, "交通費", trSb.toString().trim(), boldFont, normalFont);
+            addPdfRow(tbl, "昇給", fd.path("raise").asText("無"), boldFont, normalFont);
 
             // 賃金支払方法
             StringBuilder paySb = new StringBuilder();
             if (fd.path("payDaily").asBoolean())   paySb.append("毎日　");
-            if (fd.path("payWeekly").asBoolean())  paySb.append("毎週").append(fd.path("payWeeklyDay").asText("")).append("曜日　");
-            if (fd.path("payMonthly").asBoolean()) paySb.append("毎月").append(fd.path("payMonthlyDay").asText("")).append("日　");
+            if (fd.path("payWeekly").asBoolean())
+                paySb.append("毎週").append(fd.path("payWeeklyDay").asText("")).append("曜日　");
+            if (fd.path("payMonthly").asBoolean())
+                paySb.append("毎月").append(fd.path("payMonthlyDay").asText("")).append("日　");
             String pm = fd.path("payMethod").asText("");
             if (!pm.isBlank()) paySb.append("方法：").append(pm);
-            addRow.accept("賃金支払方法", paySb.toString().trim());
+            addPdfRow(tbl, "賃金支払方法", paySb.toString().trim(), boldFont, normalFont);
 
             // 社会・労働保険
             StringBuilder insSb = new StringBuilder();
@@ -446,36 +422,32 @@ public class IntroductionController {
                 String ot2 = fd.path("insOtherText").asText("");
                 if (!ot2.isBlank()) insSb.append("：").append(ot2);
             }
-            // 手数料を右寄せで追加
             String insStr = insSb.toString().trim() + "\n（紹介手数料15%　＋消費税）";
-            addRow.accept("社会・労働保険
-加入状況", insStr);
+            addPdfRow(tbl, "社会・労働保険\n加入状況", insStr, boldFont, normalFont);
 
-            addRow.accept("備考", fd.path("remarks").asText(""));
-
+            addPdfRow(tbl, "備考", fd.path("remarks").asText(""), boldFont, normalFont);
             doc.add(tbl);
 
             // ── 注意文 ────────────────────────────────────
             Paragraph note = new Paragraph(
                 "1. 手数料は別表のとおりです。2. 採否については至急に電話または書面によりご連絡をお願いいたします。",
                 smallFont);
-            note.setSpacingBefore(4);
-            doc.add(note);
+            note.setSpacingBefore(4); doc.add(note);
 
             // ── フッター ──────────────────────────────────
             PdfPTable footer = new PdfPTable(1);
-            footer.setWidthPercentage(100);
-            footer.setSpacingBefore(6);
-            for (String line2 : new String[]{
-                    "所在地　〒107-0052 東京都港区赤坂6-10-45-203",
-                    "紹介所　有限会社　ワークオフィス谷",
-                    "代表者　代表取締役　谷 二三代",
-                    "連絡先　TEL 03-5544-8315　FAX 03-5544-8316"}) {
-                Font ff = (line2.contains("有限会社")) ? boldFont : smallFont;
-                PdfPCell fc = new PdfPCell(new Phrase(line2, ff));
+            footer.setWidthPercentage(100); footer.setSpacingBefore(6);
+            String[] footerLines = {
+                "所在地　〒107-0052 東京都港区赤坂6-10-45-203",
+                "紹介所　有限会社　ワークオフィス谷",
+                "代表者　代表取締役　谷 二三代",
+                "連絡先　TEL 03-5544-8315　FAX 03-5544-8316"
+            };
+            for (String fl : footerLines) {
+                Font ff = fl.contains("有限会社") ? boldFont : smallFont;
+                PdfPCell fc = new PdfPCell(new Phrase(fl, ff));
                 fc.setBorder(Rectangle.NO_BORDER);
-                fc.setHorizontalAlignment(Element.ALIGN_RIGHT);
-                fc.setPadding(2);
+                fc.setHorizontalAlignment(Element.ALIGN_RIGHT); fc.setPadding(2);
                 footer.addCell(fc);
             }
             PdfPCell fBorder = new PdfPCell(footer);
@@ -484,13 +456,27 @@ public class IntroductionController {
             fWrap.setWidthPercentage(100); fWrap.setSpacingBefore(6);
             fWrap.addCell(fBorder);
             doc.add(fWrap);
-
             doc.close();
+
         } catch (DocumentException e) {
             throw new IOException("PDF生成エラー: " + e.getMessage(), e);
         }
         return baos.toByteArray();
     }
+
+    // ─── PDF行追加ヘルパー ────────────────────────────
+    private void addPdfRow(PdfPTable tbl, String key, String val,
+                            Font boldFont, Font normalFont) {
+        PdfPCell k = new PdfPCell(new Phrase(key, boldFont));
+        k.setBackgroundColor(new BaseColor(240, 240, 240));
+        k.setBorder(Rectangle.BOX); k.setPadding(3);
+        k.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        tbl.addCell(k);
+        PdfPCell v = new PdfPCell(new Phrase(val != null ? val : "", normalFont));
+        v.setBorder(Rectangle.BOX); v.setPadding(3);
+        tbl.addCell(v);
+    }
+
 
     // ─── 1-6-3 紹介状一覧 Excel エクスポート ──────────
     @GetMapping("/export")
