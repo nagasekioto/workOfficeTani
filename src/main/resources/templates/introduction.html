@@ -91,7 +91,7 @@
         </div>
         <div class="row2">
             <div class="fg"><label>紹介年月日</label><div id="introDateSel" style="display:flex;gap:4px;align-items:center;"></div><input type="hidden" id="introDate"></div>
-            <div class="fg"><label>就業開始予定日</label><div id="startDateSel" style="display:flex;gap:4px;align-items:center;"></div><input type="hidden" id="startDate"></div>
+
         </div>
     </div>
 
@@ -175,12 +175,7 @@
                 </div>
             </div>
             <div class="fg"><label>休憩時間</label>
-                <div class="tr">
-                    <select id="bSH" onchange="update()" style="width:65px;padding:5px;"></select><span>時</span>
-                    <select id="bSM" onchange="update()" style="width:65px;padding:5px;"></select><span>分 〜</span>
-                    <select id="bEH" onchange="update()" style="width:65px;padding:5px;"></select><span>時</span>
-                    <select id="bEM" onchange="update()" style="width:65px;padding:5px;"></select><span>分</span>
-                </div>
+                <input type="text" id="breakTime" placeholder="例：12:00〜13:00、なし" oninput="update()">
             </div>
         </div>
         <div class="fg"><label>休日</label>
@@ -217,9 +212,9 @@
         <div class="row2">
             <div class="fg"><label>交通費</label>
                 <div class="cbg">
-                    <label><input type="radio" name="transport" value="無" checked onchange="update()"> 無</label>
-                    <label><input type="radio" name="transport" value="往復の実費" onchange="update()"> 往復の実費</label>
-                    <label><input type="radio" name="transport" value="有" onchange="update()"> 有</label>
+                    <label><input type="checkbox" id="transNone" onchange="update()"> 無</label>
+                    <label><input type="checkbox" id="transReal" onchange="update()"> 往復の実費</label>
+                    <label><input type="checkbox" id="transYes" onchange="update()"> 有</label>
                 </div>
                 <input type="text" id="transportAmt" placeholder="金額（円）" oninput="update()" style="margin-top:4px;">
             </div>
@@ -291,7 +286,8 @@
         <tr><th>試用期間</th><td><span class="d-trial"></span></td></tr>
         <tr><th>勤務日</th><td><span class="d-work-style"></span>　<span class="d-dow"></span></td></tr>
         <tr><th>勤務時間</th><td><span class="d-hours"></span>　〔実働　<span class="d-actual"></span>〕</td></tr>
-        <tr><th>時間外労働</th><td><span class="d-overtime-type"></span>　　<strong>休憩時間</strong>　<span class="d-break"></span></td></tr>
+        <tr><th>時間外労働</th><td><span class="d-overtime-type"></span></td></tr>
+        <tr><th>休憩時間</th><td><span class="d-break"></span></td></tr>
         <tr><th>休　日</th><td><span class="d-holiday"></span></td></tr>
         <tr><th>賃金形態</th><td><span class="d-wage-type"></span>　　<strong>基本給</strong>　<span class="d-base-wage"></span>　円</td></tr>
         <tr><th>諸手当</th><td>時間外手当　<span class="d-overtime-wage"></span>　円</td></tr>
@@ -299,7 +295,6 @@
         <tr><th>昇給</th><td><span class="d-raise"></span></td></tr>
         <tr><th>賃金支払方法</th><td><span class="d-pay-method"></span></td></tr>
         <tr><th>社会・労働保険<br>加入状況</th><td><span class="d-insurance"></span><div style="text-align:right;margin-top:3px;">紹介手数料15%　＋消費税</div></td></tr>
-        <tr><th>就業開始予定日</th><td><span class="d-start"></span></td></tr>
         <tr><th>備考</th><td><span class="d-remarks"></span></td></tr>
     </table>
     <div class="doc-note">1. 手数料は別表のとおりです。2. 採否については至急に電話または書面によりご連絡をお願いいたします。</div>
@@ -327,7 +322,8 @@
         <tr><th>試用期間</th><td><span class="d-trial"></span></td></tr>
         <tr><th>勤務日</th><td><span class="d-work-style"></span>　<span class="d-dow"></span></td></tr>
         <tr><th>勤務時間</th><td><span class="d-hours"></span>　〔実働　<span class="d-actual"></span>〕</td></tr>
-        <tr><th>時間外労働</th><td><span class="d-overtime-type"></span>　　<strong>休憩時間</strong>　<span class="d-break"></span></td></tr>
+        <tr><th>時間外労働</th><td><span class="d-overtime-type"></span></td></tr>
+        <tr><th>休憩時間</th><td><span class="d-break"></span></td></tr>
         <tr><th>休　日</th><td><span class="d-holiday"></span></td></tr>
         <tr><th>賃金形態</th><td><span class="d-wage-type"></span>　　<strong>基本給</strong>　<span class="d-base-wage"></span>　円</td></tr>
         <tr><th>諸手当</th><td>時間外手当　<span class="d-overtime-wage"></span>　円</td></tr>
@@ -335,7 +331,6 @@
         <tr><th>昇給</th><td><span class="d-raise"></span></td></tr>
         <tr><th>賃金支払方法</th><td><span class="d-pay-method"></span></td></tr>
         <tr><th>社会・労働保険<br>加入状況</th><td><span class="d-insurance"></span><div style="text-align:right;margin-top:3px;">紹介手数料15%　＋消費税</div></td></tr>
-        <tr><th>就業開始予定日</th><td><span class="d-start"></span></td></tr>
         <tr><th>備考</th><td><span class="d-remarks"></span></td></tr>
     </table>
     <div class="doc-note">1. 手数料は別表のとおりです。2. 採否については至急に電話または書面によりご連絡をお願いいたします。</div>
@@ -363,7 +358,8 @@
         <tr><th>試用期間</th><td><span class="d-trial"></span></td></tr>
         <tr><th>勤務日</th><td><span class="d-work-style"></span>　<span class="d-dow"></span></td></tr>
         <tr><th>勤務時間</th><td><span class="d-hours"></span>　〔実働　<span class="d-actual"></span>〕</td></tr>
-        <tr><th>時間外労働</th><td><span class="d-overtime-type"></span>　　<strong>休憩時間</strong>　<span class="d-break"></span></td></tr>
+        <tr><th>時間外労働</th><td><span class="d-overtime-type"></span></td></tr>
+        <tr><th>休憩時間</th><td><span class="d-break"></span></td></tr>
         <tr><th>休　日</th><td><span class="d-holiday"></span></td></tr>
         <tr><th>賃金形態</th><td><span class="d-wage-type"></span>　　<strong>基本給</strong>　<span class="d-base-wage"></span>　円</td></tr>
         <tr><th>諸手当</th><td>時間外手当　<span class="d-overtime-wage"></span>　円</td></tr>
@@ -371,7 +367,6 @@
         <tr><th>昇給</th><td><span class="d-raise"></span></td></tr>
         <tr><th>賃金支払方法</th><td><span class="d-pay-method"></span></td></tr>
         <tr><th>社会・労働保険<br>加入状況</th><td><span class="d-insurance"></span><div style="text-align:right;margin-top:3px;">紹介手数料15%　＋消費税</div></td></tr>
-        <tr><th>就業開始予定日</th><td><span class="d-start"></span></td></tr>
         <tr><th>備考</th><td><span class="d-remarks"></span></td></tr>
     </table>
     <div class="doc-note">1. 手数料は別表のとおりです。2. 採否については至急に電話または書面によりご連絡をお願いいたします。</div>
@@ -414,11 +409,11 @@ function pad(n){return String(n).padStart(2,'0');}
 
 // 時分セレクト初期化
 function initTime(){
-    ['wSH','wEH','bSH','bEH'].forEach(function(id){
+    ['wSH','wEH'].forEach(function(id){
         var s=g(id);addOpt(s,'','時');
         for(var h=0;h<=23;h++) addOpt(s,pad(h),pad(h));
     });
-    ['wSM','wEM','bSM','bEM'].forEach(function(id){
+    ['wSM','wEM'].forEach(function(id){
         var s=g(id);addOpt(s,'','分');
         for(var m=0;m<=55;m+=5) addOpt(s,pad(m),pad(m));
     });
@@ -477,8 +472,7 @@ function update(){
 
     var ws=getTime('wSH','wSM'),we=getTime('wEH','wEM');
     var hoursStr=(ws&&we)?ws+' 〜 '+we:(ws||we||'');
-    var bs=getTime('bSH','bSM'),be=getTime('bEH','bEM');
-    var breakStr=(bs&&be)?bs+' 〜 '+be:(bs||be||'');
+    var breakStr=g('breakTime').value||'';
 
     var hol=[];
     if(g('holWeekly').checked) hol.push('毎週');
@@ -489,8 +483,11 @@ function update(){
 
     var bw=g('baseWage').value?parseInt(g('baseWage').value).toLocaleString():'';
     var ow=g('overtimeWage').value?parseInt(g('overtimeWage').value).toLocaleString():'';
-    var tr=gc('transport'); var ta=g('transportAmt').value;
-    if(tr==='有'&&ta) tr+='　'+ta+'円';
+    var trParts=[];
+    if(g('transNone').checked) trParts.push('無');
+    if(g('transReal').checked) trParts.push('往復の実費');
+    if(g('transYes').checked){ var ta=g('transportAmt').value; trParts.push('有'+(ta?'　'+ta+'円':'')); }
+    var tr=trParts.join('・')||'';
 
     var pay=[]; if(g('payDaily').checked) pay.push('毎日');
     if(g('payWeekly').checked) pay.push('毎週'+g('payWeeklyDay').value+'曜日');
@@ -533,7 +530,6 @@ function update(){
     setAll('d-raise',       gc('raise'));
     setAll('d-pay-method',  pay.join('　'));
     setAll('d-insurance',   ins.join('　'));
-    setAll('d-start',       g('startDate').value);
     setAll('d-remarks',     g('remarksField').value);
 
     ['doc1','doc2','doc3'].forEach(function(id){g(id).style.display='block';});
@@ -545,7 +541,6 @@ function saveIntro(){
     if(pSel.value) params.append('personId',pSel.value);
     if(cSel.value) params.append('customerId',cSel.value);
     params.append('introDate',g('introDate').value||'');
-    params.append('startDate',g('startDate').value||'');
     params.append('formData','{}');
     fetch('/introduction/save',{method:'POST',body:params})
         .then(function(r){return r.text();})
@@ -564,7 +559,6 @@ document.querySelectorAll('input[type=checkbox]').forEach(function(cb){cb.addEve
 window.addEventListener('load',function(){
     initTime();
     makeDateSel('introDateSel','introDate',true);
-    makeDateSel('startDateSel','startDate',false);
     makeDateSel('empFromSel','empFrom',false);
     makeDateSel('empToSel','empTo',false);
     makeDateSel('trialFromSel','trialFrom',false);
