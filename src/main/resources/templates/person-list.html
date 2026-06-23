@@ -85,7 +85,10 @@
                 <td th:text="${p.homePhone != null ? p.homePhone : '-'}"></td>
                 <td th:text="${p.birthDate != null ? p.birthDate : '-'}"></td>
                 <td th:text="${p.desiredJob}"></td>
-                <td th:text="${p.desiredType}"></td>
+                <td>
+                    <span th:if="${p.desiredTypes != null}" th:text="${p.desiredTypes}"></span>
+                    <span th:if="${p.desiredTypes == null}" th:text="${p.desiredType}"></span>
+                </td>
                 <td th:text="${(p.address1 != null ? p.address1 : '') + (p.address2 != null ? p.address2 : '') + (p.address3 != null and !p.address3.isBlank() ? ' ' + p.address3 : '')}"></td>
                 <td>
                     <span th:if="${p.lineWorks != null and p.lineWorks}" class="badge badge-yes">&#10003;</span>

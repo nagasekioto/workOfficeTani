@@ -57,24 +57,27 @@ public class PersonController {
             @RequestParam(required = false) Boolean animalDogAllergy,
             @RequestParam(required = false) Boolean animalCatAllergy,
             @RequestParam(required = false) Boolean lineWorks,
+            // 就職希望条件
+            @RequestParam(required = false) List<String> workLocationList,
+            @RequestParam(required = false) List<String> workDutiesList,
+            @RequestParam(required = false) List<String> desiredTypeList,
+            @RequestParam(required = false) List<String> specificDaysList,
+            @RequestParam(required = false, defaultValue = "") String specificDaysJson,
+            @RequestParam(required = false) String workAvailableHoursFrom,
+            @RequestParam(required = false) String workAvailableHoursTo,
+            @RequestParam(required = false) String workStartPeriod,
             HttpSession session) {
 
         if (!checkAuth(session)) return "redirect:/login";
 
-        person.setQualNursery(qualNursery != null && qualNursery);
-        person.setQualCook(qualCook != null && qualCook);
-        person.setQualCareWorker(qualCareWorker != null && qualCareWorker);
-        person.setQualCareHelper(qualCareHelper != null && qualCareHelper);
-        person.setAnimalDogOk(animalDogOk != null && animalDogOk);
-        person.setAnimalCatOk(animalCatOk != null && animalCatOk);
-        person.setAnimalDogAllergy(animalDogAllergy != null && animalDogAllergy);
-        person.setAnimalCatAllergy(animalCatAllergy != null && animalCatAllergy);
-        person.setLineWorks(lineWorks != null && lineWorks);
+        applyCheckboxes(person, qualNursery, qualCook, qualCareWorker, qualCareHelper,
+                animalDogOk, animalCatOk, animalDogAllergy, animalCatAllergy, lineWorks);
+        applyJobPrefs(person, workLocationList, workDutiesList, desiredTypeList,
+                specificDaysJson, workAvailableHoursFrom, workAvailableHoursTo, workStartPeriod);
 
         if (person.getRegisteredDate() == null) {
             person.setRegisteredDate(LocalDate.now());
         }
-        // No自動採番
         if (person.getNo() == null) {
             int maxNo = 0;
             for (Person p : personRepository.findAll()) {
@@ -111,21 +114,24 @@ public class PersonController {
             @RequestParam(required = false) Boolean animalDogAllergy,
             @RequestParam(required = false) Boolean animalCatAllergy,
             @RequestParam(required = false) Boolean lineWorks,
+            // 就職希望条件
+            @RequestParam(required = false) List<String> workLocationList,
+            @RequestParam(required = false) List<String> workDutiesList,
+            @RequestParam(required = false) List<String> desiredTypeList,
+            @RequestParam(required = false) List<String> specificDaysList,
+            @RequestParam(required = false, defaultValue = "") String specificDaysJson,
+            @RequestParam(required = false) String workAvailableHoursFrom,
+            @RequestParam(required = false) String workAvailableHoursTo,
+            @RequestParam(required = false) String workStartPeriod,
             HttpSession session) {
 
         if (!checkAuth(session)) return "redirect:/login";
 
-        person.setQualNursery(qualNursery != null && qualNursery);
-        person.setQualCook(qualCook != null && qualCook);
-        person.setQualCareWorker(qualCareWorker != null && qualCareWorker);
-        person.setQualCareHelper(qualCareHelper != null && qualCareHelper);
-        person.setAnimalDogOk(animalDogOk != null && animalDogOk);
-        person.setAnimalCatOk(animalCatOk != null && animalCatOk);
-        person.setAnimalDogAllergy(animalDogAllergy != null && animalDogAllergy);
-        person.setAnimalCatAllergy(animalCatAllergy != null && animalCatAllergy);
-        person.setLineWorks(lineWorks != null && lineWorks);
+        applyCheckboxes(person, qualNursery, qualCook, qualCareWorker, qualCareHelper,
+                animalDogOk, animalCatOk, animalDogAllergy, animalCatAllergy, lineWorks);
+        applyJobPrefs(person, workLocationList, workDutiesList, desiredTypeList,
+                specificDaysJson, workAvailableHoursFrom, workAvailableHoursTo, workStartPeriod);
 
-        // null保護：既存データを保持
         personRepository.findById(person.getId()).ifPresent(existing -> {
             if (person.getRegisteredDate() == null) person.setRegisteredDate(existing.getRegisteredDate());
             if (person.getBirthDate() == null) person.setBirthDate(existing.getBirthDate());
@@ -137,6 +143,67 @@ public class PersonController {
 
         personRepository.save(person);
         return "redirect:/person/register";
+    }
+
+    // ─── 共通：チェックボックス処理 ────────────────────
+    private void applyCheckboxes(Person person,
+            Boolean qualNursery, Boolean qualCook, Boolean qualCareWorker, Boolean qualCareHelper,
+            Boolean animalDogOk, Boolean animalCatOk, Boolean animalDogAllergy, Boolean animalCatAllergy,
+            Boolean lineWorks) {
+        person.setQualNursery(qualNursery != null && qualNursery);
+        person.setQualCook(qualCook != null && qualCook);
+        person.setQualCareWorker(qualCareWorker != null && qualCareWorker);
+        person.setQualCareHelper(qualCareHelper != null && qualCareHelper);
+        person.setAnimalDogOk(animalDogOk != null && animalDogOk);
+        person.setAnimalCatOk(animalCatOk != null && animalCatOk);
+        person.setAnimalDogAllergy(animalDogAllergy != null && animalDogAllergy);
+        person.setAnimalCatAllergy(animalCatAllergy != null && animalCatAllergy);
+        person.setLineWorks(lineWorks != null && lineWorks);
+    }
+
+    // ─── 共通：就職希望条件処理 ────────────────────────
+    private void applyJobPrefs(Person person,
+            List<String> workLocationList,
+            List<String> workDutiesList,
+            List<String> desiredTypeList,
+            String specificDaysJson,
+            String workAvailableHoursFrom,
+            String workAvailableHoursTo,
+            String workStartPeriod) {
+
+        // 就労場所
+        person.setWorkLocation(listToStr(workLocationList));
+
+        // 職務内容
+        person.setWorkDuties(listToStr(workDutiesList));
+
+        // 希望形態（複数選択）→ desiredTypes に保存、desiredType（旧）は先頭値
+        String typesStr = listToStr(desiredTypeList);
+        person.setDesiredTypes(typesStr);
+        if (desiredTypeList != null && !desiredTypeList.isEmpty()) {
+            person.setDesiredType(desiredTypeList.get(0));
+        }
+
+        // 特定日（JS側でJSON文字列を作成してhiddenフィールドに入れる）
+        person.setSpecificDays(specificDaysJson != null && !specificDaysJson.isBlank()
+                ? specificDaysJson : null);
+
+        // 就業可能時間
+        if (workAvailableHoursFrom != null && !workAvailableHoursFrom.isBlank()
+                && workAvailableHoursTo != null && !workAvailableHoursTo.isBlank()) {
+            person.setWorkAvailableHours(workAvailableHoursFrom + "-" + workAvailableHoursTo);
+        } else {
+            person.setWorkAvailableHours(null);
+        }
+
+        // 労働開始時期
+        person.setWorkStartPeriod(workStartPeriod != null && !workStartPeriod.isBlank()
+                ? workStartPeriod : null);
+    }
+
+    private String listToStr(List<String> list) {
+        if (list == null || list.isEmpty()) return null;
+        return String.join(",", list);
     }
 
     // ─── 1-1-6 求職者情報一覧 ──────────────────────────
@@ -167,7 +234,6 @@ public class PersonController {
             Person person = personRepository.findById(personId).orElse(null);
             model.addAttribute("selectedPerson", person);
 
-            // 稼働データ取得
             List<jp.co.housekeeping.person_management.model.Sales> salesList =
                 salesRepository.findByPersonId(personId);
             List<WorkingLedgerController.LedgerRow> rows = new ArrayList<>();

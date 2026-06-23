@@ -12,14 +12,16 @@
         .form-section, .list-section { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         h2 { color: #4CAF50; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; margin-top: 0; }
         h2.edit { color: #FF9800; border-color: #FF9800; }
+        h3 { color: #1976D2; background: #E3F2FD; padding: 8px 12px; border-radius: 4px; margin: 20px 0 12px; font-size: 14px; border-left: 4px solid #1976D2; }
         .form-group { margin-bottom: 14px; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         label { display: block; margin-bottom: 4px; font-weight: bold; color: #555; font-size: 13px; }
         label .required { color: #f44336; }
-        input[type="text"], input[type="date"] { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
+        input[type="text"], input[type="date"], input[type="time"] { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 14px; }
         input::placeholder { color: #bbb; font-size: 13px; }
         .checkbox-group { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 5px; }
         .checkbox-item { display: flex; align-items: center; gap: 4px; }
+        .checkbox-item label { font-weight: normal; margin-bottom: 0; cursor: pointer; }
         .postal-row { display: flex; gap: 6px; }
         .postal-row input { flex: 1; }
         .postal-btn { padding: 8px 12px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; white-space: nowrap; }
@@ -40,6 +42,28 @@
         .badge { display: inline-block; padding: 2px 6px; border-radius: 10px; font-size: 11px; }
         .badge-yes { background: #e8f5e9; color: #2e7d32; }
         .badge-no  { background: #fafafa; color: #999; }
+
+        /* 特定日スタイル */
+        .specific-days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 8px; }
+        .day-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .day-label { font-size: 12px; font-weight: bold; color: #555; }
+        .day-checkbox { width: 18px; height: 18px; cursor: pointer; }
+        .day-time-box { display: none; flex-direction: column; gap: 3px; margin-top: 4px; padding: 6px; background: #E3F2FD; border-radius: 4px; border: 1px solid #90CAF9; width: 100%; box-sizing: border-box; }
+        .day-time-box.show { display: flex; }
+        .day-time-box label { font-size: 10px; color: #1565C0; margin-bottom: 1px; font-weight: bold; }
+        .day-time-box input[type="time"] { padding: 3px 4px; font-size: 11px; width: 100%; }
+        .time-range-row { display: flex; gap: 4px; align-items: center; font-size: 11px; }
+        .time-range-row span { white-space: nowrap; color: #555; }
+        .time-range-row input { flex: 1; }
+
+        /* 就業可能時間 */
+        .hours-row { display: flex; gap: 8px; align-items: center; }
+        .hours-row input[type="time"] { flex: 1; }
+        .hours-row span { color: #555; font-size: 14px; white-space: nowrap; }
+
+        /* 就職希望条件セクション */
+        .section-box { border: 2px solid #1976D2; border-radius: 6px; padding: 15px; margin-bottom: 16px; }
+        .section-box-title { color: #1976D2; font-size: 14px; font-weight: bold; margin: 0 0 12px 0; display: flex; align-items: center; gap: 6px; }
     </style>
 </head>
 <body>
@@ -57,8 +81,11 @@
               th:object="${person}" method="post" id="personForm">
 
             <input th:if="${editMode}" type="hidden" th:field="*{id}">
+            <!-- 特定日JSON隠しフィールド -->
+            <input type="hidden" id="specificDaysJson" name="specificDaysJson"
+                   th:value="${person.specificDays != null ? person.specificDays : ''}">
 
-            <!-- 氏名 -->
+            <!-- ─── 氏名 ─────────────────────────────── -->
             <div class="form-row">
                 <div class="form-group">
                     <label>姓（カタカナ）<span class="required">*</span></label>
@@ -80,17 +107,15 @@
                 </div>
             </div>
 
-            <!-- 郵便番号 -->
+            <!-- ─── 郵便番号・住所 ─────────────────────── -->
             <div class="form-group">
                 <label>郵便番号（ハイフンなし7桁）</label>
                 <div class="postal-row">
                     <input type="text" th:field="*{postalCode}" id="postalCode"
-                           placeholder="例：1040051（ハイフンなし7桁）" maxlength="7">
+                           placeholder="例：1040051" maxlength="7">
                     <button type="button" class="postal-btn" onclick="searchAddress()">住所を自動入力</button>
                 </div>
             </div>
-
-            <!-- 住所 -->
             <div class="form-group">
                 <label>都道府県・市区町村</label>
                 <input type="text" th:field="*{address1}" id="address1" placeholder="例：東京都中央区月島">
@@ -101,17 +126,15 @@
             </div>
             <div class="form-group">
                 <label>マンション名・部屋番号</label>
-                <input type="text" th:field="*{address3}" id="address3"
-                       placeholder="例：月島マンション101号室">
+                <input type="text" th:field="*{address3}" id="address3" placeholder="例：月島マンション101号室">
                 <div class="addr-note">※部屋番号のみの場合は「101号室」のように入力してください</div>
             </div>
 
-            <!-- 最寄り駅（求人者と同じ順序：駅名→路線自動補完） -->
+            <!-- ─── 最寄り駅 ───────────────────────────── -->
             <div class="form-group">
                 <label>最寄り駅名</label>
                 <input type="text" th:field="*{nearestStation}" id="nearestStation"
-                       placeholder="例：月島" autocomplete="off"
-                       oninput="lookupLines(this.value)">
+                       placeholder="例：月島" autocomplete="off" oninput="lookupLines(this.value)">
             </div>
             <div class="form-group">
                 <label>最寄り路線（駅名入力で自動補完）</label>
@@ -120,7 +143,7 @@
                 <div class="station-hint" id="stationHint"></div>
             </div>
 
-            <!-- 電話番号 -->
+            <!-- ─── 電話番号 ──────────────────────────── -->
             <div class="form-group">
                 <label>自宅電話番号</label>
                 <input type="text" th:field="*{homePhone}" placeholder="例：03-1234-5678" onblur="formatPhone(this)">
@@ -134,7 +157,7 @@
                 <input type="text" th:field="*{mobilePhone}" required placeholder="例：090-1234-5678" onblur="formatPhone(this)">
             </div>
 
-            <!-- 希望職種・形態 -->
+            <!-- ─── 希望職種 ──────────────────────────── -->
             <div class="form-group">
                 <label>希望職種 <span class="required">*</span></label>
                 <div class="checkbox-group">
@@ -148,30 +171,14 @@
                     </div>
                 </div>
             </div>
-            <div class="form-group">
-                <label>希望形態 <span class="required">*</span></label>
-                <div class="checkbox-group">
-                    <div class="checkbox-item">
-                        <input type="radio" name="desiredType" value="通勤" th:checked="${person.desiredType == '通勤'}" required>
-                        <label>通勤</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="radio" name="desiredType" value="パート" th:checked="${person.desiredType == 'パート'}">
-                        <label>パート</label>
-                    </div>
-                    <div class="checkbox-item">
-                        <input type="radio" name="desiredType" value="住込" th:checked="${person.desiredType == '住込'}">
-                        <label>住込</label>
-                    </div>
-                </div>
-            </div>
 
+            <!-- ─── 紹介者 ────────────────────────────── -->
             <div class="form-group">
                 <label>紹介者</label>
                 <input type="text" th:field="*{introducer}" placeholder="例：山田太郎">
             </div>
 
-            <!-- 資格 -->
+            <!-- ─── 資格 ──────────────────────────────── -->
             <div class="form-group">
                 <label>資格（複数可）</label>
                 <div class="checkbox-group">
@@ -187,14 +194,10 @@
                         <input type="checkbox" name="qualCareWorker" value="true" th:checked="${person.qualCareWorker}">
                         <label>介護福祉士</label>
                     </div>
-                    <div class="checkbox-item">
-                        <input type="checkbox" name="qualCareHelper" value="true" th:checked="${person.qualCareHelper}">
-                        <label>介護ヘルパー</label>
-                    </div>
                 </div>
             </div>
 
-            <!-- 動物 -->
+            <!-- ─── 動物 ──────────────────────────────── -->
             <div class="form-group">
                 <label>動物（複数可）</label>
                 <div class="checkbox-group">
@@ -217,7 +220,7 @@
                 </div>
             </div>
 
-            <!-- 料理・タバコ・子育て -->
+            <!-- ─── 料理・タバコ・子育て ──────────────── -->
             <div class="form-group">
                 <label>料理 <span class="required">*</span></label>
                 <div class="checkbox-group">
@@ -241,7 +244,7 @@
                 </div>
             </div>
 
-            <!-- LINE WORKS -->
+            <!-- ─── LINE WORKS ────────────────────────── -->
             <div class="form-group">
                 <label>LINE WORKS登録</label>
                 <div class="checkbox-group">
@@ -252,6 +255,131 @@
                 </div>
             </div>
 
+            <!-- ════════════════════════════════════════ -->
+            <!--  就職希望条件（新規追加セクション）       -->
+            <!-- ════════════════════════════════════════ -->
+            <div class="section-box">
+                <div class="section-box-title">&#127775; 就職希望条件</div>
+
+                <!-- 就労場所 -->
+                <div class="form-group">
+                    <label>就労場所（複数可）</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="workLocationList" value="家庭"
+                                   th:checked="${person.workLocation != null and #strings.contains(person.workLocation,'家庭')}">
+                            <label>家庭</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="workLocationList" value="病院"
+                                   th:checked="${person.workLocation != null and #strings.contains(person.workLocation,'病院')}">
+                            <label>病院</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 職務内容 -->
+                <div class="form-group">
+                    <label>職務内容（複数可）</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="workDutiesList" value="付添"
+                                   th:checked="${person.workDuties != null and #strings.contains(person.workDuties,'付添')}">
+                            <label>付添</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="workDutiesList" value="家事"
+                                   th:checked="${person.workDuties != null and #strings.contains(person.workDuties,'家事')}">
+                            <label>家事</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="workDutiesList" value="家庭介護"
+                                   th:checked="${person.workDuties != null and #strings.contains(person.workDuties,'家庭介護')}">
+                            <label>家庭介護</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 希望形態（複数可） -->
+                <div class="form-group">
+                    <label>希望形態（複数可）</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="desiredTypeList" value="通勤"
+                                   th:checked="${(person.desiredTypes != null and #strings.contains(person.desiredTypes,'通勤')) or (person.desiredTypes == null and person.desiredType == '通勤')}">
+                            <label>通勤</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="desiredTypeList" value="パート"
+                                   th:checked="${(person.desiredTypes != null and #strings.contains(person.desiredTypes,'パート')) or (person.desiredTypes == null and person.desiredType == 'パート')}">
+                            <label>パート</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="desiredTypeList" value="住込"
+                                   th:checked="${(person.desiredTypes != null and #strings.contains(person.desiredTypes,'住込')) or (person.desiredTypes == null and person.desiredType == '住込')}">
+                            <label>住込</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 特定日 -->
+                <div class="form-group">
+                    <label>特定日（曜日を選択すると時間入力欄が表示されます）</label>
+                    <div class="specific-days-grid" id="specificDaysGrid">
+                        <div class="day-item" th:each="day : ${ {'月','火','水','木','金','土','日'} }">
+                            <span class="day-label" th:text="${day}">月</span>
+                            <input type="checkbox" class="day-checkbox"
+                                   th:id="'day_' + ${day}"
+                                   th:value="${day}"
+                                   onchange="toggleDayTime(this)">
+                            <div class="day-time-box" th:id="'time_' + ${day}">
+                                <div class="time-range-row">
+                                    <input type="time" th:id="'from_' + ${day}" step="900"
+                                           onchange="updateSpecificDaysJson()">
+                                    <span>〜</span>
+                                    <input type="time" th:id="'to_' + ${day}" step="900"
+                                           onchange="updateSpecificDaysJson()">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 就業可能時間 -->
+                <div class="form-group">
+                    <label>就業可能時間</label>
+                    <div class="hours-row">
+                        <input type="time" id="workHoursFrom" name="workAvailableHoursFrom" step="900"
+                               th:value="${person.workAvailableHours != null ? #strings.substringBefore(person.workAvailableHours, '-') : ''}">
+                        <span>時から</span>
+                        <input type="time" id="workHoursTo" name="workAvailableHoursTo" step="900"
+                               th:value="${person.workAvailableHours != null ? #strings.substringAfter(person.workAvailableHours, '-') : ''}">
+                        <span>時まで</span>
+                    </div>
+                </div>
+
+                <!-- 労働開始時期 -->
+                <div class="form-group">
+                    <label>労働開始時期</label>
+                    <input type="text" th:field="*{workStartPeriod}"
+                           placeholder="例：即日可、2024年4月から、〇ヶ月後から">
+                </div>
+
+                <!-- 介護ヘルパー資格 -->
+                <div class="form-group">
+                    <label>介護ヘルパー資格</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="qualCareHelper" value="true"
+                                   th:checked="${person.qualCareHelper}">
+                            <label>介護ヘルパー資格あり</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- ════════════════════════════════════════ -->
+
+            <!-- ─── 生年月日 ──────────────────────────── -->
             <div class="form-group">
                 <label>生年月日</label>
                 <div style="display:flex;gap:6px;align-items:center;">
@@ -271,6 +399,8 @@
                     <input type="hidden" th:field="*{birthDate}" id="birthDateHidden">
                 </div>
             </div>
+
+            <!-- ─── 登録日 ──────────────────────────── -->
             <div class="form-group">
                 <label>登録日</label>
                 <div style="display:flex;gap:6px;align-items:center;">
@@ -307,6 +437,7 @@
                     <th>年齢</th>
                     <th>携帯電話</th>
                     <th>希望</th>
+                    <th>就労場所</th>
                     <th>LINE</th>
                     <th>登録日</th>
                     <th>操作</th>
@@ -319,7 +450,11 @@
                     <td th:with="age=${p.birthDate != null ? T(java.time.LocalDate).now().getYear() - p.birthDate.getYear() - (T(java.time.LocalDate).now().getDayOfYear() < p.birthDate.getDayOfYear() ? 1 : 0) : null}"
                         th:text="${age != null ? age + '歳' : '-'}"></td>
                     <td th:text="${p.mobilePhone}"></td>
-                    <td th:text="${p.desiredJob + '/' + p.desiredType}"></td>
+                    <td>
+                        <span th:if="${p.desiredTypes != null}" th:text="${p.desiredTypes}"></span>
+                        <span th:if="${p.desiredTypes == null}" th:text="${p.desiredType}"></span>
+                    </td>
+                    <td th:text="${p.workLocation != null ? p.workLocation : '-'}"></td>
                     <td>
                         <span th:if="${p.lineWorks != null and p.lineWorks}" class="badge badge-yes">&#10003;</span>
                         <span th:unless="${p.lineWorks != null and p.lineWorks}" class="badge badge-no">-</span>
@@ -345,20 +480,76 @@ document.getElementById('personForm').addEventListener('keydown', function(e) {
     if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') e.preventDefault();
 });
 
-// フォーム送信前にbirthDate・regDateをセット
+// フォーム送信前に更新
 document.getElementById('personForm').addEventListener('submit', function() {
     updateBirthDate();
     updateRegDate();
+    updateSpecificDaysJson();
 });
 
-// ─── 生年月日セレクト初期化 ──────────────────────────
+// ─── 特定日JSON ────────────────────────────────────────
+var DAYS = ['月','火','水','木','金','土','日'];
+
+function toggleDayTime(checkbox) {
+    var day = checkbox.value;
+    var timeBox = document.getElementById('time_' + day);
+    if (checkbox.checked) {
+        timeBox.classList.add('show');
+    } else {
+        timeBox.classList.remove('show');
+        document.getElementById('from_' + day).value = '';
+        document.getElementById('to_' + day).value = '';
+    }
+    updateSpecificDaysJson();
+}
+
+function updateSpecificDaysJson() {
+    var result = {};
+    DAYS.forEach(function(day) {
+        var cb = document.getElementById('day_' + day);
+        if (cb && cb.checked) {
+            var from = document.getElementById('from_' + day).value;
+            var to   = document.getElementById('to_' + day).value;
+            result[day] = (from || '') + '-' + (to || '');
+        }
+    });
+    document.getElementById('specificDaysJson').value =
+        Object.keys(result).length > 0 ? JSON.stringify(result) : '';
+}
+
+// 既存データの特定日を復元
+(function() {
+    var jsonStr = document.getElementById('specificDaysJson').value;
+    if (!jsonStr) return;
+    try {
+        var data = JSON.parse(jsonStr);
+        DAYS.forEach(function(day) {
+            if (data[day] !== undefined) {
+                var cb = document.getElementById('day_' + day);
+                if (cb) {
+                    cb.checked = true;
+                    var timeBox = document.getElementById('time_' + day);
+                    if (timeBox) timeBox.classList.add('show');
+                    var parts = data[day].split('-');
+                    if (parts.length >= 2) {
+                        var fromEl = document.getElementById('from_' + day);
+                        var toEl   = document.getElementById('to_' + day);
+                        if (fromEl) fromEl.value = parts[0];
+                        if (toEl)   toEl.value   = parts[1];
+                    }
+                }
+            }
+        });
+    } catch(e) {}
+})();
+
+// ─── 生年月日セレクト ────────────────────────────────
 (function() {
     var yearSel  = document.getElementById('birthYear');
     var monthSel = document.getElementById('birthMonth');
     var daySel   = document.getElementById('birthDay');
     var hidden   = document.getElementById('birthDateHidden');
     var existingBirth = hidden.value || '';
-
     var cy = new Date().getFullYear();
     for (var y = cy; y >= 1920; y--) {
         var o = document.createElement('option');
@@ -378,16 +569,16 @@ document.getElementById('personForm').addEventListener('submit', function() {
             yearSel.value = parts[0]; monthSel.value = parts[1]; daySel.value = parts[2];
         }
     }
+    updateBirthDate();
 })();
 
-// ─── 登録日セレクト初期化 ──────────────────────────
+// ─── 登録日セレクト ──────────────────────────────────
 (function() {
     var yearSel  = document.getElementById('regYear');
     var monthSel = document.getElementById('regMonth');
     var daySel   = document.getElementById('regDay');
     var hidden   = document.getElementById('regDateHidden');
     var existing = hidden.value || '';
-
     var cy = new Date().getFullYear();
     for (var y = cy; y >= 2000; y--) {
         var o = document.createElement('option');
@@ -401,7 +592,6 @@ document.getElementById('personForm').addEventListener('submit', function() {
         var o3 = document.createElement('option');
         o3.value = String(d).padStart(2,'0'); o3.textContent = d; daySel.appendChild(o3);
     }
-    // 既存値をセット（なければ今日）
     var target = existing || new Date().toISOString().split('T')[0];
     if (target && target.length >= 8) {
         var parts = target.substring(0,10).split('-');
@@ -424,7 +614,6 @@ function updateBirthDate() {
     var m = document.getElementById('birthMonth').value;
     var d = document.getElementById('birthDay').value;
     document.getElementById('birthDateHidden').value = (y && m && d) ? y + '-' + m + '-' + d : '';
-    // 年齢計算
     var ageEl = document.getElementById('ageDisplay');
     if (y && m && d) {
         var today = new Date();
@@ -487,8 +676,8 @@ function confirmDelete(id, el) {
     return false;
 }
 
-// 駅名→路線自動補完（求人者と同じデータ）
-var STATION_LINES = {"東京":["JR東海道新幹線","JR横須賀線","JR京浜東北線","JR山手線","JR上越新幹線","JR総武本線","JR中央本線","JR北陸新幹線","JR東海道本線","JR東北新幹線","JR宇都宮線","東京メトロ丸ノ内線"],"品川":["JR東海道新幹線","JR横須賀線","JR京浜東北線","JR山手線","JR東海道本線","京急本線"],"新橋":["JR横須賀線","JR京浜東北線","JR山手線","ゆりかもめ","東京メトロ銀座線","都営浅草線"],"武蔵小杉":["JR横須賀線","JR埼京線","JR南武線","JR湘南新宿ライン","東京メトロ南北線","東急東横線","東急目黒線"],"横浜":["JR横須賀線","JR京浜東北線","JR東海道本線","JR湘南新宿ライン","京急本線","東急東横線"],"大宮":["JR京浜東北線","JR埼京線","JR上越新幹線","JR北陸新幹線","JR東北新幹線","JR宇都宮線","JR湘南新宿ライン"],"浦和":["JR京浜東北線","JR宇都宮線","JR湘南新宿ライン"],"赤羽":["JR京浜東北線","JR埼京線","JR宇都宮線","JR湘南新宿ライン"],"王子":["JR京浜東北線","東京メトロ南北線"],"田端":["JR京浜東北線","JR山手線"],"西日暮里":["JR京浜東北線","JR山手線","東京メトロ千代田線","都営日暮里・舎人ライナー"],"日暮里":["JR京浜東北線","JR山手線","JR常磐線","京成本線","都営日暮里・舎人ライナー"],"鶯谷":["JR京浜東北線","JR山手線"],"上野":["JR京浜東北線","JR山手線","JR上越新幹線","JR常磐線","JR北陸新幹線","JR東北新幹線","JR宇都宮線","東京メトロ銀座線","東京メトロ日比谷線"],"御徒町":["JR京浜東北線","JR山手線"],"秋葉原":["JR京浜東北線","JR山手線","JR総武線各停","東京メトロ日比谷線","つくばエクスプレス"],"神田":["JR京浜東北線","JR山手線","JR中央本線","東京メトロ銀座線"],"有楽町":["JR京浜東北線","JR山手線","東京メトロ有楽町線"],"浜松町":["JR京浜東北線","JR山手線","東京モノレール","都営大江戸線"],"田町":["JR京浜東北線","JR山手線"],"品川":["JR京浜東北線","JR山手線","JR東海道本線","京急本線"],"大井町":["JR京浜東北線","東急大井町線"],"大森":["JR京浜東北線"],"蒲田":["JR京浜東北線","東急池上線","東急多摩川線"],"川崎":["JR京浜東北線","JR東海道本線","JR南武線"],"池袋":["JR埼京線","JR山手線","JR湘南新宿ライン","西武池袋線","東京メトロ丸ノ内線","東京メトロ有楽町線","東京メトロ副都心線","東武東上線"],"新宿":["JR埼京線","JR山手線","JR中央本線","JR湘南新宿ライン","京王線","京王新線","小田急小田原線","東京メトロ丸ノ内線","都営大江戸線","都営新宿線"],"渋谷":["JR埼京線","JR山手線","JR湘南新宿ライン","京王井の頭線","東京メトロ銀座線","東京メトロ半蔵門線","東京メトロ副都心線","東急田園都市線","東急東横線"],"恵比寿":["JR埼京線","JR山手線","JR湘南新宿ライン","東京メトロ日比谷線"],"大崎":["JR埼京線","JR山手線","JR湘南新宿ライン","りんかい線"],"五反田":["JR山手線","東急池上線","都営浅草線"],"目黒":["JR山手線","東京メトロ南北線","東急目黒線","都営三田線"],"原宿":["JR山手線"],"代々木":["JR山手線","都営大江戸線"],"新大久保":["JR山手線"],"高田馬場":["JR山手線","西武新宿線","東京メトロ東西線"],"目白":["JR山手線"],"大塚":["JR山手線"],"巣鴨":["JR山手線","都営大江戸線","都営三田線"],"駒込":["JR山手線","東京メトロ南北線"],"北千住":["JR常磐線","東京メトロ千代田線","東京メトロ日比谷線","東武伊勢崎線","つくばエクスプレス"],"松戸":["JR常磐線"],"柏":["JR常磐線"],"取手":["JR常磐線"],"立川":["JR青梅線","JR中央本線","JR南武線"],"拝島":["JR青梅線","JR八高線","西武拝島線"],"青梅":["JR青梅線"],"錦糸町":["JR総武本線","JR総武線各停","東京メトロ半蔵門線"],"本八幡":["JR総武本線","JR総武線各停","都営新宿線"],"西船橋":["JR総武本線","JR総武線各停","JR武蔵野線","東京メトロ東西線"],"船橋":["JR総武本線","JR総武線各停"],"津田沼":["JR総武本線","JR総武線各停"],"千葉":["JR総武本線","JR総武線各停"],"御茶ノ水":["JR総武線各停","JR中央本線","東京メトロ丸ノ内線"],"四ツ谷":["JR中央本線","東京メトロ丸ノ内線","東京メトロ南北線"],"中野":["JR中央本線","東京メトロ東西線"],"荻窪":["JR中央本線","東京メトロ丸ノ内線"],"吉祥寺":["JR中央本線","京王井の頭線"],"三鷹":["JR中央本線"],"国分寺":["JR中央本線","西武国分寺線","西武多摩湖線"],"西国分寺":["JR中央本線","JR武蔵野線"],"八王子":["JR横浜線","JR中央本線","JR八高線","京王線"],"高尾":["JR中央本線","京王高尾線"],"登戸":["JR南武線","小田急小田原線"],"府中本町":["JR南武線","JR武蔵野線"],"南浦和":["JR京浜東北線","JR武蔵野線"],"東川口":["JR武蔵野線","埼玉高速鉄道線"],"海浜幕張":["JR総武本線","JR武蔵野線"],"豊洲":["ゆりかもめ","東京メトロ有楽町線"],"新橋":["JR山手線","ゆりかもめ","東京メトロ銀座線","都営浅草線"],"吉祥寺":["JR中央本線","京王井の頭線"],"下北沢":["京王井の頭線","小田急小田原線"],"調布":["京王線","京王相模原線"],"府中":["京王線"],"橋本":["JR横浜線","京王相模原線"],"押上":["京成押上線","東京メトロ半蔵門線","都営浅草線","東武伊勢崎線","京成成田スカイアクセス線・北総線"],"成田空港":["京成本線","京成成田スカイアクセス線・北総線"],"京急蒲田":["京急空港線","京急本線"],"羽田空港第3ターミナル":["京急空港線","東京モノレール"],"町田":["JR横浜線","小田急小田原線"],"新百合ヶ丘":["小田急小田原線","小田急多摩線"],"本厚木":["小田急小田原線"],"所沢":["西武新宿線","西武池袋線"],"練馬":["西武池袋線","西武豊島線","西武有楽町線","都営大江戸線"],"小竹向原":["西武有楽町線","東京メトロ南北線","東京メトロ有楽町線","東京メトロ副都心線"],"和光市":["東京メトロ南北線","東京メトロ有楽町線","東京メトロ副都心線","東武東上線"],"多摩センター":["多摩都市モノレール"],"表参道":["東京メトロ銀座線","東京メトロ千代田線","東京メトロ半蔵門線"],"銀座":["東京メトロ丸ノ内線","東京メトロ銀座線","東京メトロ日比谷線"],"浅草":["東京メトロ銀座線","都営浅草線","東武伊勢崎線","つくばエクスプレス"],"大手町":["東京メトロ丸ノ内線","東京メトロ千代田線","東京メトロ東西線","東京メトロ半蔵門線","都営三田線"],"代々木上原":["小田急小田原線","東京メトロ千代田線"],"飯田橋":["東京メトロ東西線","東京メトロ南北線","東京メトロ有楽町線","都営大江戸線"],"九段下":["東京メトロ東西線","東京メトロ半蔵門線","都営新宿線"],"門前仲町":["東京メトロ東西線","都営大江戸線"],"溜池山王":["東京メトロ銀座線","東京メトロ南北線"],"六本木":["東京メトロ日比谷線","都営大江戸線"],"麻布十番":["東京メトロ南北線","都営大江戸線"],"白金高輪":["東京メトロ南北線","都営三田線"],"三田":["都営三田線","都営浅草線"],"永田町":["東京メトロ南北線","東京メトロ半蔵門線","東京メトロ有楽町線"],"市ヶ谷":["東京メトロ南北線","東京メトロ有楽町線","都営新宿線"],"新宿三丁目":["東京メトロ丸ノ内線","東京メトロ副都心線","都営新宿線"],"茅場町":["東京メトロ東西線","東京メトロ日比谷線"],"清澄白河":["東京メトロ半蔵門線","都営大江戸線"],"神保町":["東京メトロ半蔵門線","都営三田線","都営新宿線"],"水天宮前":["東京メトロ半蔵門線"],"月島":["東京メトロ有楽町線","都営大江戸線"],"勝どき":["都営大江戸線"],"光が丘":["都営大江戸線"],"中野坂上":["東京メトロ丸ノ内線","都営大江戸線"],"春日":["都営大江戸線","都営三田線"],"本駒込":["東京メトロ南北線","都営大江戸線"],"蔵前":["都営大江戸線","都営浅草線"],"両国":["JR総武線各停","都営大江戸線"],"築地市場":["都営大江戸線"],"汐留":["ゆりかもめ","都営大江戸線"],"森下":["都営大江戸線","都営新宿線"],"住吉":["東京メトロ半蔵門線","都営新宿線"],"人形町":["東京メトロ日比谷線","都営浅草線"],"三越前":["東京メトロ銀座線","東京メトロ半蔵門線"],"日比谷":["東京メトロ千代田線","東京メトロ日比谷線","都営三田線"],"内幸町":["都営三田線"],"天王洲アイル":["東京モノレール","りんかい線"],"国際展示場":["りんかい線"],"新木場":["東京メトロ有楽町線","りんかい線"],"三軒茶屋":["東急世田谷線","東急田園都市線"],"二子玉川":["東急大井町線","東急田園都市線"],"自由が丘":["東急大井町線","東急東横線"],"中目黒":["東京メトロ日比谷線","東急東横線"],"代官山":["東急東横線"],"菊名":["JR横浜線","東急東横線","東急目黒線"],"日吉":["東京メトロ南北線","東急東横線","東急目黒線"],"武蔵小山":["東京メトロ南北線","東急目黒線"],"大岡山":["東京メトロ南北線","東急大井町線","東急目黒線"],"田園調布":["東京メトロ南北線","東急東横線","東急目黒線"],"多摩川":["東京メトロ南北線","東急東横線","東急目黒線","東急多摩川線"],"中目黒":["東京メトロ日比谷線","東急東横線"],"都庁前":["都営大江戸線"],"西高島平":["都営三田線"],"高島平":["都営三田線"],"笹塚":["京王線","京王新線"],"千歳烏山":["京王線"],"つつじヶ丘":["京王線"],"京成上野":["京成本線"],"青砥":["京成押上線","京成本線"],"天空橋":["京急空港線","東京モノレール"],"広尾":["東京メトロ日比谷線"],"浦安":["東京メトロ東西線"],"葛西":["東京メトロ東西線"],"西葛西":["東京メトロ東西線"],"南砂町":["東京メトロ東西線"],"東陽町":["東京メトロ東西線"],"木場":["東京メトロ東西線"],"武蔵浦和":["JR埼京線","JR武蔵野線"],"長津田":["JR横浜線","東急田園都市線"],"海老名":["小田急小田原線"],"戸塚":["JR横須賀線","JR東海道本線","JR湘南新宿ライン"],"大船":["JR横須賀線","JR京浜東北線","JR東海道本線","JR湘南新宿ライン"],"成城学園前":["小田急小田原線"],"向ヶ丘遊園":["小田急小田原線"],"聖蹟桜ヶ丘":["京王線"],"高幡不動":["京王線","京王動物園線"],"石神井公園":["西武池袋線"],"大泉学園":["西武池袋線"],"ひばりヶ丘":["西武池袋線"],"清瀬":["西武池袋線"],"入間市":["西武池袋線"],"飯能":["西武池袋線"],"東村山":["西武園線","西武国分寺線","西武新宿線"],"上石神井":["西武新宿線"],"田無":["西武新宿線"],"下北沢":["京王井の頭線","小田急小田原線"],"経堂":["小田急小田原線"],"等々力":["東急大井町線"],"溝の口":["東急大井町線","東急田園都市線"],"たまプラーザ":["東急田園都市線"],"あざみ野":["東急田園都市線"],"青葉台":["東急田園都市線"],"長津田":["JR横浜線","東急田園都市線"],"中央林間":["東急田園都市線"],"豊島園":["西武豊島線","都営大江戸線"],"玉川上水":["西武拝島線","多摩都市モノレール"],"上北台":["多摩都市モノレール"],"つくば":["つくばエクスプレス"],"南流山":["JR武蔵野線","つくばエクスプレス"],"浅草":["東京メトロ銀座線","都営浅草線","東武伊勢崎線","つくばエクスプレス"],"早稲田":["東京メトロ東西線","都電荒川線"],"曳舟":["東武伊勢崎線","東武亀戸線"],"西新井":["東武伊勢崎線","東武大師線"],"竹ノ塚":["東武伊勢崎線"],"草加":["東武伊勢崎線"],"春日部":["東武伊勢崎線"],"東武動物公園":["東武伊勢崎線"],"成増":["東武東上線"],"志木":["東武東上線"],"川越":["東武東上線"],"見沼代親水公園":["都営日暮里・舎人ライナー"],"高尾山":["高尾登山ケーブル"],"御岳山":["御岳登山ケーブル"]};
+// 駅名→路線自動補完
+var STATION_LINES = {"東京":["JR東海道新幹線","JR横須賀線","JR京浜東北線","JR山手線","JR上越新幹線","JR総武本線","JR中央本線","JR北陸新幹線","JR東海道本線","JR東北新幹線","JR宇都宮線","東京メトロ丸ノ内線"],"品川":["JR東海道新幹線","JR横須賀線","JR京浜東北線","JR山手線","JR東海道本線","京急本線"],"新橋":["JR横須賀線","JR京浜東北線","JR山手線","ゆりかもめ","東京メトロ銀座線","都営浅草線"],"武蔵小杉":["JR横須賀線","JR埼京線","JR南武線","JR湘南新宿ライン","東京メトロ南北線","東急東横線","東急目黒線"],"横浜":["JR横須賀線","JR京浜東北線","JR東海道本線","JR湘南新宿ライン","京急本線","東急東横線"],"大宮":["JR京浜東北線","JR埼京線","JR上越新幹線","JR北陸新幹線","JR東北新幹線","JR宇都宮線","JR湘南新宿ライン"],"浦和":["JR京浜東北線","JR宇都宮線","JR湘南新宿ライン"],"赤羽":["JR京浜東北線","JR埼京線","JR宇都宮線","JR湘南新宿ライン"],"王子":["JR京浜東北線","東京メトロ南北線"],"池袋":["JR埼京線","JR山手線","JR湘南新宿ライン","西武池袋線","東京メトロ丸ノ内線","東京メトロ有楽町線","東京メトロ副都心線","東武東上線"],"新宿":["JR埼京線","JR山手線","JR中央本線","JR湘南新宿ライン","京王線","小田急小田原線","東京メトロ丸ノ内線","都営大江戸線","都営新宿線"],"渋谷":["JR埼京線","JR山手線","JR湘南新宿ライン","京王井の頭線","東京メトロ銀座線","東京メトロ半蔵門線","東京メトロ副都心線","東急田園都市線","東急東横線"],"恵比寿":["JR埼京線","JR山手線","JR湘南新宿ライン","東京メトロ日比谷線"],"大崎":["JR埼京線","JR山手線","JR湘南新宿ライン","りんかい線"],"五反田":["JR山手線","東急池上線","都営浅草線"],"目黒":["JR山手線","東京メトロ南北線","東急目黒線","都営三田線"],"上野":["JR京浜東北線","JR山手線","JR上越新幹線","JR常磐線","JR北陸新幹線","JR東北新幹線","JR宇都宮線","東京メトロ銀座線","東京メトロ日比谷線"],"秋葉原":["JR京浜東北線","JR山手線","JR総武線各停","東京メトロ日比谷線","つくばエクスプレス"],"神田":["JR京浜東北線","JR山手線","JR中央本線","東京メトロ銀座線"],"有楽町":["JR京浜東北線","JR山手線","東京メトロ有楽町線"],"浜松町":["JR京浜東北線","JR山手線","東京モノレール","都営大江戸線"],"表参道":["東京メトロ銀座線","東京メトロ千代田線","東京メトロ半蔵門線"],"銀座":["東京メトロ丸ノ内線","東京メトロ銀座線","東京メトロ日比谷線"],"浅草":["東京メトロ銀座線","都営浅草線","東武伊勢崎線","つくばエクスプレス"],"大手町":["東京メトロ丸ノ内線","東京メトロ千代田線","東京メトロ東西線","東京メトロ半蔵門線","都営三田線"],"六本木":["東京メトロ日比谷線","都営大江戸線"],"麻布十番":["東京メトロ南北線","都営大江戸線"],"月島":["東京メトロ有楽町線","都営大江戸線"],"豊洲":["ゆりかもめ","東京メトロ有楽町線"],"北千住":["JR常磐線","東京メトロ千代田線","東京メトロ日比谷線","東武伊勢崎線","つくばエクスプレス"],"立川":["JR青梅線","JR中央本線","JR南武線"],"吉祥寺":["JR中央本線","京王井の頭線"],"下北沢":["京王井の頭線","小田急小田原線"],"調布":["京王線","京王相模原線"],"町田":["JR横浜線","小田急小田原線"],"所沢":["西武新宿線","西武池袋線"],"成田空港":["京成本線","京成成田スカイアクセス線・北総線"]};
 
 function lookupLines(stationName) {
     var hint = document.getElementById('stationHint');

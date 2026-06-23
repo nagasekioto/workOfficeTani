@@ -25,12 +25,13 @@ public class Person {
     private String faxPhone;
     private String mobilePhone;
     private String desiredJob;
-    private String desiredType;
+    private String desiredType;      // 後方互換用（旧単一値）
+    private String desiredTypes;     // 新：複数選択（カンマ区切り）
     private String introducer;
     private Boolean qualNursery;
     private Boolean qualCook;
     private Boolean qualCareWorker;
-    private Boolean qualCareHelper;
+    private Boolean qualCareHelper;  // 介護ヘルパー資格
     private Boolean animalDogOk;
     private Boolean animalCatOk;
     private Boolean animalDogAllergy;
@@ -40,10 +41,27 @@ public class Person {
     private String childcareExp;
     private LocalDate birthDate;
     private LocalDate registeredDate;
-    private Boolean lineWorks;   // LINE WORKS登録有無
+    private Boolean lineWorks;
+
+    // ─── 就職希望条件（新規追加） ───────────────────────
+    /** 就労場所（カンマ区切り: 家庭,病院） */
+    private String workLocation;
+
+    /** 職務内容（カンマ区切り: 付添,家事,家庭介護） */
+    private String workDuties;
+
+    /** 特定日と希望時間（JSON文字列: {"月":"09:00-17:00",...}） */
+    private String specificDays;
+
+    /** 就業可能時間（例: "09:00-18:00"） */
+    private String workAvailableHours;
+
+    /** 労働開始時期（文字列） */
+    private String workStartPeriod;
 
     public Person() {}
 
+    // ─── getters / setters ──────────────────────────────
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Integer getNo() { return no; }
@@ -78,6 +96,8 @@ public class Person {
     public void setDesiredJob(String desiredJob) { this.desiredJob = desiredJob; }
     public String getDesiredType() { return desiredType; }
     public void setDesiredType(String desiredType) { this.desiredType = desiredType; }
+    public String getDesiredTypes() { return desiredTypes; }
+    public void setDesiredTypes(String desiredTypes) { this.desiredTypes = desiredTypes; }
     public String getIntroducer() { return introducer; }
     public void setIntroducer(String introducer) { this.introducer = introducer; }
     public Boolean getQualNursery() { return qualNursery; }
@@ -108,4 +128,16 @@ public class Person {
     public void setRegisteredDate(LocalDate registeredDate) { this.registeredDate = registeredDate; }
     public Boolean getLineWorks() { return lineWorks; }
     public void setLineWorks(Boolean lineWorks) { this.lineWorks = lineWorks; }
+
+    // 就職希望条件
+    public String getWorkLocation() { return workLocation; }
+    public void setWorkLocation(String workLocation) { this.workLocation = workLocation; }
+    public String getWorkDuties() { return workDuties; }
+    public void setWorkDuties(String workDuties) { this.workDuties = workDuties; }
+    public String getSpecificDays() { return specificDays; }
+    public void setSpecificDays(String specificDays) { this.specificDays = specificDays; }
+    public String getWorkAvailableHours() { return workAvailableHours; }
+    public void setWorkAvailableHours(String workAvailableHours) { this.workAvailableHours = workAvailableHours; }
+    public String getWorkStartPeriod() { return workStartPeriod; }
+    public void setWorkStartPeriod(String workStartPeriod) { this.workStartPeriod = workStartPeriod; }
 }
