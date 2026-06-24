@@ -822,39 +822,54 @@ public class ReceiptMenuController {
         int dy1 = introDate != null ? introDate.getDayOfMonth() : 0;
 
         final float ROW_H2 = 26f;
-        // 列: [受付月日] [年] [月] [日] [スペーサー] [合計ラベル] [合計金額]
+        // 列: [受付月日 rowspan=4] [年] [月] [日] [スペーサー] [合計/空] [金額/空]
         PdfPTable dateTable = new PdfPTable(new float[]{2f, 1.4f, 0.9f, 0.9f, 0.3f, 1.2f, 2f});
         dateTable.setWidthPercentage(100);
         dateTable.setSpacingBefore(4);
 
-        // ヘッダー行
-        dateTable.addCell(cell("受付月日", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
+        // col0: 「受付月日」ヘッダー含む4行結合
+        PdfPCell rcLabel = new PdfPCell();
+        rcLabel.setBorder(Rectangle.BOX);
+        rcLabel.setRowspan(4);
+        rcLabel.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        rcLabel.setHorizontalAlignment(Element.ALIGN_CENTER);
+        rcLabel.addElement(new Phrase("受付月日", boldFont));
+        dateTable.addCell(rcLabel);
+
+        // ヘッダー行（年・月・日・スペーサー・空・空）
         dateTable.addCell(cell("年", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
         dateTable.addCell(cell("月", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
         dateTable.addCell(cell("日", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
-        PdfPCell hSpacer = cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT);
-        hSpacer.setColspan(1); dateTable.addCell(hSpacer);
-        dateTable.addCell(cell("合計", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
-        dateTable.addCell(cell(String.format("%,d　円", receptionFee), boldFont, Rectangle.BOX, Element.ALIGN_LEFT));
+        PdfPCell hSp = cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT);
+        dateTable.addCell(hSp);
+        dateTable.addCell(cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT));
+        dateTable.addCell(cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT));
 
-        // データ3行（年月日入力欄）
-        String[][] rows = {
+        // データ行1・2（空欄）
+        String[][] dataRows = {
             {yr1 > 0 ? String.valueOf(yr1) : "", mo1 > 0 ? String.valueOf(mo1) : "", dy1 > 0 ? String.valueOf(dy1) : ""},
-            {"", "", ""},
             {"", "", ""}
         };
-        for (int i = 0; i < 3; i++) {
-            PdfPCell rcCell = cell("", normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
-            rcCell.setFixedHeight(ROW_H2);
-            dateTable.addCell(rcCell);
-            dateTable.addCell(cell(rows[i][0], normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
-            dateTable.addCell(cell(rows[i][1], normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
-            dateTable.addCell(cell(rows[i][2], normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
+        for (String[] r : dataRows) {
+            dateTable.addCell(cell(r[0], normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
+            dateTable.addCell(cell(r[1], normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
+            dateTable.addCell(cell(r[2], normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
             PdfPCell sp = cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT);
             dateTable.addCell(sp);
             dateTable.addCell(cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT));
             dateTable.addCell(cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT));
         }
+
+        // データ行3（最下行）＋右側に合計
+        PdfPCell lastYear  = cell("", normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
+        lastYear.setFixedHeight(ROW_H2); dateTable.addCell(lastYear);
+        PdfPCell lastMonth = cell("", normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
+        lastMonth.setFixedHeight(ROW_H2); dateTable.addCell(lastMonth);
+        PdfPCell lastDay   = cell("", normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
+        lastDay.setFixedHeight(ROW_H2); dateTable.addCell(lastDay);
+        dateTable.addCell(cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT));
+        dateTable.addCell(cell("合計", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
+        dateTable.addCell(cell(String.format("%,d　円", receptionFee), boldFont, Rectangle.BOX, Element.ALIGN_LEFT));
 
         doc.add(dateTable);
 
