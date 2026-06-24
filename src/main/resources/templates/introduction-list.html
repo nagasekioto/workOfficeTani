@@ -9,8 +9,6 @@
         h1 { margin: 0; color: #333; font-size: 20px; }
         .back-btn   { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
         .new-btn    { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; margin-right: 8px; }
-        .export-btn { background: #43a047; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; margin-right: 8px; font-weight: bold; }
-        .export-btn:hover { background: #2e7d32; }
         .pdf-btn { background: #E53935; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; margin-right: 8px; font-weight: bold; }
         .pdf-btn:hover { background: #b71c1c; }
         .del-all-btn { background: #d32f2f; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: bold; margin-right: 8px; }
@@ -78,10 +76,9 @@
 </head>
 <body>
 <div class="header">
-    <h1>&#128203; 紹介状一覧（1-6-2） / Excel外部保存（1-6-3）</h1>
+    <h1>&#128203; 紹介状一覧（1-6-2）</h1>
     <div>
         <a href="/introduction" class="new-btn">&#43; 新規作成（1-6-1）</a>
-        <a href="/introduction/export" class="export-btn">&#128229; Excel保存（1-6-3）</a>
         <a href="/introduction/export-pdf" class="pdf-btn"
            th:if="${not #lists.isEmpty(introductions)}">&#128196; PDF一括保存（ZIP）</a>
         <button class="del-all-btn" onclick="openModal1()"

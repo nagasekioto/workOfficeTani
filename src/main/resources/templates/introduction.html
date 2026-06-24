@@ -59,7 +59,7 @@
 </head>
 <body>
 <div class="header no-print">
-    <h1>&#128196; 紹介状（1-6）</h1>
+    <h1>&#128196; 1-6-1 紹介状作成</h1>
     <a href="/menu" class="back-btn">&#8592; 初期画面に戻る</a>
 </div>
 
@@ -91,7 +91,6 @@
         </div>
         <div class="row2">
             <div class="fg"><label>紹介年月日</label><div id="introDateSel" style="display:flex;gap:4px;align-items:center;"></div><input type="hidden" id="introDate"></div>
-            <div class="fg"><label>就業開始日</label><div id="startDateSel" style="display:flex;gap:4px;align-items:center;"></div><input type="hidden" id="startDate"></div>
         </div>
     </div>
 
@@ -602,7 +601,6 @@ function saveIntro(){
     if(pSel.value) params.append('personId',pSel.value);
     if(cSel.value) params.append('customerId',cSel.value);
     params.append('introDate',g('introDate').value||'');
-    params.append('startDate',g('startDate').value||'');
     params.append('formData', JSON.stringify(collectFormData()));
     fetch('/introduction/save',{method:'POST',body:params})
         .then(function(r){return r.text();})
@@ -697,16 +695,13 @@ window.addEventListener('load',function(){
     initTime();
     var inputArea=document.querySelector('.input-area');
     var introDateVal=inputArea?inputArea.dataset.introDate:'';
-    var startDateVal=inputArea?inputArea.dataset.startDate:'';
-    var personIdVal=inputArea?inputArea.dataset.personId:'';
+    var startDateVal='';    var personIdVal=inputArea?inputArea.dataset.personId:'';
     var customerIdVal=inputArea?inputArea.dataset.customerId:'';
     var formDataVal=inputArea?inputArea.dataset.formData:'';
     var editId=inputArea?inputArea.dataset.introId:'';
 
     makeDateSel('introDateSel','introDate',!introDateVal);
     if(introDateVal) g('introDate').value=introDateVal;
-    makeDateSel('startDateSel','startDate',false);
-    if(startDateVal) g('startDate').value=startDateVal;
     makeDateSel('empFromSel','empFrom',false);
     makeDateSel('empToSel','empTo',false);
     makeDateSel('trialFromSel','trialFrom',false);
@@ -723,7 +718,6 @@ window.addEventListener('load',function(){
         if(sels.length>=3){sels[0].value=p[0];sels[1].value=p[1];sels[2].value=p[2];}
     }
     if(introDateVal){ setTimeout(function(){syncDateSel('introDateSel','introDate');},0); }
-    if(startDateVal){ setTimeout(function(){syncDateSel('startDateSel','startDate');},0); }
 
     // 求職者・求人者セレクト復元
     if(personIdVal){

@@ -31,16 +31,6 @@ import com.itextpdf.text.pdf.BaseFont;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
-import org.apache.poi.ss.usermodel.BorderStyle;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.FillPatternType;
-import org.apache.poi.ss.usermodel.HorizontalAlignment;
-import org.apache.poi.ss.usermodel.IndexedColors;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -583,109 +573,5 @@ public class IntroductionController {
         v.setBorder(Rectangle.BOX); v.setPadding(3);
         tbl.addCell(v);
     }
-
-
-    // ─── 1-6-3 紹介状一覧 Excel エクスポート ──────────
-    @GetMapping("/export")
-    public void exportExcel(HttpSession session, HttpServletResponse response)
-            throws IOException {
-        if (!checkAuth(session)) { response.sendError(401); return; }
-
-        // データ収集
-        List<Introduction> intros = new ArrayList<>();
-        introductionRepository.findAllOrderByCreatedAtDesc().forEach(intros::add);
-
-        Map<Long, String> personMap = new HashMap<>();
-        StreamSupport.stream(personRepository.findAll().spliterator(), false)
-            .forEach(p -> personMap.put(p.getId(),
-                p.getLastNameKanji() + " " + p.getFirstNameKanji()));
-
-        Map<Long, String> customerMap = new HashMap<>();
-        StreamSupport.stream(customerRepository.findAll().spliterator(), false)
-            .forEach(c -> customerMap.put(c.getId(),
-                c.getLastNameKanji() + " " + c.getFirstNameKanji()));
-
-        try (Workbook wb = new XSSFWorkbook()) {
-            Sheet sheet = wb.createSheet("紹介状一覧");
-
-            // ── ヘッダースタイル ──────────────────────
-            CellStyle hStyle = wb.createCellStyle();
-            hStyle.setFillForegroundColor(IndexedColors.GREY_50_PERCENT.getIndex());
-            hStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-            hStyle.setAlignment(HorizontalAlignment.CENTER);
-            hStyle.setBorderBottom(BorderStyle.THIN);
-            hStyle.setBorderTop(BorderStyle.THIN);
-            hStyle.setBorderLeft(BorderStyle.THIN);
-            hStyle.setBorderRight(BorderStyle.THIN);
-            org.apache.poi.ss.usermodel.Font hFont = wb.createFont();
-            hFont.setBold(true);
-            hFont.setColor(IndexedColors.WHITE.getIndex());
-            hFont.setFontName("メイリオ");
-            hStyle.setFont(hFont);
-
-            // ── データスタイル ─────────────────────────
-            CellStyle dStyle = wb.createCellStyle();
-            dStyle.setBorderBottom(BorderStyle.THIN);
-            dStyle.setBorderTop(BorderStyle.THIN);
-            dStyle.setBorderLeft(BorderStyle.THIN);
-            dStyle.setBorderRight(BorderStyle.THIN);
-            org.apache.poi.ss.usermodel.Font dFont = wb.createFont();
-            dFont.setFontName("メイリオ");
-            dStyle.setFont(dFont);
-
-            // ── ヘッダー行 ────────────────────────────
-            String[] headers = {
-                "紹介番号", "紹介年月日", "求職者（家政婦）", "求人者", "登録日時"
-            };
-            Row hRow = sheet.createRow(0);
-            hRow.setHeightInPoints(20);
-            for (int i = 0; i < headers.length; i++) {
-                Cell cell = hRow.createCell(i);
-                cell.setCellValue(headers[i]);
-                cell.setCellStyle(hStyle);
-            }
-
-            // ── データ行 ──────────────────────────────
-            DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm");
-            int rowNum = 1;
-            for (Introduction intro : intros) {
-                Row row = sheet.createRow(rowNum++);
-                row.setHeightInPoints(18);
-
-                String[] vals = {
-                    intro.getRefNo() != null ? intro.getRefNo() : "",
-                    intro.getIntroDate() != null ? intro.getIntroDate().toString() : "",
-                    intro.getPersonId() != null
-                        ? personMap.getOrDefault(intro.getPersonId(), "") : "",
-                    intro.getCustomerId() != null
-                        ? customerMap.getOrDefault(intro.getCustomerId(), "") : "",
-                    intro.getCreatedAt() != null
-                        ? intro.getCreatedAt().format(dtf) : ""
-                };
-                for (int i = 0; i < vals.length; i++) {
-                    Cell cell = row.createCell(i);
-                    cell.setCellValue(vals[i]);
-                    cell.setCellStyle(dStyle);
-                }
-            }
-
-            // ── 列幅自動調整 ─────────────────────────
-            int[] colWidths = {12, 14, 20, 20, 20};
-            for (int i = 0; i < colWidths.length; i++) {
-                sheet.setColumnWidth(i, colWidths[i] * 256);
-            }
-
-            // ── ファイル出力 ──────────────────────────
-            String fileName = "紹介状一覧_"
-                + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmm"))
-                + ".xlsx";
-            response.setContentType(
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-            response.setHeader("Content-Disposition",
-                "attachment; filename*=UTF-8''" +
-                java.net.URLEncoder.encode(fileName, "UTF-8").replace("+", "%20"));
-            wb.write(response.getOutputStream());
-            response.getOutputStream().flush();
-        }
-    }
 }
+
