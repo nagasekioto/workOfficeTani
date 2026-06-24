@@ -544,7 +544,7 @@ public class ReceiptMenuController {
         // 行の高さを固定して縦伸ばし
         final float ROW_H = 22f;
 
-        PdfPTable wageTable = new PdfPTable(new float[]{1.2f, 1.2f, 2.8f, 2f, 1.8f, 2.8f});
+        PdfPTable wageTable = new PdfPTable(new float[]{1.2f, 1.2f, 2.2f, 2.8f, 1.6f, 2.8f});
         wageTable.setWidthPercentage(100);
         wageTable.setSpacingBefore(4);
 
