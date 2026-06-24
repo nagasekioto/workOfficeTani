@@ -88,6 +88,7 @@ public class SalesController {
             @RequestParam(required = false) String[] dailyWagesList,
             @RequestParam(required = false) String[] workStartDates,
             @RequestParam(required = false) String[] workEndDates,
+            @RequestParam(required = false) String[] workDaysList,
             @RequestParam(required = false) String[] workingHoursList,
             @RequestParam(required = false) String[] remarksList,
             HttpSession session) {
@@ -153,6 +154,15 @@ public class SalesController {
             if (workEndDates != null && i < workEndDates.length
                     && workEndDates[i] != null && !workEndDates[i].isBlank()) {
                 try { detail.setWorkEndDate(LocalDate.parse(workEndDates[i])); } catch (Exception ignored) {}
+            }
+            // 就労日数から開始・終了日を補完（hiddenが空でも日数だけで計算）
+            if (detail.getWorkStartDate() != null && detail.getWorkEndDate() == null
+                    && workDaysList != null && i < workDaysList.length
+                    && workDaysList[i] != null && !workDaysList[i].isBlank()) {
+                try {
+                    int days = Integer.parseInt(workDaysList[i]);
+                    if (days > 0) detail.setWorkEndDate(detail.getWorkStartDate().plusDays(days - 1));
+                } catch (NumberFormatException ignored) {}
             }
             if (workingHoursList != null && i < workingHoursList.length
                     && workingHoursList[i] != null && !workingHoursList[i].isBlank()) {

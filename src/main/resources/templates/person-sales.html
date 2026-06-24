@@ -85,13 +85,16 @@
                     </div>
                     <div class="form-group"><label>紹介年月日</label>
                         <input type="date" name="introductionDates" id="introDate1" th:value="${d?.introductionDate}"></div>
-                    <div class="form-row">
-                        <div class="form-group"><label>就労開始</label>
-                            <input type="date" name="workStartDates" id="workStart1" th:value="${d?.workStartDate}" oninput="calcDays(1)"></div>
-                        <div class="form-group"><label>就労終了</label>
-                            <input type="date" name="workEndDates" id="workEnd1" th:value="${d?.workEndDate}" oninput="calcDays(1)"></div>
+                    <div class="form-group"><label>就労日数</label>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <input type="number" id="workDays1" name="workDaysList" min="0" placeholder="日数" style="width:100px;"
+                                th:value="${d?.workStartDate != null and d?.workEndDate != null ? T(java.time.temporal.ChronoUnit).DAYS.between(d.workStartDate, d.workEndDate) + 1 : ''}"
+                                oninput="syncDaysToHidden(1)">
+                            <span>日</span>
+                        </div>
+                        <input type="hidden" name="workStartDates" id="workStart1" th:value="${d?.workStartDate}">
+                        <input type="hidden" name="workEndDates" id="workEnd1" th:value="${d?.workEndDate}">
                     </div>
-                    <div id="daysDisplay1" style="font-size:13px;color:#555;margin-bottom:10px;"></div>
                     <div class="form-group"><label>受付料</label>
                         <div class="fee-fixed"><span>710円（固定）</span>
                             <div style="display:flex;align-items:center;gap:8px;">
@@ -147,13 +150,16 @@
                     </div>
                     <div class="form-group"><label>紹介年月日</label>
                         <input type="date" name="introductionDates" id="introDate2" th:value="${d?.introductionDate}"></div>
-                    <div class="form-row">
-                        <div class="form-group"><label>就労開始</label>
-                            <input type="date" name="workStartDates" id="workStart2" th:value="${d?.workStartDate}" oninput="calcDays(2)"></div>
-                        <div class="form-group"><label>就労終了</label>
-                            <input type="date" name="workEndDates" id="workEnd2" th:value="${d?.workEndDate}" oninput="calcDays(2)"></div>
+                    <div class="form-group"><label>就労日数</label>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <input type="number" id="workDays2" name="workDaysList" min="0" placeholder="日数" style="width:100px;"
+                                th:value="${d?.workStartDate != null and d?.workEndDate != null ? T(java.time.temporal.ChronoUnit).DAYS.between(d.workStartDate, d.workEndDate) + 1 : ''}"
+                                oninput="syncDaysToHidden(2)">
+                            <span>日</span>
+                        </div>
+                        <input type="hidden" name="workStartDates" id="workStart2" th:value="${d?.workStartDate}">
+                        <input type="hidden" name="workEndDates" id="workEnd2" th:value="${d?.workEndDate}">
                     </div>
-                    <div id="daysDisplay2" style="font-size:13px;color:#555;margin-bottom:10px;"></div>
                     <div class="form-group"><label>受付料</label>
                         <div class="fee-fixed"><span>710円（固定）</span>
                             <div style="display:flex;align-items:center;gap:8px;">
@@ -209,13 +215,16 @@
                     </div>
                     <div class="form-group"><label>紹介年月日</label>
                         <input type="date" name="introductionDates" id="introDate3" th:value="${d?.introductionDate}"></div>
-                    <div class="form-row">
-                        <div class="form-group"><label>就労開始</label>
-                            <input type="date" name="workStartDates" id="workStart3" th:value="${d?.workStartDate}" oninput="calcDays(3)"></div>
-                        <div class="form-group"><label>就労終了</label>
-                            <input type="date" name="workEndDates" id="workEnd3" th:value="${d?.workEndDate}" oninput="calcDays(3)"></div>
+                    <div class="form-group"><label>就労日数</label>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <input type="number" id="workDays3" name="workDaysList" min="0" placeholder="日数" style="width:100px;"
+                                th:value="${d?.workStartDate != null and d?.workEndDate != null ? T(java.time.temporal.ChronoUnit).DAYS.between(d.workStartDate, d.workEndDate) + 1 : ''}"
+                                oninput="syncDaysToHidden(3)">
+                            <span>日</span>
+                        </div>
+                        <input type="hidden" name="workStartDates" id="workStart3" th:value="${d?.workStartDate}">
+                        <input type="hidden" name="workEndDates" id="workEnd3" th:value="${d?.workEndDate}">
                     </div>
-                    <div id="daysDisplay3" style="font-size:13px;color:#555;margin-bottom:10px;"></div>
                     <div class="form-group"><label>受付料</label>
                         <div class="fee-fixed"><span>710円（固定）</span>
                             <div style="display:flex;align-items:center;gap:8px;">
@@ -271,13 +280,16 @@
                     </div>
                     <div class="form-group"><label>紹介年月日</label>
                         <input type="date" name="introductionDates" id="introDate4" th:value="${d?.introductionDate}"></div>
-                    <div class="form-row">
-                        <div class="form-group"><label>就労開始</label>
-                            <input type="date" name="workStartDates" id="workStart4" th:value="${d?.workStartDate}" oninput="calcDays(4)"></div>
-                        <div class="form-group"><label>就労終了</label>
-                            <input type="date" name="workEndDates" id="workEnd4" th:value="${d?.workEndDate}" oninput="calcDays(4)"></div>
+                    <div class="form-group"><label>就労日数</label>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <input type="number" id="workDays4" name="workDaysList" min="0" placeholder="日数" style="width:100px;"
+                                th:value="${d?.workStartDate != null and d?.workEndDate != null ? T(java.time.temporal.ChronoUnit).DAYS.between(d.workStartDate, d.workEndDate) + 1 : ''}"
+                                oninput="syncDaysToHidden(4)">
+                            <span>日</span>
+                        </div>
+                        <input type="hidden" name="workStartDates" id="workStart4" th:value="${d?.workStartDate}">
+                        <input type="hidden" name="workEndDates" id="workEnd4" th:value="${d?.workEndDate}">
                     </div>
-                    <div id="daysDisplay4" style="font-size:13px;color:#555;margin-bottom:10px;"></div>
                     <div class="form-group"><label>受付料</label>
                         <div class="fee-fixed"><span>710円（固定）</span>
                             <div style="display:flex;align-items:center;gap:8px;">
@@ -333,13 +345,16 @@
                     </div>
                     <div class="form-group"><label>紹介年月日</label>
                         <input type="date" name="introductionDates" id="introDate5" th:value="${d?.introductionDate}"></div>
-                    <div class="form-row">
-                        <div class="form-group"><label>就労開始</label>
-                            <input type="date" name="workStartDates" id="workStart5" th:value="${d?.workStartDate}" oninput="calcDays(5)"></div>
-                        <div class="form-group"><label>就労終了</label>
-                            <input type="date" name="workEndDates" id="workEnd5" th:value="${d?.workEndDate}" oninput="calcDays(5)"></div>
+                    <div class="form-group"><label>就労日数</label>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <input type="number" id="workDays5" name="workDaysList" min="0" placeholder="日数" style="width:100px;"
+                                th:value="${d?.workStartDate != null and d?.workEndDate != null ? T(java.time.temporal.ChronoUnit).DAYS.between(d.workStartDate, d.workEndDate) + 1 : ''}"
+                                oninput="syncDaysToHidden(5)">
+                            <span>日</span>
+                        </div>
+                        <input type="hidden" name="workStartDates" id="workStart5" th:value="${d?.workStartDate}">
+                        <input type="hidden" name="workEndDates" id="workEnd5" th:value="${d?.workEndDate}">
                     </div>
-                    <div id="daysDisplay5" style="font-size:13px;color:#555;margin-bottom:10px;"></div>
                     <div class="form-group"><label>受付料</label>
                         <div class="fee-fixed"><span>710円（固定）</span>
                             <div style="display:flex;align-items:center;gap:8px;">
@@ -403,14 +418,18 @@ function toggleCustomerFee(idx) {
 }
 function onCustomerChange(idx) {}
 
-function calcDays(idx) {
-    const s = document.getElementById('workStart' + idx).value;
-    const e = document.getElementById('workEnd' + idx).value;
-    const div = document.getElementById('daysDisplay' + idx);
-    if (s && e) {
-        const days = Math.round((new Date(e) - new Date(s)) / 86400000) + 1;
-        div.textContent = days > 0 ? '就労日数：' + days + '日' : '';
-    } else { div.textContent = ''; }
+function syncDaysToHidden(idx) {
+    // 就労日数から workEndDate を計算して hidden に同期
+    // workStartDate が入っていない場合は今日を基準にしない（日数のみ保持）
+    const days = parseInt(document.getElementById('workDays' + idx).value) || 0;
+    const startHidden = document.getElementById('workStart' + idx);
+    const endHidden   = document.getElementById('workEnd' + idx);
+    if (startHidden && startHidden.value && days > 0) {
+        const start = new Date(startHidden.value);
+        const end = new Date(start);
+        end.setDate(start.getDate() + days - 1);
+        endHidden.value = end.toISOString().split('T')[0];
+    }
 }
 
 function addDailyWage(idx) {

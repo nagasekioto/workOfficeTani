@@ -595,7 +595,7 @@ public class ReceiptMenuController {
         wageTable.addCell(period3);
 
         // ── 行2: 日給 ────────────────────────────────────────────
-        String dailyUnitStr  = dailyWageUnit > 0 ? String.format("%,d円", dailyWageUnit) : "　　　円";
+        String dailyUnitStr  = dailyWageUnit > 0 ? String.format("%,d円", dailyWageUnit) : "　　円";
         String dailyDaysStr  = dailyDays > 0 ? String.format("%d日間", dailyDays) : "　日間";
         String dailyTotalStr = dailyTotalAmt > 0 ? String.format("%,d円", dailyTotalAmt) : "0円";
         addFixedRow(wageTable, smallNormal, ROW_H,
