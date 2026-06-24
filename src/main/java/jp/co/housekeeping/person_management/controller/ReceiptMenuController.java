@@ -406,85 +406,82 @@ public class ReceiptMenuController {
         doc.open();
 
         BaseFont bf = BaseFont.createFont("HeiseiMin-W3", "UniJIS-UCS2-H", BaseFont.NOT_EMBEDDED);
-        Font titleFont   = new Font(bf, 16, Font.BOLD);
+        Font titleFont   = new Font(bf, 15, Font.BOLD | Font.UNDERLINE);
         Font boldFont    = new Font(bf, 10, Font.BOLD);
         Font normalFont  = new Font(bf, 10);
         Font smallFont   = new Font(bf, 8);
         Font largeFont   = new Font(bf, 13, Font.BOLD);
 
-        // ── 右上：領収番号・領収日 ──────────────────────────
+        // ── ① タイトル（一番上） ────────────────────────────
+        Paragraph title = new Paragraph("求 人 受 付 ・ 紹 介 手 数 料 領 収 証 書", titleFont);
+        title.setAlignment(Element.ALIGN_CENTER);
+        title.setSpacingAfter(8);
+        doc.add(title);
+
+        // ── ② 右上：領収番号・領収日 ─────────────────────────
         LocalDate today = LocalDate.now();
-        PdfPTable topTable = new PdfPTable(new float[]{1, 1});
+        PdfPTable topTable = new PdfPTable(new float[]{3, 2});
         topTable.setWidthPercentage(100);
+        topTable.setSpacingAfter(6);
+
+        // 左：空欄
         PdfPCell emptyLeft = cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT);
         topTable.addCell(emptyLeft);
 
+        // 右：領収番号 + 領収日（右寄せ）
         PdfPTable noDateTable = new PdfPTable(new float[]{1, 2});
         noDateTable.setWidthPercentage(100);
-        PdfPCell noLabel = cell("領収番号", smallFont, Rectangle.NO_BORDER, Element.ALIGN_RIGHT);
-        noDateTable.addCell(noLabel);
-        PdfPCell noValue = cell(receiptNo, boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
-        noDateTable.addCell(noValue);
-        PdfPCell dateLabel = cell("領収日", smallFont, Rectangle.NO_BORDER, Element.ALIGN_RIGHT);
-        noDateTable.addCell(dateLabel);
-        PdfPCell dateValue = cell(
+        noDateTable.addCell(cell("領収番号", smallFont, Rectangle.NO_BORDER, Element.ALIGN_RIGHT));
+        noDateTable.addCell(cell(receiptNo, boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
+        noDateTable.addCell(cell("領収日", smallFont, Rectangle.NO_BORDER, Element.ALIGN_RIGHT));
+        noDateTable.addCell(cell(
             String.format("%d年　%d月　%d日", today.getYear(), today.getMonthValue(), today.getDayOfMonth()),
-            normalFont, Rectangle.NO_BORDER, Element.ALIGN_RIGHT);
-        noDateTable.addCell(dateValue);
-
+            normalFont, Rectangle.NO_BORDER, Element.ALIGN_RIGHT));
         PdfPCell rightCell = new PdfPCell(noDateTable);
         rightCell.setBorder(Rectangle.NO_BORDER);
         topTable.addCell(rightCell);
         doc.add(topTable);
 
-        // ── タイトル ────────────────────────────────────────
-        Paragraph title = new Paragraph("求 人 受 付 ・ 紹 介 手 数 料 領 収 証 書", titleFont);
-        title.setAlignment(Element.ALIGN_CENTER);
-        title.setSpacingBefore(4);
-        title.setSpacingAfter(10);
-        doc.add(title);
-
-        // ── 宛名 ────────────────────────────────────────────
+        // ── ③ 宛名 ──────────────────────────────────────────
         String customerName = customer != null
             ? customer.getLastNameKanji() + "　" + customer.getFirstNameKanji() : "　　　　　";
         Paragraph nameP = new Paragraph(customerName + "　様", largeFont);
-        nameP.setSpacingAfter(2);
+        nameP.setSpacingAfter(4);
         doc.add(nameP);
 
-        // ── 金額算定（賃金総額・手数料計算） ──────────────────
-        int totalWage   = detail.getMonthlyTotal() != null ? detail.getMonthlyTotal() : 0;
-        int customerFee = detail.getCustomerFee()  != null ? detail.getCustomerFee()  : 1000;
-        int commission  = (int)(totalWage * FEE_RATE);        // ②：賃金総額×15%切捨
+        // ── ④ 金額算定 ───────────────────────────────────────
+        int totalWage      = detail.getMonthlyTotal() != null ? detail.getMonthlyTotal() : 0;
+        int customerFee    = detail.getCustomerFee()  != null ? detail.getCustomerFee()  : 1000;
+        int commission     = (int)(totalWage * FEE_RATE);     // ②：賃金総額×15%切捨
         int consumptionTax = (int)(commission * 0.10);        // ③：消費税10%
-        int grandTotal  = customerFee + commission + consumptionTax; // ①+②+③
+        int grandTotal     = customerFee + commission + consumptionTax; // ①+②+③
 
-        // ── 丸D マーク + 一金 ──────────────────────────────
+        // ── ⑤ （②+③）一金 ─────────────────────────────────
         PdfPTable amountLine = new PdfPTable(new float[]{1, 6});
         amountLine.setWidthPercentage(100);
-        amountLine.setSpacingBefore(4);
+        amountLine.setSpacingBefore(2);
         amountLine.setSpacingAfter(4);
-        PdfPCell circleD = cell("（D）", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
-        circleD.setPadding(4);
-        amountLine.addCell(circleD);
+        PdfPCell circleLabel = cell("（②＋③）", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
+        circleLabel.setPadding(4);
+        amountLine.addCell(circleLabel);
         PdfPCell amtVal = cell(
             "一金　　" + String.format("%,d", grandTotal) + " 円也",
             largeFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT);
         amountLine.addCell(amtVal);
         doc.add(amountLine);
 
-        // ── 右：会社情報 ──────────────────────────────────
+        // ── ⑥ 説明文 ＋ 会社情報（右寄せ） ────────────────────
         PdfPTable splitTable = new PdfPTable(new float[]{1, 1});
         splitTable.setWidthPercentage(100);
         splitTable.setSpacingBefore(2);
 
-        // 左：説明文
         PdfPCell descCell = new PdfPCell(
             new Phrase("職業紹介手数料として上記金額を正に領収しました。", normalFont));
         descCell.setBorder(Rectangle.NO_BORDER);
         descCell.setPaddingTop(8);
         splitTable.addCell(descCell);
 
-        // 右：会社情報
+        // 右：会社情報（右寄せ）
         PdfPTable companyTable = new PdfPTable(1);
         companyTable.setWidthPercentage(100);
         for (String line : new String[]{
@@ -493,7 +490,7 @@ public class ReceiptMenuController {
                 "〒107-0052",
                 "東京都港区赤坂6-10-45-203",
                 "TEL 03-5544-8315　FAX 03-5544-8316"}) {
-            PdfPCell c = cell(line, smallFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT);
+            PdfPCell c = cell(line, smallFont, Rectangle.NO_BORDER, Element.ALIGN_RIGHT);
             c.setPadding(1);
             companyTable.addCell(c);
         }
@@ -502,22 +499,20 @@ public class ReceiptMenuController {
         splitTable.addCell(companyWrap);
         doc.add(splitTable);
 
-        // ── 賃金算定テーブル ─────────────────────────────
+        // ── ⑦ 賃金算定テーブル ──────────────────────────────
         doc.add(new Paragraph(" ", smallFont));
 
-        // 就労期間の計算
         LocalDate startDate = detail.getWorkStartDate();
         LocalDate endDate   = detail.getWorkEndDate();
         int workDays = 0;
-        if (startDate != null && endDate != null) {
+        if (startDate != null && endDate != null)
             workDays = (int)(endDate.toEpochDay() - startDate.toEpochDay()) + 1;
-        }
+
         String periodStr = "";
-        if (startDate != null && endDate != null) {
+        if (startDate != null && endDate != null)
             periodStr = String.format("%d月　%d日　から　%d日　まで　%d　日間",
                 startDate.getMonthValue(), startDate.getDayOfMonth(),
                 endDate.getDayOfMonth(), workDays);
-        }
 
         // 日給情報
         String dailyWages = detail.getDailyWages();
@@ -527,23 +522,31 @@ public class ReceiptMenuController {
             dailyDays = wages.length;
             for (String w : wages)
                 try { dailyTotalAmt += Integer.parseInt(w.trim()); } catch (NumberFormatException ignored) {}
-            if (dailyDays > 0) dailyWageUnit = dailyDays > 0 ? dailyTotalAmt / dailyDays : 0;
+            if (dailyDays > 0) dailyWageUnit = dailyTotalAmt / dailyDays;
         }
 
         // 時給情報
-        int hw  = detail.getHourlyWage() != null ? detail.getHourlyWage() : 0;
-        double wh = detail.getWorkingHours() != null ? detail.getWorkingHours().doubleValue() : 0;
-        int hwOt = detail.getHourlyWageOvertime() != null ? detail.getHourlyWageOvertime() : 0;
+        int hw   = detail.getHourlyWage()          != null ? detail.getHourlyWage()          : 0;
+        double wh = detail.getWorkingHours()        != null ? detail.getWorkingHours().doubleValue() : 0;
+        int hwOt = detail.getHourlyWageOvertime()   != null ? detail.getHourlyWageOvertime()  : 0;
 
-        // ワーカー名
+        // 賃金総額を再計算（monthlyTotalが未設定でも各項目から積算）
+        int calcTotal = dailyTotalAmt + (hw > 0 && wh > 0 ? (int)(hw * wh) : 0);
+        if (calcTotal == 0) calcTotal = totalWage; // DBの値を優先
+        else totalWage = calcTotal;
+        commission     = (int)(totalWage * FEE_RATE);
+        consumptionTax = (int)(commission * 0.10);
+        grandTotal     = customerFee + commission + consumptionTax;
+
         String workerName = person != null
             ? person.getLastNameKanji() + "　" + person.getFirstNameKanji() : "";
 
+        // 列構成：賃金算定（縦）| 内訳ラベル | 単価 | 数量 | 金額
         PdfPTable wageTable = new PdfPTable(new float[]{1, 2, 2, 2, 3});
         wageTable.setWidthPercentage(100);
         wageTable.setSpacingBefore(4);
 
-        // ヘッダー行1：勤務者氏名
+        // 勤務者氏名行
         PdfPCell wn1 = cell("勤務者氏名", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
         wn1.setColspan(2);
         wageTable.addCell(wn1);
@@ -551,11 +554,24 @@ public class ReceiptMenuController {
         wn2.setColspan(3);
         wageTable.addCell(wn2);
 
-        // ヘッダー行2：就労期間
-        PdfPCell period1 = cell("賃", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
-        period1.setRowspan(7);
-        period1.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        wageTable.addCell(period1);
+        // 「賃金算定」縦書きラベル（rowspan=7: 就労期間+日給+時間給2行+手当4行）
+        PdfPCell wageLabel = new PdfPCell();
+        wageLabel.setBorder(Rectangle.BOX);
+        wageLabel.setRowspan(7);
+        wageLabel.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        wageLabel.setHorizontalAlignment(Element.ALIGN_CENTER);
+        // 縦書き風：各文字を改行で並べる
+        Paragraph vp = new Paragraph();
+        vp.setAlignment(Element.ALIGN_CENTER);
+        String[] chars = {"賃", "金", "算", "定"};
+        for (int i = 0; i < chars.length; i++) {
+            vp.add(new com.itextpdf.text.Chunk(chars[i], boldFont));
+            if (i < chars.length - 1) vp.add(com.itextpdf.text.Chunk.NEWLINE);
+        }
+        wageLabel.addElement(vp);
+        wageTable.addCell(wageLabel);
+
+        // 就労期間行
         PdfPCell period2 = cell("就 労 期 間", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
         period2.setColspan(2);
         wageTable.addCell(period2);
@@ -570,19 +586,30 @@ public class ReceiptMenuController {
         addWageRow5(wageTable, "日給", "（1日　　" + dailyUnitStr + "）", dailyDaysStr, dailyTotalStr, normalFont);
 
         // 時間給行1
-        String hw1Str   = hw > 0 ? String.format("%,d円", hw) : "　　　円";
-        String wh1Str   = wh > 0 ? String.format("%.0f 時間", wh) : "　　時間";
-        String hwAmt1   = hw > 0 && wh > 0 ? String.format("%,d 円", (int)(hw * wh)) : "0 円";
+        String hw1Str = hw   > 0 ? String.format("%,d円", hw)  : "　　　円";
+        String wh1Str = wh   > 0 ? String.format("%.0f 時間", wh) : "　　時間";
+        String hwAmt1 = hw   > 0 && wh > 0 ? String.format("%,d 円", (int)(hw * wh)) : "0 円";
         addWageRow5(wageTable, "時間給", "（1時間　" + hw1Str + "）", wh1Str, hwAmt1, normalFont);
 
         // 時間給行2（残業）
-        String hw2Str   = hwOt > 0 ? String.format("%,d円", hwOt) : "　　　円";
-        addWageRow5(wageTable, "", "（1時間　" + hw2Str + "）", "　　時間", "0 円", normalFont);
+        String hw2Str = hwOt > 0 ? String.format("%,d円", hwOt) : "　　　円";
+        int hwOtAmt   = 0; // 残業時間は別フィールドがないため0
+        addWageRow5(wageTable, "", "（1時間　" + hw2Str + "）", "　　時間", hwOtAmt > 0 ? String.format("%,d 円", hwOtAmt) : "0 円", normalFont);
 
-        // 諸手当行
-        PdfPCell kinCell = cell("金", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
+        // 諸手当行（金・手・当 縦書き、rowspan=4）
+        PdfPCell kinCell = new PdfPCell();
+        kinCell.setBorder(Rectangle.BOX);
         kinCell.setRowspan(4);
         kinCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        kinCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        Paragraph kinP = new Paragraph();
+        kinP.setAlignment(Element.ALIGN_CENTER);
+        String[] kinChars = {"諸", "手", "当"};
+        for (int i = 0; i < kinChars.length; i++) {
+            kinP.add(new com.itextpdf.text.Chunk(kinChars[i], boldFont));
+            if (i < kinChars.length - 1) kinP.add(com.itextpdf.text.Chunk.NEWLINE);
+        }
+        kinCell.addElement(kinP);
         wageTable.addCell(kinCell);
         addWageRow4WithFirstLabel(wageTable, "手", "（1時間　　　　円）", "　　時間", "0 円", normalFont);
         addWageRow4(wageTable, "当", "", "", "", normalFont);
@@ -595,20 +622,30 @@ public class ReceiptMenuController {
         wageTable.addCell(tl);
         PdfPCell tn = cell("①", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
         wageTable.addCell(tn);
-        PdfPCell ta = cell(String.format("%,d 円", totalWage), boldFont, Rectangle.BOX, Element.ALIGN_RIGHT);
+        PdfPCell ta = cell(totalWage > 0 ? String.format("%,d 円", totalWage) : "　　　　　円",
+                           boldFont, Rectangle.BOX, Element.ALIGN_RIGHT);
         wageTable.addCell(ta);
         doc.add(wageTable);
 
-        // ── 領収金額算定テーブル ─────────────────────────
+        // ── ⑧ 領収金額算定テーブル ──────────────────────────
         doc.add(new Paragraph(" ", smallFont));
         PdfPTable feeTable = new PdfPTable(new float[]{1, 6, 1, 3});
         feeTable.setWidthPercentage(100);
         feeTable.setSpacingBefore(4);
 
-        // 左側ラベル（縦書き的に）
-        PdfPCell feeLabel = cell("領\n収\n金\n額\n算\n定", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
+        PdfPCell feeLabel = new PdfPCell();
+        feeLabel.setBorder(Rectangle.BOX);
         feeLabel.setRowspan(4);
         feeLabel.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        feeLabel.setHorizontalAlignment(Element.ALIGN_CENTER);
+        Paragraph feeLabelP = new Paragraph();
+        feeLabelP.setAlignment(Element.ALIGN_CENTER);
+        String[] feeLabelChars = {"領", "収", "金", "額", "算", "定"};
+        for (int i = 0; i < feeLabelChars.length; i++) {
+            feeLabelP.add(new com.itextpdf.text.Chunk(feeLabelChars[i], boldFont));
+            if (i < feeLabelChars.length - 1) feeLabelP.add(com.itextpdf.text.Chunk.NEWLINE);
+        }
+        feeLabel.addElement(feeLabelP);
         feeTable.addCell(feeLabel);
 
         // ①：求人受付手数料
@@ -616,8 +653,8 @@ public class ReceiptMenuController {
         feeTable.addCell(cell("①", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
         feeTable.addCell(cell(String.format("%,d 円", customerFee), normalFont, Rectangle.BOX, Element.ALIGN_RIGHT));
 
-        // ②：紹介手数料
-        feeTable.addCell(cell("紹介手数料（①×15% ※円未満切り捨て）", normalFont, Rectangle.BOX, Element.ALIGN_LEFT));
+        // ②：紹介手数料（賃金総額①×15%）
+        feeTable.addCell(cell("紹介手数料（賃金総額①×15% ※円未満切り捨て）", normalFont, Rectangle.BOX, Element.ALIGN_LEFT));
         feeTable.addCell(cell("②", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
         feeTable.addCell(cell(String.format("%,d 円", commission), normalFont, Rectangle.BOX, Element.ALIGN_RIGHT));
 
@@ -627,7 +664,7 @@ public class ReceiptMenuController {
         feeTable.addCell(cell(String.format("%,d 円", consumptionTax), normalFont, Rectangle.BOX, Element.ALIGN_RIGHT));
 
         // 手数料合計
-        feeTable.addCell(cell("手数料合計　（①+②+③）", boldFont, Rectangle.BOX, Element.ALIGN_LEFT));
+        feeTable.addCell(cell("手数料合計　（①＋②＋③）", boldFont, Rectangle.BOX, Element.ALIGN_LEFT));
         feeTable.addCell(cell("D", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
         feeTable.addCell(cell(String.format("%,d 円", grandTotal), boldFont, Rectangle.BOX, Element.ALIGN_RIGHT));
 
