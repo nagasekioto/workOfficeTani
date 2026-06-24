@@ -63,7 +63,7 @@
     <a href="/menu" class="back-btn">&#8592; 初期画面に戻る</a>
 </div>
 
-<div class="input-area no-print">
+<div class="input-area no-print" th:attr="data-intro-id=${intro != null ? intro.id : ''},data-form-data=${intro != null and intro.formData != null ? intro.formData : ''},data-intro-date=${intro != null and intro.introDate != null ? intro.introDate : ''},data-start-date=${intro != null and intro.startDate != null ? intro.startDate : ''},data-person-id=${intro != null and intro.personId != null ? intro.personId : ''},data-customer-id=${intro != null and intro.customerId != null ? intro.customerId : ''}">
     <div class="info-box">&#9432; 内容を入力して「保存する」を押すと紹介番号が採番されます。保存後に印刷できます。</div>
 
     <div class="sec"><h3>&#9312; 基本情報</h3>
@@ -91,7 +91,7 @@
         </div>
         <div class="row2">
             <div class="fg"><label>紹介年月日</label><div id="introDateSel" style="display:flex;gap:4px;align-items:center;"></div><input type="hidden" id="introDate"></div>
-
+            <div class="fg"><label>就業開始日</label><div id="startDateSel" style="display:flex;gap:4px;align-items:center;"></div><input type="hidden" id="startDate"></div>
         </div>
     </div>
 
@@ -594,11 +594,15 @@ function collectFormData(){
 }
 
 function saveIntro(){
+    var inputArea=document.querySelector('.input-area');
+    var editId=inputArea?inputArea.dataset.introId:'';
     var pSel=g('personSelect'),cSel=g('customerSelect');
     var params=new URLSearchParams();
+    if(editId) params.append('editId',editId);
     if(pSel.value) params.append('personId',pSel.value);
     if(cSel.value) params.append('customerId',cSel.value);
     params.append('introDate',g('introDate').value||'');
+    params.append('startDate',g('startDate').value||'');
     params.append('formData', JSON.stringify(collectFormData()));
     fetch('/introduction/save',{method:'POST',body:params})
         .then(function(r){return r.text();})
@@ -612,15 +616,147 @@ function saveIntro(){
         .catch(function(){alert('保存に失敗しました');});
 }
 
+// 既存データの復元（編集時）
+function restoreFormData(fd){
+    if(!fd||fd==='{}') return;
+    var data;
+    try{ data=JSON.parse(fd); }catch(e){ return; }
+
+    if(data.jobKaji)  g('jobKaji').checked=true;
+    if(data.jobKaigo) g('jobKaigo').checked=true;
+    if(data.jobOther){ g('jobOther').checked=true; g('jobOtherArea').style.display='block'; }
+    if(data.jobOtherText) g('jobOtherText').value=data.jobOtherText;
+
+    if(data.workPostal)  g('workPostal').value=data.workPostal;
+    if(data.workPlace)   g('workPlace').value=data.workPlace;
+    if(data.workStation) g('workStation').value=data.workStation;
+    if(data.workLine)    g('workLine').value=data.workLine;
+    if(data.workAccess)  g('workAccess').value=data.workAccess;
+    if(data.smoking)     g('smoking').value=data.smoking;
+
+    if(data.empPeriod){
+        document.querySelectorAll('input[name=empPeriod]').forEach(function(r){if(r.value===data.empPeriod)r.checked=true;});
+        if(data.empPeriod==='有期') g('empPeriodArea').style.display='block';
+    }
+    if(data.trialPeriod){
+        document.querySelectorAll('input[name=trialPeriod]').forEach(function(r){if(r.value===data.trialPeriod)r.checked=true;});
+        if(data.trialPeriod==='有') g('trialPeriodArea').style.display='block';
+    }
+    if(data.workStyle) document.querySelectorAll('input[name=workStyle]').forEach(function(r){if(r.value===data.workStyle)r.checked=true;});
+
+    if(data.dow){
+        var dows=data.dow.split('・');
+        document.querySelectorAll('.dow').forEach(function(cb){if(dows.indexOf(cb.value)>=0)cb.checked=true;});
+    }
+    if(data.wSH) g('wSH').value=data.wSH;
+    if(data.wSM) g('wSM').value=data.wSM;
+    if(data.wEH) g('wEH').value=data.wEH;
+    if(data.wEM) g('wEM').value=data.wEM;
+    if(data.actualHours) g('actualHours').value=data.actualHours;
+    if(data.overtime) document.querySelectorAll('input[name=overtime]').forEach(function(r){if(r.value===data.overtime)r.checked=true;});
+    if(data.breakTime) g('breakTime').value=data.breakTime;
+
+    if(data.holWeekly)  g('holWeekly').checked=true;
+    if(data.holBiWeekly) g('holBiWeekly').checked=true;
+    if(data.holHoliday) g('holHoliday').checked=true;
+    if(data.holOther)   g('holOther').checked=true;
+    if(data.holDow){
+        var hdows=data.holDow.split('・');
+        document.querySelectorAll('.hol-dow').forEach(function(cb){if(hdows.indexOf(cb.value)>=0)cb.checked=true;});
+    }
+
+    if(data.wageType) document.querySelectorAll('input[name=wageType]').forEach(function(r){if(r.value===data.wageType)r.checked=true;});
+    if(data.baseWage)     g('baseWage').value=data.baseWage;
+    if(data.overtimeWage) g('overtimeWage').value=data.overtimeWage;
+    if(data.transNone) g('transNone').checked=true;
+    if(data.transReal) g('transReal').checked=true;
+    if(data.transYes)  g('transYes').checked=true;
+    if(data.transportAmt) g('transportAmt').value=data.transportAmt;
+    if(data.raise) document.querySelectorAll('input[name=raise]').forEach(function(r){if(r.value===data.raise)r.checked=true;});
+
+    if(data.payDaily)   g('payDaily').checked=true;
+    if(data.payWeekly)  g('payWeekly').checked=true;
+    if(data.payWeeklyDay)  g('payWeeklyDay').value=data.payWeeklyDay;
+    if(data.payMonthly) g('payMonthly').checked=true;
+    if(data.payMonthlyDay) g('payMonthlyDay').value=data.payMonthlyDay;
+    if(data.payMethod) document.querySelectorAll('input[name=payMethod]').forEach(function(r){if(r.value===data.payMethod)r.checked=true;});
+
+    if(data.insHealth)      g('insHealth').checked=true;
+    if(data.insPension)     g('insPension').checked=true;
+    if(data.insEmploy)      g('insEmploy').checked=true;
+    if(data.insWork)        g('insWork').checked=true;
+    if(data.insWorkSpecial) g('insWorkSpecial').checked=true;
+    if(data.insOther)       g('insOther').checked=true;
+    if(data.insOtherText)   g('insOtherText').value=data.insOtherText;
+    if(data.remarks)        g('remarksField').value=data.remarks;
+}
+
 document.querySelectorAll('input[type=checkbox]').forEach(function(cb){cb.addEventListener('change',update);});
 
 window.addEventListener('load',function(){
     initTime();
-    makeDateSel('introDateSel','introDate',true);
+    var inputArea=document.querySelector('.input-area');
+    var introDateVal=inputArea?inputArea.dataset.introDate:'';
+    var startDateVal=inputArea?inputArea.dataset.startDate:'';
+    var personIdVal=inputArea?inputArea.dataset.personId:'';
+    var customerIdVal=inputArea?inputArea.dataset.customerId:'';
+    var formDataVal=inputArea?inputArea.dataset.formData:'';
+    var editId=inputArea?inputArea.dataset.introId:'';
+
+    makeDateSel('introDateSel','introDate',!introDateVal);
+    if(introDateVal) g('introDate').value=introDateVal;
+    makeDateSel('startDateSel','startDate',false);
+    if(startDateVal) g('startDate').value=startDateVal;
     makeDateSel('empFromSel','empFrom',false);
     makeDateSel('empToSel','empTo',false);
     makeDateSel('trialFromSel','trialFrom',false);
     makeDateSel('trialToSel','trialTo',false);
+
+    // 日付セレクトに値を反映
+    function syncDateSel(containerId, hiddenId){
+        var hid=g(hiddenId);
+        if(!hid||!hid.value) return;
+        var p=hid.value.split('-');
+        if(p.length!==3) return;
+        var c=g(containerId);
+        var sels=c.querySelectorAll('select');
+        if(sels.length>=3){sels[0].value=p[0];sels[1].value=p[1];sels[2].value=p[2];}
+    }
+    if(introDateVal){ setTimeout(function(){syncDateSel('introDateSel','introDate');},0); }
+    if(startDateVal){ setTimeout(function(){syncDateSel('startDateSel','startDate');},0); }
+
+    // 求職者・求人者セレクト復元
+    if(personIdVal){
+        var pSel=g('personSelect');
+        for(var i=0;i<pSel.options.length;i++){
+            if(pSel.options[i].value==personIdVal){pSel.selectedIndex=i;break;}
+        }
+    }
+    if(customerIdVal){
+        var cSel=g('customerSelect');
+        for(var j=0;j<cSel.options.length;j++){
+            if(cSel.options[j].value==customerIdVal){cSel.selectedIndex=j;break;}
+        }
+    }
+
+    // formData復元
+    if(formDataVal && formDataVal!=='') {
+        restoreFormData(formDataVal);
+        // 雇用期間・試用期間の日付セレクト同期
+        setTimeout(function(){
+            syncDateSel('empFromSel','empFrom');
+            syncDateSel('empToSel','empTo');
+            syncDateSel('trialFromSel','trialFrom');
+            syncDateSel('trialToSel','trialTo');
+        },0);
+    }
+
+    // 編集中ならrefNoを表示
+    if(editId){
+        var infoBox=document.querySelector('.info-box');
+        if(infoBox) infoBox.textContent='✏️ 編集モード：変更後「保存する」を押してください。';
+    }
+
     update();
 });
 </script>

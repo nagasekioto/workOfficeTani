@@ -148,6 +148,114 @@ public class IntroductionController {
         return "introduction-list";
     }
 
+    // 1-6-2 詳細表示
+    @GetMapping("/detail/{id}")
+    public String detail(@PathVariable Long id, HttpSession session, Model model) {
+        if (!checkAuth(session)) return "redirect:/login";
+        Introduction intro = introductionRepository.findById(id).orElse(null);
+        if (intro == null) return "redirect:/introduction/list";
+
+        String personName = intro.getPersonId() != null
+            ? StreamSupport.stream(personRepository.findAll().spliterator(), false)
+                .filter(p -> p.getId().equals(intro.getPersonId()))
+                .map(p -> p.getLastNameKanji() + " " + p.getFirstNameKanji())
+                .findFirst().orElse("-")
+            : "-";
+        String customerName = intro.getCustomerId() != null
+            ? StreamSupport.stream(customerRepository.findAll().spliterator(), false)
+                .filter(c -> c.getId().equals(intro.getCustomerId()))
+                .map(c -> c.getLastNameKanji() + " " + c.getFirstNameKanji())
+                .findFirst().orElse("-")
+            : "-";
+
+        // formDataをパースして表示用マップに変換
+        Map<String, String> fd = new java.util.LinkedHashMap<>();
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode node = (intro.getFormData() != null && !intro.getFormData().isBlank())
+                ? mapper.readTree(intro.getFormData()) : mapper.createObjectNode();
+
+            // 職務内容
+            List<String> jobList = new ArrayList<>();
+            if (node.path("jobKaji").asBoolean()) jobList.add("家事サービス");
+            if (node.path("jobKaigo").asBoolean()) jobList.add("介護サービス");
+            if (node.path("jobOther").asBoolean()) {
+                String ot = node.path("jobOtherText").asText("");
+                jobList.add("その他" + (ot.isBlank() ? "" : "：" + ot));
+            }
+            fd.put("jobContent", String.join("　", jobList));
+            fd.put("workPostal", node.path("workPostal").asText(""));
+            fd.put("workPlace", node.path("workPlace").asText(""));
+            fd.put("workStation", node.path("workStation").asText(""));
+            fd.put("workLine", node.path("workLine").asText(""));
+            fd.put("workAccess", node.path("workAccess").asText(""));
+            fd.put("smoking", node.path("smoking").asText(""));
+            fd.put("empPeriod", node.path("empPeriod").asText("無期"));
+            fd.put("empFrom", node.path("empFrom").asText(""));
+            fd.put("empTo", node.path("empTo").asText(""));
+            fd.put("trialPeriod", node.path("trialPeriod").asText("無"));
+            fd.put("workStyle", node.path("workStyle").asText(""));
+            fd.put("dow", node.path("dow").asText(""));
+            String sh = node.path("wSH").asText(""), sm = node.path("wSM").asText("");
+            String eh = node.path("wEH").asText(""), em = node.path("wEM").asText("");
+            fd.put("workHours", (!sh.isBlank() && !sm.isBlank()) ? sh + ":" + sm + " 〜 " + eh + ":" + em : "");
+            fd.put("actualHours", node.path("actualHours").asText(""));
+            fd.put("overtime", node.path("overtime").asText(""));
+            fd.put("breakTime", node.path("breakTime").asText(""));
+            // 休日
+            List<String> holList = new ArrayList<>();
+            if (node.path("holWeekly").asBoolean()) holList.add("毎週");
+            if (node.path("holBiWeekly").asBoolean()) holList.add("隔週");
+            String hd = node.path("holDow").asText("");
+            if (!hd.isBlank()) holList.add(hd + "曜日");
+            if (node.path("holHoliday").asBoolean()) holList.add("祝日");
+            if (node.path("holOther").asBoolean()) holList.add("その他");
+            fd.put("holiday", String.join("　", holList));
+            fd.put("wageType", node.path("wageType").asText(""));
+            fd.put("baseWage", node.path("baseWage").asText(""));
+            fd.put("overtimeWage", node.path("overtimeWage").asText(""));
+            // 交通費
+            List<String> trList = new ArrayList<>();
+            if (node.path("transNone").asBoolean()) trList.add("無");
+            if (node.path("transReal").asBoolean()) trList.add("往復の実費");
+            if (node.path("transYes").asBoolean()) {
+                String ta = node.path("transportAmt").asText("");
+                trList.add("有" + (ta.isBlank() ? "" : "　" + ta + "円"));
+            }
+            fd.put("transport", String.join("　", trList));
+            fd.put("raise", node.path("raise").asText(""));
+            // 賃金支払方法
+            List<String> payList = new ArrayList<>();
+            if (node.path("payDaily").asBoolean()) payList.add("毎日");
+            if (node.path("payWeekly").asBoolean()) payList.add("毎週" + node.path("payWeeklyDay").asText("") + "曜日");
+            if (node.path("payMonthly").asBoolean()) payList.add("毎月" + node.path("payMonthlyDay").asText("") + "日");
+            String pm = node.path("payMethod").asText("");
+            if (!pm.isBlank()) payList.add("方法：" + pm);
+            fd.put("payMethod", String.join("　", payList));
+            // 保険
+            List<String> insList = new ArrayList<>();
+            if (node.path("insHealth").asBoolean()) insList.add("健康保険");
+            if (node.path("insPension").asBoolean()) insList.add("厚生年金");
+            if (node.path("insEmploy").asBoolean()) insList.add("雇用");
+            if (node.path("insWork").asBoolean()) insList.add("労災");
+            if (node.path("insWorkSpecial").asBoolean()) insList.add("労災特別加入");
+            if (node.path("insOther").asBoolean()) {
+                String ot2 = node.path("insOtherText").asText("");
+                insList.add("その他" + (ot2.isBlank() ? "" : "：" + ot2));
+            }
+            fd.put("insurance", String.join("　", insList));
+            fd.put("remarks", node.path("remarks").asText(""));
+        } catch (Exception e) {
+            fd.put("jobContent", "");
+        }
+
+        model.addAttribute("intro", intro);
+        model.addAttribute("personName", personName);
+        model.addAttribute("customerName", customerName);
+        model.addAttribute("fd", fd);
+        return "introduction-detail";
+    }
+
     // 削除（個別）
     @PostMapping("/delete/{id}")
     public String delete(@PathVariable Long id, HttpSession session) {

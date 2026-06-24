@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>紹介状詳細 - 家政婦紹介事務所</title>
+    <style>
+        body{font-family:'Segoe UI',Meiryo,sans-serif;background:#f5f5f5;margin:0;padding:20px;}
+        .header{background:white;padding:20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.1);margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;}
+        h1{margin:0;color:#333;font-size:20px;}
+        .btn{color:white;padding:10px 20px;border:none;border-radius:5px;text-decoration:none;font-size:14px;display:inline-block;}
+        .btn-blue{background:#2196F3;}
+        .btn-orange{background:#FF9800;}
+        .container{max-width:900px;margin:0 auto;background:white;padding:28px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.1);}
+        .sec{margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid #eee;}
+        .sec h3{color:#4CAF50;margin:0 0 12px;font-size:14px;}
+        .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+        .field{margin-bottom:8px;}
+        .field-label{font-size:11px;font-weight:bold;color:#888;margin-bottom:2px;}
+        .field-value{font-size:13px;color:#333;padding:6px 8px;background:#f9f9f9;border-radius:4px;border:1px solid #eee;min-height:28px;}
+        .badge-ref{background:#e3f2fd;color:#1565c0;padding:4px 12px;border-radius:12px;font-weight:bold;font-size:16px;display:inline-block;}
+        .btn-area{display:flex;gap:10px;margin-top:20px;}
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>&#128196; 紹介状詳細</h1>
+    <div style="display:flex;gap:8px;">
+        <a th:href="@{/introduction/edit/{id}(id=${intro.id})}" class="btn btn-orange">&#9998; 修正</a>
+        <a href="/introduction/list" class="btn btn-blue">&#8592; 一覧に戻る</a>
+    </div>
+</div>
+
+<div class="container">
+    <div class="sec">
+        <h3>&#9312; 基本情報</h3>
+        <div class="field"><div class="field-label">紹介番号</div><div class="field-value"><span class="badge-ref" th:text="${intro.refNo}"></span></div></div>
+        <div class="grid">
+            <div class="field"><div class="field-label">求職者（家政婦）</div><div class="field-value" th:text="${personName}"></div></div>
+            <div class="field"><div class="field-label">求人者</div><div class="field-value" th:text="${customerName}"></div></div>
+            <div class="field"><div class="field-label">紹介年月日</div><div class="field-value" th:text="${intro.introDate != null ? intro.introDate : '-'}"></div></div>
+            <div class="field"><div class="field-label">就業開始日</div><div class="field-value" th:text="${intro.startDate != null ? intro.startDate : '-'}"></div></div>
+        </div>
+    </div>
+
+    <div class="sec">
+        <h3>&#9313; 職務内容・就業場所</h3>
+        <div class="field"><div class="field-label">職務内容</div><div class="field-value" th:text="${fd.jobContent}"></div></div>
+        <div class="grid">
+            <div class="field"><div class="field-label">就業場所 〒</div><div class="field-value" th:text="${fd.workPostal}"></div></div>
+            <div class="field"><div class="field-label">就業場所 住所</div><div class="field-value" th:text="${fd.workPlace}"></div></div>
+            <div class="field"><div class="field-label">最寄り駅</div><div class="field-value" th:text="${fd.workStation}"></div></div>
+            <div class="field"><div class="field-label">路線</div><div class="field-value" th:text="${fd.workLine}"></div></div>
+            <div class="field"><div class="field-label">駅からのアクセス</div><div class="field-value" th:text="${fd.workAccess}"></div></div>
+            <div class="field"><div class="field-label">受動喫煙防止措置状況</div><div class="field-value" th:text="${fd.smoking}"></div></div>
+        </div>
+    </div>
+
+    <div class="sec">
+        <h3>&#9314; 雇用条件</h3>
+        <div class="grid">
+            <div class="field"><div class="field-label">雇用期間</div><div class="field-value" th:text="${fd.empPeriod + (fd.empFrom != null and !fd.empFrom.isBlank() ? '　' + fd.empFrom + ' 〜 ' + fd.empTo : '')}"></div></div>
+            <div class="field"><div class="field-label">試用期間</div><div class="field-value" th:text="${fd.trialPeriod}"></div></div>
+            <div class="field"><div class="field-label">勤務スタイル</div><div class="field-value" th:text="${fd.workStyle}"></div></div>
+            <div class="field"><div class="field-label">勤務曜日</div><div class="field-value" th:text="${fd.dow}"></div></div>
+            <div class="field"><div class="field-label">勤務時間</div><div class="field-value" th:text="${fd.workHours}"></div></div>
+            <div class="field"><div class="field-label">実働時間</div><div class="field-value" th:text="${fd.actualHours}"></div></div>
+            <div class="field"><div class="field-label">時間外労働</div><div class="field-value" th:text="${fd.overtime}"></div></div>
+            <div class="field"><div class="field-label">休憩時間</div><div class="field-value" th:text="${fd.breakTime}"></div></div>
+            <div class="field"><div class="field-label">休日</div><div class="field-value" th:text="${fd.holiday}"></div></div>
+        </div>
+    </div>
+
+    <div class="sec">
+        <h3>&#9315; 賃金</h3>
+        <div class="grid">
+            <div class="field"><div class="field-label">賃金形態</div><div class="field-value" th:text="${fd.wageType}"></div></div>
+            <div class="field"><div class="field-label">基本給（円）</div><div class="field-value" th:text="${fd.baseWage}"></div></div>
+            <div class="field"><div class="field-label">時間外手当（円）</div><div class="field-value" th:text="${fd.overtimeWage}"></div></div>
+            <div class="field"><div class="field-label">交通費</div><div class="field-value" th:text="${fd.transport}"></div></div>
+            <div class="field"><div class="field-label">昇給</div><div class="field-value" th:text="${fd.raise}"></div></div>
+            <div class="field"><div class="field-label">賃金支払方法</div><div class="field-value" th:text="${fd.payMethod}"></div></div>
+        </div>
+    </div>
+
+    <div class="sec">
+        <h3>&#9316; 社会・労働保険</h3>
+        <div class="field"><div class="field-label">加入状況</div><div class="field-value" th:text="${fd.insurance}"></div></div>
+    </div>
+
+    <div class="sec" style="border-bottom:none;">
+        <h3>&#9317; 備考</h3>
+        <div class="field"><div class="field-value" style="white-space:pre-wrap;min-height:60px;" th:text="${fd.remarks}"></div></div>
+    </div>
+
+    <div class="btn-area">
+        <a th:href="@{/introduction/edit/{id}(id=${intro.id})}" class="btn btn-orange">&#9998; この紹介状を修正する</a>
+        <a href="/introduction/list" class="btn btn-blue">&#8592; 一覧に戻る</a>
+    </div>
+</div>
+</body>
+</html>
