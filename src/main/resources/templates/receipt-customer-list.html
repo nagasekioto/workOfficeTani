@@ -37,6 +37,7 @@
             <tr>
                 <th>求人者</th>
                 <th>紹介年月日</th>
+                <th>就労日数</th>
                 <th>求人受付手数料</th>
                 <th>領収番号</th>
                 <th>状態</th>
@@ -47,6 +48,8 @@
             <tr th:each="item : ${items}">
                 <td th:text="${item.customer.lastNameKanji + ' ' + item.customer.firstNameKanji}"></td>
                 <td th:text="${item.detail.introductionDate}"></td>
+                <td th:text="${item.detail.workStartDate != null and item.detail.workEndDate != null ?
+                    T(java.time.temporal.ChronoUnit).DAYS.between(item.detail.workStartDate, item.detail.workEndDate) + 1 + '日' : '-'}"></td>
                 <td th:text="${item.detail.customerFee != null ? item.detail.customerFee + '円' : '-'}"></td>
                 <td>
                     <span th:if="${item.issued}" class="receipt-no" th:text="${item.receiptNumber}"></span>

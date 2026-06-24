@@ -83,6 +83,7 @@
                     <th>日給④</th>
                     <th>日給⑤</th>
                     <th>受付料</th>
+                    <th>求人受付手数料</th>
                     <th>就労月日</th>
                     <th>日数</th>
                     <th>賃金総額</th>
@@ -106,6 +107,7 @@
                         <td th:text="${row.dailyWageStrs.length > 3 ? row.dailyWageStrs[3] : '-'}" class="daily-cell">-</td>
                         <td th:text="${row.dailyWageStrs.length > 4 ? row.dailyWageStrs[4] : '-'}" class="daily-cell">-</td>
 <td th:text="${row.receptionFeeStr}">-</td>
+<td th:text="${row.customerFeeStr}">-</td>
 
                     <!-- 就労月日 -->
                     <td>

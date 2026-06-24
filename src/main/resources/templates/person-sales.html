@@ -416,6 +416,15 @@ function toggleCustomerFee(idx) {
     const val = document.getElementById('cusFeeVal' + idx);
     val.value = cb.checked ? '1000' : '';
 }
+
+// ページロード時：チェック済みのhiddenが空なら1000をセット
+document.addEventListener('DOMContentLoaded', function() {
+    for (let i = 1; i <= 5; i++) {
+        const cb  = document.getElementById('cusFeeCheck' + i);
+        const val = document.getElementById('cusFeeVal' + i);
+        if (cb && val && cb.checked && !val.value) val.value = '1000';
+    }
+});
 function onCustomerChange(idx) {}
 
 function syncDaysToHidden(idx) {

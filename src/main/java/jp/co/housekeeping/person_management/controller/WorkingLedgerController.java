@@ -127,6 +127,7 @@ public class WorkingLedgerController {
                 row.hourlyWageStr     = fmt(d.getHourlyWage());
                 row.hourlyWageOTStr   = fmt(d.getHourlyWageOvertime());
                 row.receptionFeeStr   = fmt(d.getReceptionFee());
+                row.customerFeeStr    = fmt(d.getCustomerFee());
                 // 日給（カンマ区切り文字列 → ¥付き配列）
                 if (d.getDailyWages() != null && !d.getDailyWages().isBlank()) {
                     String[] parts = d.getDailyWages().split(",");
@@ -197,6 +198,7 @@ public class WorkingLedgerController {
         public String      hourlyWageStr  = "-";
         public String      hourlyWageOTStr = "-";
         public String      receptionFeeStr = "-";
+        public String      customerFeeStr  = "-";
         public String[]    dailyWageStrs  = new String[0];
     }
 }
