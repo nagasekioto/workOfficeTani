@@ -461,7 +461,7 @@ public class ReceiptMenuController {
         amountLine.setWidthPercentage(100);
         amountLine.setSpacingBefore(2);
         amountLine.setSpacingAfter(4);
-        PdfPCell circleLabel = cell("（②＋③）", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
+        PdfPCell circleLabel = cell("（②＋③＋④）", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
         circleLabel.setPadding(4);
         amountLine.addCell(circleLabel);
         PdfPCell amtVal = cell(
@@ -647,14 +647,15 @@ public class ReceiptMenuController {
             wageTable.addCell(cell("0円", smallNormal, Rectangle.BOX, Element.ALIGN_RIGHT));
         }
 
-        // ── 行9: 賃金総額（col1〜4）＋ ① 金額 ────────────────────
+        // ── 行9: 賃金総額（col1〜4）＋ 金額（①） ──────────────────
         PdfPCell totalLabel = cell("賃 金 総 額", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
         totalLabel.setColspan(4);
         wageTable.addCell(totalLabel);
-        wageTable.addCell(cell("①", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
-        wageTable.addCell(cell(
+        PdfPCell totalAmtCell = cell(
             totalWage > 0 ? String.format("%,d 円", totalWage) : "　　　　　円",
-            boldFont, Rectangle.BOX, Element.ALIGN_RIGHT));
+            boldFont, Rectangle.BOX, Element.ALIGN_RIGHT);
+        totalAmtCell.setColspan(2);
+        wageTable.addCell(totalAmtCell);
 
         doc.add(wageTable);
 
