@@ -647,12 +647,11 @@ public class ReceiptMenuController {
             wageTable.addCell(cell("0円", smallNormal, Rectangle.BOX, Element.ALIGN_RIGHT));
         }
 
-        // ── 行9: 賃金総額（col1〜4）＋ ①（※合計）＋ 金額 ────────
-        // 賃金算定(col0)のrowspan=9がここで終了 → col0から再開
+        // ── 行9: 賃金総額（col1〜4）＋ ① 金額 ────────────────────
         PdfPCell totalLabel = cell("賃 金 総 額", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
         totalLabel.setColspan(4);
         wageTable.addCell(totalLabel);
-        wageTable.addCell(cell("①（※合計賃金総額）", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
+        wageTable.addCell(cell("①", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
         wageTable.addCell(cell(
             totalWage > 0 ? String.format("%,d 円", totalWage) : "　　　　　円",
             boldFont, Rectangle.BOX, Element.ALIGN_RIGHT));
@@ -660,7 +659,7 @@ public class ReceiptMenuController {
         doc.add(wageTable);
 
         // ── 領収金額算定テーブル ─────────────────────────────────
-        // 番号体系: 賃金総額①、求人受付手数料②、紹介手数料③、消費税④、合計D
+        // 番号体系: 求人受付手数料②、紹介手数料③、消費税④、合計D
         doc.add(new Paragraph(" ", smallFont));
         PdfPTable feeTable = new PdfPTable(new float[]{1, 6, 1, 3});
         feeTable.setWidthPercentage(100);
@@ -668,7 +667,7 @@ public class ReceiptMenuController {
 
         PdfPCell feeLabel = new PdfPCell();
         feeLabel.setBorder(Rectangle.BOX);
-        feeLabel.setRowspan(5);
+        feeLabel.setRowspan(4);
         feeLabel.setVerticalAlignment(Element.ALIGN_MIDDLE);
         feeLabel.setHorizontalAlignment(Element.ALIGN_CENTER);
         Paragraph feeLabelP = new Paragraph();
@@ -679,12 +678,6 @@ public class ReceiptMenuController {
         }
         feeLabel.addElement(feeLabelP);
         feeTable.addCell(feeLabel);
-
-        // ①：賃金総額（参照のみ表示）
-        feeTable.addCell(cell("賃金総額", normalFont, Rectangle.BOX, Element.ALIGN_LEFT));
-        feeTable.addCell(cell("①", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
-        feeTable.addCell(cell(totalWage > 0 ? String.format("%,d 円", totalWage) : "　　　　　円",
-                              normalFont, Rectangle.BOX, Element.ALIGN_RIGHT));
 
         // ②：求人受付手数料
         feeTable.addCell(cell("求人受付手数料（求人1件につき1回）", normalFont, Rectangle.BOX, Element.ALIGN_LEFT));
