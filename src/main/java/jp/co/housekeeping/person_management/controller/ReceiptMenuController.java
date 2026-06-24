@@ -749,8 +749,9 @@ public class ReceiptMenuController {
         noLabel.setPaddingTop(10);
         noDateTable.addCell(noLabel);
         PdfPCell noVal = cell(receiptNo, boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
-        noVal.setPaddingTop(10);
-        noVal.setVerticalAlignment(Element.ALIGN_TOP);
+        noVal.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        noVal.setPaddingTop(4);
+        noVal.setPaddingBottom(4);
         noDateTable.addCell(noVal);
         noDateTable.addCell(cell("領収日", smallFont, Rectangle.NO_BORDER, Element.ALIGN_RIGHT));
         PdfPCell dateVal = cell(
@@ -835,13 +836,19 @@ public class ReceiptMenuController {
         dateTable.setWidthPercentage(100);
         dateTable.setSpacingBefore(10);
 
-        // col0: 「受付月日」4行結合
+        // col0: 「受付月日」4行結合 - Paragraphで中央揃え
         PdfPCell rcLabel = new PdfPCell();
         rcLabel.setBorder(Rectangle.BOX);
         rcLabel.setRowspan(4);
         rcLabel.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        rcLabel.setHorizontalAlignment(Element.ALIGN_RIGHT);
-        rcLabel.addElement(new Phrase("受付月日", boldFont));
+        rcLabel.setHorizontalAlignment(Element.ALIGN_CENTER);
+        // Paragraphでテキストのalignmentを明示的に設定
+        Paragraph rcP = new Paragraph("受付月日", boldFont);
+        rcP.setAlignment(Element.ALIGN_CENTER);
+        rcLabel.addElement(rcP);
+        // useAscenderで垂直中央が効くようにする
+        rcLabel.setUseAscender(true);
+        rcLabel.setUseDescender(true);
         dateTable.addCell(rcLabel);
 
         // ヘッダー行（年・月・日・スペーサー3列）
