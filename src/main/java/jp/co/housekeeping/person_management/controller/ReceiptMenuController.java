@@ -541,37 +541,57 @@ public class ReceiptMenuController {
         String workerName = person != null
             ? person.getLastNameKanji() + "　" + person.getFirstNameKanji() : "";
 
-        // 列構成：賃金算定（縦）| 内訳ラベル | 単価 | 数量 | 金額
-        PdfPTable wageTable = new PdfPTable(new float[]{1, 2, 2, 2, 3});
+        // ─────────────────────────────────────────────────────────
+        // wageTable 列構成（6列）:
+        //  col0: 賃金算定（縦書き、rowspan=全体行）
+        //  col1: 諸手当（縦書き、手当行のみrowspan=4）/ 就労期間・日給・時間給では空欄
+        //  col2: 内訳ラベル
+        //  col3: 単価
+        //  col4: 数量
+        //  col5: 金額
+        //
+        // 行構成:
+        //  行0: 勤務者氏名（colspan=6）
+        //  行1: [賃金算定 rowspan=8][空 ][就労期間(col2)][期間内容(col3-5)]
+        //  行2: [空        ][日給  ][単価][日数][金額]
+        //  行3: [空        ][時間給][単価][時間][金額]
+        //  行4: [空        ][時間給（残業）][単価][時間][金額]
+        //  行5: [諸手当 rowspan=4][手 ][単価][時間][金額]
+        //  行6:                  [当 ][   ][    ][    ]
+        //  行7:                  [   ][   ][    ][    ]
+        //  行8:                  [   ][   ][    ][    ]
+        //  行9: [賃金総額（col1-4）][①（※合計賃金総額）][金額]
+        // ─────────────────────────────────────────────────────────
+        PdfPTable wageTable = new PdfPTable(new float[]{1.2f, 1.2f, 2.5f, 2f, 2f, 3f});
         wageTable.setWidthPercentage(100);
         wageTable.setSpacingBefore(4);
 
-        // 勤務者氏名行
+        // ── 行0: 勤務者氏名 ─────────────────────────────────────
         PdfPCell wn1 = cell("勤務者氏名", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
-        wn1.setColspan(2);
+        wn1.setColspan(3);
         wageTable.addCell(wn1);
         PdfPCell wn2 = cell(workerName, boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
         wn2.setColspan(3);
         wageTable.addCell(wn2);
 
-        // 「賃金算定」縦書きラベル（rowspan=7: 就労期間+日給+時間給2行+手当4行）
+        // ── 賃金算定ラベル（col0, rowspan=8: 行1〜行8） ───────────
         PdfPCell wageLabel = new PdfPCell();
         wageLabel.setBorder(Rectangle.BOX);
-        wageLabel.setRowspan(7);
+        wageLabel.setRowspan(8);
         wageLabel.setVerticalAlignment(Element.ALIGN_MIDDLE);
         wageLabel.setHorizontalAlignment(Element.ALIGN_CENTER);
-        // 縦書き風：各文字を改行で並べる
         Paragraph vp = new Paragraph();
         vp.setAlignment(Element.ALIGN_CENTER);
-        String[] chars = {"賃", "金", "算", "定"};
-        for (int i = 0; i < chars.length; i++) {
-            vp.add(new com.itextpdf.text.Chunk(chars[i], boldFont));
-            if (i < chars.length - 1) vp.add(com.itextpdf.text.Chunk.NEWLINE);
+        for (String ch : new String[]{"賃","金","算","定"}) {
+            vp.add(new com.itextpdf.text.Chunk(ch, boldFont));
+            vp.add(com.itextpdf.text.Chunk.NEWLINE);
         }
         wageLabel.addElement(vp);
         wageTable.addCell(wageLabel);
 
-        // 就労期間行
+        // ── 行1: [空(col1)] 就労期間 ────────────────────────────
+        PdfPCell emptyCol1_row1 = cell("", normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
+        wageTable.addCell(emptyCol1_row1);
         PdfPCell period2 = cell("就 労 期 間", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
         period2.setColspan(2);
         wageTable.addCell(period2);
@@ -579,24 +599,35 @@ public class ReceiptMenuController {
         period3.setColspan(2);
         wageTable.addCell(period3);
 
-        // 日給行
+        // ── 行2: [空(col1)] 日給 ────────────────────────────────
         String dailyUnitStr  = dailyWageUnit > 0 ? String.format("%,d円", dailyWageUnit) : "　　　円";
         String dailyDaysStr  = dailyDays > 0 ? String.format("%d 日間", dailyDays) : "　　日間";
         String dailyTotalStr = dailyTotalAmt > 0 ? String.format("%,d 円", dailyTotalAmt) : "0 円";
-        addWageRow5(wageTable, "日給", "（1日　　" + dailyUnitStr + "）", dailyDaysStr, dailyTotalStr, normalFont);
+        wageTable.addCell(cell("", normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
+        wageTable.addCell(cell("日給", normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
+        wageTable.addCell(cell("（1日　　" + dailyUnitStr + "）", normalFont, Rectangle.BOX, Element.ALIGN_LEFT));
+        wageTable.addCell(cell(dailyDaysStr, normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
+        wageTable.addCell(cell(dailyTotalStr, normalFont, Rectangle.BOX, Element.ALIGN_RIGHT));
 
-        // 時間給行1
-        String hw1Str = hw   > 0 ? String.format("%,d円", hw)  : "　　　円";
-        String wh1Str = wh   > 0 ? String.format("%.0f 時間", wh) : "　　時間";
-        String hwAmt1 = hw   > 0 && wh > 0 ? String.format("%,d 円", (int)(hw * wh)) : "0 円";
-        addWageRow5(wageTable, "時間給", "（1時間　" + hw1Str + "）", wh1Str, hwAmt1, normalFont);
+        // ── 行3: [空(col1)] 時間給 ──────────────────────────────
+        String hw1Str = hw  > 0 ? String.format("%,d円", hw)  : "　　　円";
+        String wh1Str = wh  > 0 ? String.format("%.0f 時間", wh) : "　　時間";
+        String hwAmt1 = hw  > 0 && wh > 0 ? String.format("%,d 円", (int)(hw * wh)) : "0 円";
+        wageTable.addCell(cell("", normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
+        wageTable.addCell(cell("時間給", normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
+        wageTable.addCell(cell("（1時間　" + hw1Str + "）", normalFont, Rectangle.BOX, Element.ALIGN_LEFT));
+        wageTable.addCell(cell(wh1Str, normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
+        wageTable.addCell(cell(hwAmt1, normalFont, Rectangle.BOX, Element.ALIGN_RIGHT));
 
-        // 時間給行2（残業）
+        // ── 行4: [空(col1)] 時間給（残業） ──────────────────────
         String hw2Str = hwOt > 0 ? String.format("%,d円", hwOt) : "　　　円";
-        int hwOtAmt   = 0; // 残業時間は別フィールドがないため0
-        addWageRow5(wageTable, "", "（1時間　" + hw2Str + "）", "　　時間", hwOtAmt > 0 ? String.format("%,d 円", hwOtAmt) : "0 円", normalFont);
+        wageTable.addCell(cell("", normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
+        wageTable.addCell(cell("", normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
+        wageTable.addCell(cell("（1時間　" + hw2Str + "）", normalFont, Rectangle.BOX, Element.ALIGN_LEFT));
+        wageTable.addCell(cell("　　時間", normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
+        wageTable.addCell(cell("0 円", normalFont, Rectangle.BOX, Element.ALIGN_RIGHT));
 
-        // 諸手当行（金・手・当 縦書き、rowspan=4）
+        // ── 諸手当ラベル（col1, rowspan=4: 行5〜行8） ─────────────
         PdfPCell kinCell = new PdfPCell();
         kinCell.setBorder(Rectangle.BOX);
         kinCell.setRowspan(4);
@@ -604,27 +635,33 @@ public class ReceiptMenuController {
         kinCell.setHorizontalAlignment(Element.ALIGN_CENTER);
         Paragraph kinP = new Paragraph();
         kinP.setAlignment(Element.ALIGN_CENTER);
-        String[] kinChars = {"諸", "手", "当"};
-        for (int i = 0; i < kinChars.length; i++) {
-            kinP.add(new com.itextpdf.text.Chunk(kinChars[i], boldFont));
-            if (i < kinChars.length - 1) kinP.add(com.itextpdf.text.Chunk.NEWLINE);
+        for (String ch : new String[]{"諸","手","当"}) {
+            kinP.add(new com.itextpdf.text.Chunk(ch, boldFont));
+            kinP.add(com.itextpdf.text.Chunk.NEWLINE);
         }
         kinCell.addElement(kinP);
         wageTable.addCell(kinCell);
-        addWageRow4WithFirstLabel(wageTable, "手", "（1時間　　　　円）", "　　時間", "0 円", normalFont);
-        addWageRow4(wageTable, "当", "", "", "", normalFont);
-        addWageRow4(wageTable, "", "", "", "", normalFont);
-        addWageRow4(wageTable, "", "", "", "", normalFont);
 
-        // 賃金総額行
-        PdfPCell tl = cell("賃 金 総 額", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
-        tl.setColspan(3);
-        wageTable.addCell(tl);
-        PdfPCell tn = cell("①", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
-        wageTable.addCell(tn);
-        PdfPCell ta = cell(totalWage > 0 ? String.format("%,d 円", totalWage) : "　　　　　円",
-                           boldFont, Rectangle.BOX, Element.ALIGN_RIGHT);
-        wageTable.addCell(ta);
+        // ── 行5〜8: 諸手当の内訳（4行） ─────────────────────────
+        for (int i = 0; i < 4; i++) {
+            wageTable.addCell(cell("", normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
+            wageTable.addCell(cell("（1時間　　　　円）", normalFont, Rectangle.BOX, Element.ALIGN_LEFT));
+            wageTable.addCell(cell("　　時間", normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
+            wageTable.addCell(cell("0 円", normalFont, Rectangle.BOX, Element.ALIGN_RIGHT));
+        }
+
+        // ── 賃金総額行（行9）: col0なし・col1-4で「賃金総額」・col5で金額 ─
+        // ※ 賃金算定のrowspan=8が終わるので、col0から再開
+        PdfPCell totalLabel = cell("賃 金 総 額", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
+        totalLabel.setColspan(4);
+        wageTable.addCell(totalLabel);
+        PdfPCell totalCircle = cell("①　（※合計賃金総額）", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
+        wageTable.addCell(totalCircle);
+        PdfPCell totalAmt = cell(
+            totalWage > 0 ? String.format("%,d 円", totalWage) : "　　　　　円",
+            boldFont, Rectangle.BOX, Element.ALIGN_RIGHT);
+        wageTable.addCell(totalAmt);
+
         doc.add(wageTable);
 
         // ── ⑧ 領収金額算定テーブル ──────────────────────────
