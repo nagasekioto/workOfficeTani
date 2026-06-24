@@ -764,19 +764,21 @@ public class ReceiptMenuController {
         nameRow.setWidthPercentage(100);
         nameRow.setSpacingAfter(6);
 
-        // 左：求職者名ラベル＋名前（名前セルにBOTTOM下線を直接付ける）
+        // 左：求職者名ラベル＋名前（Chunkで下線を名前直下に密着）
         PdfPTable nameInner = new PdfPTable(1);
         nameInner.setWidthPercentage(100);
-        // ラベル行（枠なし）
         PdfPCell labelCell = cell("求職者名", smallFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT);
-        labelCell.setPaddingBottom(0);
+        labelCell.setPaddingBottom(1);
         nameInner.addCell(labelCell);
-        // 名前行（下線のみ・padding最小で密着）
-        PdfPCell nLine = new PdfPCell(new Phrase(personName + "　様", largeFont));
-        nLine.setBorder(Rectangle.BOTTOM);
+        // 下線付きChunkで名前直下に線を引く
+        com.itextpdf.text.Chunk nameChunk = new com.itextpdf.text.Chunk(
+            personName + "　様", largeFont);
+        nameChunk.setUnderline(0.8f, -2f); // 線の太さ0.8、位置-2（文字直下）
+        PdfPCell nLine = new PdfPCell(new Phrase(nameChunk));
+        nLine.setBorder(Rectangle.NO_BORDER);
         nLine.setHorizontalAlignment(Element.ALIGN_LEFT);
         nLine.setPaddingTop(2);
-        nLine.setPaddingBottom(3);
+        nLine.setPaddingBottom(2);
         nLine.setPaddingLeft(2);
         nameInner.addCell(nLine);
         PdfPCell nameWrap = new PdfPCell(nameInner);
