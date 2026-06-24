@@ -586,11 +586,12 @@ public class ReceiptMenuController {
         kinCell.addElement(kinP);
         wageTable.addCell(kinCell);
 
-        // ── 行1: 就労期間 ────────────────────────────────────────
-        PdfPCell period2 = cell("就 労 期 間", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
+        // ── 行1: 就労日数 ────────────────────────────────────────
+        PdfPCell period2 = cell("就 労 日 数", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
         period2.setColspan(2); period2.setFixedHeight(ROW_H);
         wageTable.addCell(period2);
-        PdfPCell period3 = cell(periodStr, normalFont, Rectangle.BOX, Element.ALIGN_LEFT);
+        String workDaysStr = workDays > 0 ? workDays + " 日" : "－";
+        PdfPCell period3 = cell(workDaysStr, normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
         period3.setColspan(2); period3.setFixedHeight(ROW_H);
         wageTable.addCell(period3);
 
