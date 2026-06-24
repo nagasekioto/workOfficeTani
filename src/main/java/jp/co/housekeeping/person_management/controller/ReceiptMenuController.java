@@ -745,12 +745,18 @@ public class ReceiptMenuController {
 
         PdfPTable noDateTable = new PdfPTable(new float[]{1, 2});
         noDateTable.setWidthPercentage(100);
-        noDateTable.addCell(cell("領収番号", smallFont, Rectangle.NO_BORDER, Element.ALIGN_RIGHT));
-        noDateTable.addCell(cell(receiptNo, boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
+        PdfPCell noLabel = cell("領収番号", smallFont, Rectangle.NO_BORDER, Element.ALIGN_RIGHT);
+        noLabel.setPaddingTop(10);
+        noDateTable.addCell(noLabel);
+        PdfPCell noVal = cell(receiptNo, boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
+        noVal.setPaddingTop(10);
+        noDateTable.addCell(noVal);
         noDateTable.addCell(cell("領収日", smallFont, Rectangle.NO_BORDER, Element.ALIGN_RIGHT));
-        noDateTable.addCell(cell(
+        PdfPCell dateVal = cell(
             String.format("%d年　%d月　%d日", today.getYear(), today.getMonthValue(), today.getDayOfMonth()),
-            normalFont, Rectangle.NO_BORDER, Element.ALIGN_RIGHT));
+            normalFont, Rectangle.NO_BORDER, Element.ALIGN_RIGHT);
+        dateVal.setPaddingBottom(10);
+        noDateTable.addCell(dateVal);
         PdfPCell noWrap = new PdfPCell(noDateTable);
         noWrap.setBorder(Rectangle.NO_BORDER);
         topTable.addCell(noWrap);
@@ -838,9 +844,12 @@ public class ReceiptMenuController {
         dateTable.addCell(rcLabel);
 
         // ヘッダー行（年・月・日・スペーサー3列）
-        dateTable.addCell(cell("年", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
-        dateTable.addCell(cell("月", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
-        dateTable.addCell(cell("日", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
+        PdfPCell hY = cell("年", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
+        hY.setVerticalAlignment(Element.ALIGN_MIDDLE); dateTable.addCell(hY);
+        PdfPCell hM = cell("月", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
+        hM.setVerticalAlignment(Element.ALIGN_MIDDLE); dateTable.addCell(hM);
+        PdfPCell hD = cell("日", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
+        hD.setVerticalAlignment(Element.ALIGN_MIDDLE); dateTable.addCell(hD);
         PdfPCell hSp = cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT);
         hSp.setColspan(3);
         dateTable.addCell(hSp);
@@ -853,16 +862,18 @@ public class ReceiptMenuController {
         };
         for (int i = 0; i < 3; i++) {
             PdfPCell cy = cell(dataRows[i][0], normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
-            cy.setFixedHeight(ROW_H2); dateTable.addCell(cy);
+            cy.setFixedHeight(ROW_H2); cy.setVerticalAlignment(Element.ALIGN_MIDDLE); dateTable.addCell(cy);
             PdfPCell cm = cell(dataRows[i][1], normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
-            cm.setFixedHeight(ROW_H2); dateTable.addCell(cm);
+            cm.setFixedHeight(ROW_H2); cm.setVerticalAlignment(Element.ALIGN_MIDDLE); dateTable.addCell(cm);
             PdfPCell cd = cell(dataRows[i][2], normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
-            cd.setFixedHeight(ROW_H2); dateTable.addCell(cd);
+            cd.setFixedHeight(ROW_H2); cd.setVerticalAlignment(Element.ALIGN_MIDDLE); dateTable.addCell(cd);
             if (i == 2) {
-                // 最下行：合計を右側に
+                // 最下行：合計を右側に（中央揃え）
                 dateTable.addCell(cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT));
-                dateTable.addCell(cell("合計", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
-                dateTable.addCell(cell(String.format("%,d　円", receptionFee), boldFont, Rectangle.BOX, Element.ALIGN_LEFT));
+                PdfPCell gLabel = cell("合計", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
+                gLabel.setVerticalAlignment(Element.ALIGN_MIDDLE); dateTable.addCell(gLabel);
+                PdfPCell gAmt = cell(String.format("%,d　円", receptionFee), boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
+                gAmt.setVerticalAlignment(Element.ALIGN_MIDDLE); dateTable.addCell(gAmt);
             } else {
                 PdfPCell sp = cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT);
                 sp.setColspan(3); dateTable.addCell(sp);
