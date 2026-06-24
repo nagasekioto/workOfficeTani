@@ -224,6 +224,10 @@ public class ReceiptMenuController {
                     LocalDateTime.now().getYear(), LocalDateTime.now().getMonthValue());
                 return "redirect:/receipt-menu/issued-list?viewMode=month&month=" + cur;
             }
+            // month を yyyy-MM 形式に正規化（例: 2026-6 → 2026-06）
+            if (month.matches("\\d{4}-\\d{1}")) {
+                month = month.substring(0, 5) + "0" + month.substring(5);
+            }
         }
 
         final String targetMonth = month;
@@ -236,11 +240,11 @@ public class ReceiptMenuController {
             for (SalesDetail d : details) {
                 if (d.getReceiptNo() == null || d.getReceiptNo().isEmpty()) continue;
 
-                // 発行日時（issuedAt優先、なければintroductionDate）でフィルタ
+                // 発行日時（issuedAt優先、introductionDate次点、両方nullなら今日）
                 LocalDateTime issuedAt = d.getIssuedAt();
                 LocalDate filterDate = issuedAt != null ? issuedAt.toLocalDate()
-                                       : d.getIntroductionDate();
-                if (filterDate == null) continue;
+                                     : d.getIntroductionDate() != null ? d.getIntroductionDate()
+                                     : LocalDate.now();
 
                 if ("year".equals(viewMode)) {
                     String detailYear = String.valueOf(filterDate.getYear());
@@ -290,13 +294,23 @@ public class ReceiptMenuController {
         });
 
         long total = rows.stream().mapToLong(r -> r.amount).sum();
+        // 月タブ用：年単位→当年当月、月単位→そのまま
+        String tabMonthVal = "year".equals(viewMode)
+            ? String.format("%d-%02d", LocalDateTime.now().getYear(), LocalDateTime.now().getMonthValue())
+            : month;
+        // 年タブ用：月単位→その年、年単位→そのまま
+        String tabYearVal = "month".equals(viewMode) && month != null && month.length() >= 4
+            ? month.substring(0, 4)
+            : (year != null ? year : String.valueOf(LocalDateTime.now().getYear()));
+
         model.addAttribute("rows",           rows);
         model.addAttribute("totalAmountStr", "¥" + String.format("%,d", total));
         model.addAttribute("totalCount",     rows.size());
         model.addAttribute("selectedMonth",  month);
         model.addAttribute("selectedYear",   year);
         model.addAttribute("viewMode",       viewMode);
-        // ラベル用
+        model.addAttribute("tabMonthUrl",    "/receipt-menu/issued-list?viewMode=month&month=" + tabMonthVal);
+        model.addAttribute("tabYearUrl",     "/receipt-menu/issued-list?viewMode=year&year=" + tabYearVal);
         String periodLabel = "year".equals(viewMode) ? year + "年" : (month != null ? month : "");
         model.addAttribute("periodLabel",    periodLabel);
         return "receipt-issued-list";
@@ -320,8 +334,9 @@ public class ReceiptMenuController {
             for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {
                 if (d.getReceiptNo() == null || d.getReceiptNo().isEmpty()) continue;
                 LocalDateTime issuedAt = d.getIssuedAt();
-                LocalDate filterDate = issuedAt != null ? issuedAt.toLocalDate() : d.getIntroductionDate();
-                if (filterDate == null) continue;
+                LocalDate filterDate = issuedAt != null ? issuedAt.toLocalDate()
+                                     : d.getIntroductionDate() != null ? d.getIntroductionDate()
+                                     : LocalDate.now();
                 if (isYearMode) {
                     if (targetYear == null || !String.valueOf(filterDate.getYear()).equals(targetYear)) continue;
                 } else {

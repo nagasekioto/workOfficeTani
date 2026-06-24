@@ -65,10 +65,8 @@
 
     <!-- タブ -->
     <div class="tab-row">
-        <a th:href="@{/receipt-menu/issued-list(viewMode='month', month=${selectedMonth != null ? selectedMonth : #strings.toString(#dates.year(#dates.createNow())) + '-' + #strings.toString(#dates.month(#dates.createNow()))})}"
-           th:classappend="${viewMode == 'month'} ? 'active'" class="tab">月単位</a>
-        <a th:href="@{/receipt-menu/issued-list(viewMode='year', year=${selectedYear != null ? selectedYear : #strings.toString(#dates.year(#dates.createNow()))})}"
-           th:classappend="${viewMode == 'year'} ? 'active'" class="tab">年単位</a>
+        <a th:href="${tabMonthUrl}" th:classappend="${viewMode == 'month'} ? 'active'" class="tab">月単位</a>
+        <a th:href="${tabYearUrl}"  th:classappend="${viewMode == 'year'}  ? 'active'" class="tab">年単位</a>
     </div>
 
     <!-- 月単位フィルタ -->
