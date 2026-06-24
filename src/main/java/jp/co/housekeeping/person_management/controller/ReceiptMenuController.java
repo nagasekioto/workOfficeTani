@@ -750,6 +750,7 @@ public class ReceiptMenuController {
         noDateTable.addCell(noLabel);
         PdfPCell noVal = cell(receiptNo, boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
         noVal.setPaddingTop(10);
+        noVal.setVerticalAlignment(Element.ALIGN_TOP);
         noDateTable.addCell(noVal);
         noDateTable.addCell(cell("領収日", smallFont, Rectangle.NO_BORDER, Element.ALIGN_RIGHT));
         PdfPCell dateVal = cell(
@@ -839,7 +840,7 @@ public class ReceiptMenuController {
         rcLabel.setBorder(Rectangle.BOX);
         rcLabel.setRowspan(4);
         rcLabel.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        rcLabel.setHorizontalAlignment(Element.ALIGN_CENTER);
+        rcLabel.setHorizontalAlignment(Element.ALIGN_RIGHT);
         rcLabel.addElement(new Phrase("受付月日", boldFont));
         dateTable.addCell(rcLabel);
 
