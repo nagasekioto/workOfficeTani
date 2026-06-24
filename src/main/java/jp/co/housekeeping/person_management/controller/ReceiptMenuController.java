@@ -482,7 +482,7 @@ public class ReceiptMenuController {
         descCell.setPaddingTop(10);
         splitTable.addCell(descCell);
 
-        Font companyFont = new Font(bf, 9);  // 会社情報は少し大きめ
+        Font companyFont = new Font(bf, 11, Font.BOLD);  // 会社情報は11pt太字
         // 右：会社情報（右寄せ）＋登録番号
         PdfPTable companyTable = new PdfPTable(1);
         companyTable.setWidthPercentage(100);
