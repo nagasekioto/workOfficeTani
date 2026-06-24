@@ -734,7 +734,7 @@ public class ReceiptMenuController {
         // ── ① タイトル（一番上） ────────────────────────────────
         Paragraph title = new Paragraph("求 職 受 付 手 数 料 領 収 書", titleFont);
         title.setAlignment(Element.ALIGN_CENTER);
-        title.setSpacingAfter(10);
+        title.setSpacingAfter(16);
         doc.add(title);
 
         // ── ② 領収番号＋領収日（右上） ──────────────────────────
@@ -762,7 +762,7 @@ public class ReceiptMenuController {
 
         PdfPTable nameRow = new PdfPTable(new float[]{3, 2});
         nameRow.setWidthPercentage(100);
-        nameRow.setSpacingAfter(6);
+        nameRow.setSpacingAfter(14);
 
         // 左：求職者名ラベル＋名前（Chunkで下線を名前直下に密着）
         PdfPTable nameInner = new PdfPTable(1);
@@ -805,7 +805,7 @@ public class ReceiptMenuController {
 
         // ── ④ 説明文 ──────────────────────────────────────────
         Paragraph desc = new Paragraph("下記の金額正に領収いたしました。　（1件につき710円）", normalFont);
-        desc.setSpacingAfter(6);
+        desc.setSpacingAfter(10);
         doc.add(desc);
 
         // ── ⑤ 受付月日テーブル ──────────────────────────────────
@@ -821,13 +821,14 @@ public class ReceiptMenuController {
         int mo1 = introDate != null ? introDate.getMonthValue() : 0;
         int dy1 = introDate != null ? introDate.getDayOfMonth() : 0;
 
-        final float ROW_H2 = 26f;
-        // 列: [受付月日 rowspan=4] [年] [月] [日] [スペーサー] [合計/空] [金額/空]
+        final float ROW_H2 = 30f;
+        // 列: [受付月日 rowspan=4] [年] [月] [日] [スペーサー] [合計] [金額]
+        // 受付月日はrowspan=4（ヘッダー1行＋データ3行）
         PdfPTable dateTable = new PdfPTable(new float[]{2f, 1.4f, 0.9f, 0.9f, 0.3f, 1.2f, 2f});
         dateTable.setWidthPercentage(100);
-        dateTable.setSpacingBefore(4);
+        dateTable.setSpacingBefore(10);
 
-        // col0: 「受付月日」ヘッダー含む4行結合
+        // col0: 「受付月日」4行結合
         PdfPCell rcLabel = new PdfPCell();
         rcLabel.setBorder(Rectangle.BOX);
         rcLabel.setRowspan(4);
@@ -836,48 +837,45 @@ public class ReceiptMenuController {
         rcLabel.addElement(new Phrase("受付月日", boldFont));
         dateTable.addCell(rcLabel);
 
-        // ヘッダー行（年・月・日・スペーサー・空・空）
+        // ヘッダー行（年・月・日・スペーサー3列）
         dateTable.addCell(cell("年", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
         dateTable.addCell(cell("月", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
         dateTable.addCell(cell("日", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
         PdfPCell hSp = cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT);
+        hSp.setColspan(3);
         dateTable.addCell(hSp);
-        dateTable.addCell(cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT));
-        dateTable.addCell(cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT));
 
-        // データ行1・2（空欄）
+        // データ行1（1件目：紹介年月日を初期値に）
         String[][] dataRows = {
             {yr1 > 0 ? String.valueOf(yr1) : "", mo1 > 0 ? String.valueOf(mo1) : "", dy1 > 0 ? String.valueOf(dy1) : ""},
+            {"", "", ""},
             {"", "", ""}
         };
-        for (String[] r : dataRows) {
-            dateTable.addCell(cell(r[0], normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
-            dateTable.addCell(cell(r[1], normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
-            dateTable.addCell(cell(r[2], normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
-            PdfPCell sp = cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT);
-            dateTable.addCell(sp);
-            dateTable.addCell(cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT));
-            dateTable.addCell(cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT));
+        for (int i = 0; i < 3; i++) {
+            PdfPCell cy = cell(dataRows[i][0], normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
+            cy.setFixedHeight(ROW_H2); dateTable.addCell(cy);
+            PdfPCell cm = cell(dataRows[i][1], normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
+            cm.setFixedHeight(ROW_H2); dateTable.addCell(cm);
+            PdfPCell cd = cell(dataRows[i][2], normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
+            cd.setFixedHeight(ROW_H2); dateTable.addCell(cd);
+            if (i == 2) {
+                // 最下行：合計を右側に
+                dateTable.addCell(cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT));
+                dateTable.addCell(cell("合計", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
+                dateTable.addCell(cell(String.format("%,d　円", receptionFee), boldFont, Rectangle.BOX, Element.ALIGN_LEFT));
+            } else {
+                PdfPCell sp = cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT);
+                sp.setColspan(3); dateTable.addCell(sp);
+            }
         }
-
-        // データ行3（最下行）＋右側に合計
-        PdfPCell lastYear  = cell("", normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
-        lastYear.setFixedHeight(ROW_H2); dateTable.addCell(lastYear);
-        PdfPCell lastMonth = cell("", normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
-        lastMonth.setFixedHeight(ROW_H2); dateTable.addCell(lastMonth);
-        PdfPCell lastDay   = cell("", normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
-        lastDay.setFixedHeight(ROW_H2); dateTable.addCell(lastDay);
-        dateTable.addCell(cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT));
-        dateTable.addCell(cell("合計", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
-        dateTable.addCell(cell(String.format("%,d　円", receptionFee), boldFont, Rectangle.BOX, Element.ALIGN_LEFT));
 
         doc.add(dateTable);
 
         // ── ⑥ 注意書き ─────────────────────────────────────────
-        doc.add(new Paragraph(" ", smallFont));
+        doc.add(new Paragraph(" ", normalFont));
         Paragraph note1 = new Paragraph("（注）求職受付手数料は求職のお申し込み1回ごとにいただいております。", smallFont);
         Paragraph note2 = new Paragraph("　　　求職お申し込みが1か月に3回を超える場合は、3回分の金額です。", smallFont);
-        note1.setSpacingAfter(3);
+        note1.setSpacingAfter(6);
         doc.add(note1);
         doc.add(note2);
 
