@@ -764,25 +764,20 @@ public class ReceiptMenuController {
         nameRow.setWidthPercentage(100);
         nameRow.setSpacingAfter(6);
 
-        // 左：求職者名（下線付きセル）
-        PdfPCell nameCell = new PdfPCell();
-        nameCell.setBorder(Rectangle.NO_BORDER);
-        Paragraph nameLabel = new Paragraph("求職者名", smallFont);
-        nameLabel.setSpacingAfter(2);
-        nameCell.addElement(nameLabel);
-        PdfPCell nameUnderline = cell(personName + "　様", largeFont, Rectangle.BOTTOM, Element.ALIGN_LEFT);
-        nameUnderline.setPaddingBottom(2);
-        nameCell.addElement(new Phrase(personName + "　様", largeFont));
-        // 下線を直接名前の下に付けるため Phrase+drawLine の代わりにセルで実装
-        nameCell.setBorder(Rectangle.NO_BORDER);
-        // nameTableを使う
+        // 左：求職者名ラベル＋名前（名前セルにBOTTOM下線を直接付ける）
         PdfPTable nameInner = new PdfPTable(1);
         nameInner.setWidthPercentage(100);
-        nameInner.addCell(cell("求職者名", smallFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT));
+        // ラベル行（枠なし）
+        PdfPCell labelCell = cell("求職者名", smallFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT);
+        labelCell.setPaddingBottom(0);
+        nameInner.addCell(labelCell);
+        // 名前行（下線のみ・padding最小で密着）
         PdfPCell nLine = new PdfPCell(new Phrase(personName + "　様", largeFont));
         nLine.setBorder(Rectangle.BOTTOM);
         nLine.setHorizontalAlignment(Element.ALIGN_LEFT);
-        nLine.setPadding(2);
+        nLine.setPaddingTop(2);
+        nLine.setPaddingBottom(3);
+        nLine.setPaddingLeft(2);
         nameInner.addCell(nLine);
         PdfPCell nameWrap = new PdfPCell(nameInner);
         nameWrap.setBorder(Rectangle.NO_BORDER);
@@ -811,60 +806,53 @@ public class ReceiptMenuController {
         desc.setSpacingAfter(6);
         doc.add(desc);
 
-        // ── ⑤ 受付月日テーブル（受付月日縦結合・年月日3行・合計） ──
+        // ── ⑤ 受付月日テーブル ──────────────────────────────────
+        // 構成:
+        //  ヘッダー行: [受付月日(横)] [年] [月] [日] [スペーサー] [合計] [金額]
+        //  データ行1:  [空           ] [年] [月] [日] [スペーサー] [空  ] [空  ]
+        //  データ行2:  [空           ] [年] [月] [日] [スペーサー] [空  ] [空  ]
+        //  データ行3:  [空           ] [年] [月] [日] [スペーサー] [空  ] [空  ]
         LocalDate introDate = detail.getIntroductionDate();
         int receptionFee = detail.getReceptionFee() != null ? detail.getReceptionFee() : 710;
-        int count = Math.max(1, Math.min(3, receptionFee / 710));
 
-        // 受付1件目の年月日
         int yr1 = introDate != null ? introDate.getYear()       : 0;
         int mo1 = introDate != null ? introDate.getMonthValue() : 0;
         int dy1 = introDate != null ? introDate.getDayOfMonth() : 0;
 
-        // 列: [受付月日(縦結合)] [年] [月] [日] [スペーサー] [合計ラベル/空] [金額/空]
         final float ROW_H2 = 26f;
-        PdfPTable dateTable = new PdfPTable(new float[]{1.8f, 1.2f, 0.8f, 0.8f, 0.5f, 1.2f, 2f});
+        // 列: [受付月日] [年] [月] [日] [スペーサー] [合計ラベル] [合計金額]
+        PdfPTable dateTable = new PdfPTable(new float[]{2f, 1.4f, 0.9f, 0.9f, 0.3f, 1.2f, 2f});
         dateTable.setWidthPercentage(100);
         dateTable.setSpacingBefore(4);
 
-        // col0: 「受付月日」縦結合(rowspan=3)
-        PdfPCell rcLabel = new PdfPCell();
-        rcLabel.setBorder(Rectangle.BOX);
-        rcLabel.setRowspan(3);
-        rcLabel.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        rcLabel.setHorizontalAlignment(Element.ALIGN_CENTER);
-        Paragraph rcP = new Paragraph();
-        rcP.setAlignment(Element.ALIGN_CENTER);
-        for (String ch : new String[]{"受","付","月","日"}) {
-            rcP.add(new com.itextpdf.text.Chunk(ch, boldFont));
-            rcP.add(com.itextpdf.text.Chunk.NEWLINE);
-        }
-        rcLabel.addElement(rcP);
-        dateTable.addCell(rcLabel);
-
-        // ヘッダー行（年・月・日）
+        // ヘッダー行
+        dateTable.addCell(cell("受付月日", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
         dateTable.addCell(cell("年", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
         dateTable.addCell(cell("月", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
         dateTable.addCell(cell("日", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
         PdfPCell hSpacer = cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT);
-        hSpacer.setColspan(3);
-        dateTable.addCell(hSpacer);
-
-        // データ行1（1件目）
-        dateTable.addCell(cell(yr1 > 0 ? String.valueOf(yr1) : "", normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
-        dateTable.addCell(cell(mo1 > 0 ? String.valueOf(mo1) : "", normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
-        dateTable.addCell(cell(dy1 > 0 ? String.valueOf(dy1) : "", normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
-        PdfPCell sp1 = cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT);
-        sp1.setColspan(3); dateTable.addCell(sp1);
-
-        // データ行2（2件目以降は空欄）
-        dateTable.addCell(cell("", normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
-        dateTable.addCell(cell("", normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
-        dateTable.addCell(cell("", normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
-        // 合計行（最終行右側）
+        hSpacer.setColspan(1); dateTable.addCell(hSpacer);
         dateTable.addCell(cell("合計", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
-        dateTable.addCell(cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT));
-        dateTable.addCell(cell(String.format("%,d　円", receptionFee), boldFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT));
+        dateTable.addCell(cell(String.format("%,d　円", receptionFee), boldFont, Rectangle.BOX, Element.ALIGN_LEFT));
+
+        // データ3行（年月日入力欄）
+        String[][] rows = {
+            {yr1 > 0 ? String.valueOf(yr1) : "", mo1 > 0 ? String.valueOf(mo1) : "", dy1 > 0 ? String.valueOf(dy1) : ""},
+            {"", "", ""},
+            {"", "", ""}
+        };
+        for (int i = 0; i < 3; i++) {
+            PdfPCell rcCell = cell("", normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
+            rcCell.setFixedHeight(ROW_H2);
+            dateTable.addCell(rcCell);
+            dateTable.addCell(cell(rows[i][0], normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
+            dateTable.addCell(cell(rows[i][1], normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
+            dateTable.addCell(cell(rows[i][2], normalFont, Rectangle.BOX, Element.ALIGN_CENTER));
+            PdfPCell sp = cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT);
+            dateTable.addCell(sp);
+            dateTable.addCell(cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT));
+            dateTable.addCell(cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT));
+        }
 
         doc.add(dateTable);
 
