@@ -617,7 +617,7 @@ public class ReceiptMenuController {
         // ── 行5〜8: 諸手当内訳（4行） ────────────────────────────
         for (int i = 0; i < 4; i++) {
             addFixedRow(wageTable, smallNormal, ROW_H,
-                "", "（1時間　　　　　円 ）", "　時間", "0円");
+                "", "（1時間　　　円 ）", "　時間", "0円");
         }
 
         // ── 行9: 賃金総額① ──────────────────────────────────────
@@ -863,6 +863,32 @@ public class ReceiptMenuController {
         t.addCell(cell(unit,  f, Rectangle.BOX, Element.ALIGN_LEFT));
         t.addCell(cell(qty,   f, Rectangle.BOX, Element.ALIGN_CENTER));
         t.addCell(cell(total, f, Rectangle.BOX, Element.ALIGN_RIGHT));
+    }
+
+    // ─── 領収番号リセット（1-7-1 求人者宛） ──────────────────────
+    @PostMapping("/customer-receipt/reset")
+    public String resetCustomerReceiptNo(@RequestParam Long detailId,
+                                          HttpSession session) {
+        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+        salesDetailRepository.findById(detailId).ifPresent(d -> {
+            d.setReceiptNo(null);
+            d.setIssuedAt(null);
+            salesDetailRepository.save(d);
+        });
+        return "redirect:/receipt-menu/customer-receipt";
+    }
+
+    // ─── 領収番号リセット（1-7-2 求職受付） ──────────────────────
+    @PostMapping("/jobseeker-receipt/reset")
+    public String resetJobseekerReceiptNo(@RequestParam Long detailId,
+                                           HttpSession session) {
+        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+        salesDetailRepository.findById(detailId).ifPresent(d -> {
+            d.setReceiptNo(null);
+            d.setIssuedAt(null);
+            salesDetailRepository.save(d);
+        });
+        return "redirect:/receipt-menu/jobseeker-receipt";
     }
 
     // ─── 内部クラス ────────────────────────────────────────────

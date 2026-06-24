@@ -63,14 +63,8 @@ public class SalesController {
 
         if (personId != null) {
             Person person = personRepository.findById(personId).orElse(null);
-            List<Sales> salesList = salesRepository.findByPersonId(personId);
-            List<SalesDetail> allDetails = new ArrayList<>();
-            for (Sales s : salesList) {
-                allDetails.addAll(salesDetailRepository.findBySalesId(s.getId()));
-            }
             model.addAttribute("selectedPerson", person);
             model.addAttribute("selectedPersonId", personId);
-            model.addAttribute("existingDetails", allDetails);
         }
 
         return "person-sales";

@@ -58,6 +58,11 @@
                 </td>
                 <td>
                     <a th:href="@{/receipt-menu/jobseeker-receipt/pdf(detailId=${item.detail.id})}" target="_blank" class="pdf-btn">&#128196; PDF出力</a>
+                    <form th:if="${item.issued}" th:action="@{/receipt-menu/jobseeker-receipt/reset}" method="post"
+                          style="display:inline;" onsubmit="return confirm('領収番号をリセットしますか？')">
+                        <input type="hidden" name="detailId" th:value="${item.detail.id}">
+                        <button type="submit" style="background:#f44336;color:white;border:none;border-radius:4px;padding:6px 10px;cursor:pointer;font-size:12px;margin-left:4px;">&#x1F504; リセット</button>
+                    </form>
                 </td>
             </tr>
         </tbody>
