@@ -95,8 +95,9 @@ public class WorkingLedgerController {
             List<SalesDetail> details = salesDetailRepository.findBySalesId(s.getId());
             for (SalesDetail d : details) {
                 LedgerRow row = new LedgerRow();
-                row.detail = d;
-                row.sales  = s;
+                row.detail   = d;
+                row.sales    = s;
+                row.personId = s.getPersonId();
 
                 // 求人者名
                 if (d.getCustomerId() != null) {
@@ -189,6 +190,7 @@ public class WorkingLedgerController {
     public static class LedgerRow {
         public SalesDetail detail;
         public Sales       sales;
+        public Long        personId       = null;
         public String      customerName   = "";
         public int         workDays       = 0;
         public LocalDate   receiptDate;
