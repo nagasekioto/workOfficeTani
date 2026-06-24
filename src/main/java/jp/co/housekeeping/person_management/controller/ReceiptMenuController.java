@@ -206,13 +206,28 @@ public class ReceiptMenuController {
     // ─── 発行済み一覧（月単位）────────────────────────
     @GetMapping("/issued-list")
     public String issuedList(@RequestParam(required = false) String month,
+                              @RequestParam(required = false) String year,
+                              @RequestParam(required = false, defaultValue = "month") String viewMode,
                               HttpSession session, Model model) {
         if (session.getAttribute("authenticated") == null) return "redirect:/login";
-        if (month == null || month.isBlank()) {
-            String cur = String.format("%d-%02d",
-                LocalDateTime.now().getYear(), LocalDateTime.now().getMonthValue());
-            return "redirect:/receipt-menu/issued-list?month=" + cur;
+
+        // デフォルトリダイレクト
+        if ("year".equals(viewMode)) {
+            if (year == null || year.isBlank()) {
+                year = String.valueOf(LocalDateTime.now().getYear());
+                return "redirect:/receipt-menu/issued-list?viewMode=year&year=" + year;
+            }
+        } else {
+            viewMode = "month";
+            if (month == null || month.isBlank()) {
+                String cur = String.format("%d-%02d",
+                    LocalDateTime.now().getYear(), LocalDateTime.now().getMonthValue());
+                return "redirect:/receipt-menu/issued-list?viewMode=month&month=" + cur;
+            }
         }
+
+        final String targetMonth = month;
+        final String targetYear  = year;
 
         List<IssuedListRow> rows = new ArrayList<>();
 
@@ -221,13 +236,19 @@ public class ReceiptMenuController {
             for (SalesDetail d : details) {
                 if (d.getReceiptNo() == null || d.getReceiptNo().isEmpty()) continue;
 
-                // 発行日時（issuedAt優先、なければintroductionDate）で月フィルタ
+                // 発行日時（issuedAt優先、なければintroductionDate）でフィルタ
                 LocalDateTime issuedAt = d.getIssuedAt();
                 LocalDate filterDate = issuedAt != null ? issuedAt.toLocalDate()
                                        : d.getIntroductionDate();
                 if (filterDate == null) continue;
-                String detailMonth = String.format("%d-%02d", filterDate.getYear(), filterDate.getMonthValue());
-                if (!detailMonth.equals(month)) continue;
+
+                if ("year".equals(viewMode)) {
+                    String detailYear = String.valueOf(filterDate.getYear());
+                    if (!detailYear.equals(targetYear)) continue;
+                } else {
+                    String detailMonth = String.format("%d-%02d", filterDate.getYear(), filterDate.getMonthValue());
+                    if (!detailMonth.equals(targetMonth)) continue;
+                }
 
                 IssuedListRow row = new IssuedListRow();
                 row.receiptNumber = d.getReceiptNo();
@@ -273,22 +294,27 @@ public class ReceiptMenuController {
         model.addAttribute("totalAmountStr", "¥" + String.format("%,d", total));
         model.addAttribute("totalCount",     rows.size());
         model.addAttribute("selectedMonth",  month);
+        model.addAttribute("selectedYear",   year);
+        model.addAttribute("viewMode",       viewMode);
+        // ラベル用
+        String periodLabel = "year".equals(viewMode) ? year + "年" : (month != null ? month : "");
+        model.addAttribute("periodLabel",    periodLabel);
         return "receipt-issued-list";
     }
-
     // ─── 発行済み一覧 PDF一括ZIP ──────────────────────────
     @GetMapping("/issued-list/export-pdf")
     public void issuedListExportPdf(@RequestParam(required = false) String month,
+                                     @RequestParam(required = false) String year,
+                                     @RequestParam(required = false, defaultValue = "month") String viewMode,
                                      HttpSession session, HttpServletResponse response)
             throws IOException, DocumentException {
         if (session.getAttribute("authenticated") == null) { response.sendError(401); return; }
-        if (month == null || month.isBlank()) {
-            month = String.format("%d-%02d",
-                LocalDateTime.now().getYear(), LocalDateTime.now().getMonthValue());
-        }
-        final String targetMonth = month;
 
-        // 対象データ収集（issuedListと同じ月フィルタ）
+        final String targetMonth = (month != null && !month.isBlank()) ? month : null;
+        final String targetYear  = (year  != null && !year.isBlank())  ? year  : null;
+        final boolean isYearMode = "year".equals(viewMode);
+
+        // 対象データ収集
         List<Object[]> targets = new ArrayList<>();
         for (Sales s : salesRepository.findAll()) {
             for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {
@@ -296,13 +322,19 @@ public class ReceiptMenuController {
                 LocalDateTime issuedAt = d.getIssuedAt();
                 LocalDate filterDate = issuedAt != null ? issuedAt.toLocalDate() : d.getIntroductionDate();
                 if (filterDate == null) continue;
-                String dm = String.format("%d-%02d", filterDate.getYear(), filterDate.getMonthValue());
-                if (!dm.equals(targetMonth)) continue;
+                if (isYearMode) {
+                    if (targetYear == null || !String.valueOf(filterDate.getYear()).equals(targetYear)) continue;
+                } else {
+                    String dm = String.format("%d-%02d", filterDate.getYear(), filterDate.getMonthValue());
+                    if (targetMonth == null || !dm.equals(targetMonth)) continue;
+                }
                 targets.add(new Object[]{d, s});
             }
         }
 
-        String zipName = "領収書一括_" + targetMonth + "_"
+        String periodStr = isYearMode ? (targetYear != null ? targetYear + "年" : "全期間")
+                                      : (targetMonth != null ? targetMonth : "不明");
+        String zipName = "領収書一括_" + periodStr + "_"
             + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")) + ".zip";
         response.setContentType("application/zip");
         response.setHeader("Content-Disposition",

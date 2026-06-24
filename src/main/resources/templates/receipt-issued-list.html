@@ -5,30 +5,47 @@
     <title>発行済み領収書一覧 - 家政婦紹介事務所</title>
     <style>
         body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
-        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        h1 { margin: 0; color: #333; }
+        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; color: #333; font-size: 18px; }
         .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
-        .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .filter-row { display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px; }
-        .filter-row label { font-weight: bold; color: #555; font-size: 14px; display: block; margin-bottom: 4px; }
-        .filter-row input[type="month"] { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
-        .filter-btn { background: #7B1FA2; color: white; border: none; border-radius: 4px; padding: 9px 20px; cursor: pointer; font-size: 14px; }
+        .container { max-width: 960px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,.1); }
+
+        /* タブ切り替え */
+        .tab-row { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #7B1FA2; }
+        .tab { padding: 10px 28px; font-size: 14px; font-weight: bold; cursor: pointer; border: none; background: #f3e5f5; color: #7B1FA2; border-radius: 6px 6px 0 0; text-decoration: none; }
+        .tab.active { background: #7B1FA2; color: white; }
+        .tab:hover:not(.active) { background: #e1bee7; }
+
+        /* フィルタ行 */
+        .filter-row { display: flex; gap: 12px; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap; }
+        .filter-row label { font-weight: bold; color: #555; font-size: 13px; display: block; margin-bottom: 4px; }
+        .filter-row input[type="month"],
+        .filter-row input[type="number"] { padding: 8px 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .filter-row input[type="number"] { width: 90px; }
+        .filter-btn { background: #7B1FA2; color: white; border: none; border-radius: 4px; padding: 9px 20px; cursor: pointer; font-size: 14px; font-weight: bold; }
         .filter-btn:hover { background: #4A148C; }
-        .month-label { font-size: 18px; font-weight: bold; color: #4A148C; margin-bottom: 16px; }
-        .summary-box { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
-        .summary-card { background: #f3e5f5; border-radius: 8px; padding: 15px; text-align: center; }
-        .summary-card .label { font-size: 13px; color: #7b1fa2; margin-bottom: 5px; }
+
+        /* サマリ */
+        .period-label { font-size: 17px; font-weight: bold; color: #4A148C; margin-bottom: 14px; }
+        .summary-box { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 20px; }
+        .summary-card { background: #f3e5f5; border-radius: 8px; padding: 14px; text-align: center; }
+        .summary-card .label { font-size: 12px; color: #7b1fa2; margin-bottom: 4px; }
         .summary-card .value { font-size: 22px; font-weight: bold; color: #4a148c; }
-        table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        th { background: #7B1FA2; color: white; padding: 10px; text-align: left; }
-        td { padding: 9px 10px; border-bottom: 1px solid #e0e0e0; vertical-align: middle; }
-        tr:hover { background: #f3e5f5; }
+
+        /* テーブル */
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #7B1FA2; color: white; padding: 10px; text-align: left; white-space: nowrap; }
+        td { padding: 8px 10px; border-bottom: 1px solid #e0e0e0; vertical-align: middle; }
+        tr:hover { background: #f9f0ff; }
         .total-row { background: #e1bee7; font-weight: bold; }
         .total-row td { border-top: 2px solid #7B1FA2; }
-        .badge-customer { background: #e3f2fd; color: #1565c0; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
-        .badge-jobseeker { background: #e8f5e9; color: #2e7d32; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+        .badge-customer  { background: #e3f2fd; color: #1565c0; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+        .badge-jobseeker { background: #e8f5e9; color: #2e7d32; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+        .pdf-link { color: #7B1FA2; font-size: 12px; text-decoration: none; padding: 2px 8px; border: 1px solid #7B1FA2; border-radius: 3px; }
+        .pdf-link:hover { background: #7B1FA2; color: white; }
         .empty { text-align: center; padding: 40px; color: #999; }
-        .pdf-link { color: #7B1FA2; font-size: 12px; }
+        .pdf-zip-btn { background: #E53935; color: white; padding: 9px 18px; border: none; border-radius: 5px; text-decoration: none; font-weight: bold; font-size: 13px; }
+        .pdf-zip-btn:hover { background: #b71c1c; }
     </style>
 </head>
 <body>
@@ -36,15 +53,27 @@
     <h1>&#128203; 発行済み領収書一覧（1-7-1 / 1-7-2）</h1>
     <div style="display:flex;gap:8px;align-items:center;">
         <a th:if="${not #lists.isEmpty(rows)}"
-           th:href="@{/receipt-menu/issued-list/export-pdf(month=${selectedMonth})}"
-           style="background:#E53935;color:white;padding:10px 20px;border:none;border-radius:5px;text-decoration:none;font-weight:bold;">
-            &#128196; PDF一括保存（ZIP）
-        </a>
+           th:href="${viewMode == 'year'
+               ? '/receipt-menu/issued-list/export-pdf?viewMode=year&year=' + selectedYear
+               : '/receipt-menu/issued-list/export-pdf?viewMode=month&month=' + selectedMonth}"
+           class="pdf-zip-btn">&#128196; PDF一括保存（ZIP）</a>
         <a href="/receipt-menu" class="back-btn">&#8592; 戻る</a>
     </div>
 </div>
+
 <div class="container">
-    <form method="get" action="/receipt-menu/issued-list">
+
+    <!-- タブ -->
+    <div class="tab-row">
+        <a th:href="@{/receipt-menu/issued-list(viewMode='month', month=${selectedMonth != null ? selectedMonth : #strings.toString(#dates.year(#dates.createNow())) + '-' + #strings.toString(#dates.month(#dates.createNow()))})}"
+           th:classappend="${viewMode == 'month'} ? 'active'" class="tab">月単位</a>
+        <a th:href="@{/receipt-menu/issued-list(viewMode='year', year=${selectedYear != null ? selectedYear : #strings.toString(#dates.year(#dates.createNow()))})}"
+           th:classappend="${viewMode == 'year'} ? 'active'" class="tab">年単位</a>
+    </div>
+
+    <!-- 月単位フィルタ -->
+    <form th:if="${viewMode == 'month'}" method="get" action="/receipt-menu/issued-list">
+        <input type="hidden" name="viewMode" value="month">
         <div class="filter-row">
             <div>
                 <label for="month">表示月</label>
@@ -54,8 +83,21 @@
         </div>
     </form>
 
-    <div th:if="${selectedMonth != null}">
-        <div class="month-label" th:text="${selectedMonth + ' の発行済み領収書'}"></div>
+    <!-- 年単位フィルタ -->
+    <form th:if="${viewMode == 'year'}" method="get" action="/receipt-menu/issued-list">
+        <input type="hidden" name="viewMode" value="year">
+        <div class="filter-row">
+            <div>
+                <label for="year">表示年</label>
+                <input type="number" id="year" name="year" th:value="${selectedYear}" min="2000" max="2099" placeholder="例：2026">
+            </div>
+            <button type="submit" class="filter-btn">&#128269; 表示</button>
+        </div>
+    </form>
+
+    <!-- 結果 -->
+    <div>
+        <div class="period-label" th:text="${periodLabel + ' の発行済み領収書'}"></div>
 
         <div class="summary-box">
             <div class="summary-card">
@@ -83,7 +125,7 @@
                 <tr th:each="r : ${rows}">
                     <td th:text="${r.receiptNumber}"></td>
                     <td>
-                        <span th:if="${r.receiptType.contains('1-7-1')}" class="badge-customer" th:text="${r.receiptType}"></span>
+                        <span th:if="${r.receiptType.contains('1-7-1')}"  class="badge-customer"  th:text="${r.receiptType}"></span>
                         <span th:unless="${r.receiptType.contains('1-7-1')}" class="badge-jobseeker" th:text="${r.receiptType}"></span>
                     </td>
                     <td th:text="${r.partyName}"></td>
@@ -106,9 +148,8 @@
             </tbody>
         </table>
 
-        <div class="empty" th:if="${#lists.isEmpty(rows)}">
-            <span th:text="${selectedMonth + ' に発行された領収書はありません。'}"></span>
-        </div>
+        <div class="empty" th:if="${#lists.isEmpty(rows)}"
+             th:text="${periodLabel + ' に発行された領収書はありません。'}"></div>
     </div>
 </div>
 </body>
