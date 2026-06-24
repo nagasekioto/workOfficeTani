@@ -457,7 +457,7 @@ public class ReceiptMenuController {
         int grandTotal     = customerFee + commission + consumptionTax; // ①+②+③
 
         // ── ⑤ （②+③）一金 ─────────────────────────────────
-        PdfPTable amountLine = new PdfPTable(new float[]{1, 6});
+        PdfPTable amountLine = new PdfPTable(new float[]{1.8f, 5.2f});
         amountLine.setWidthPercentage(100);
         amountLine.setSpacingBefore(2);
         amountLine.setSpacingAfter(4);
@@ -648,7 +648,7 @@ public class ReceiptMenuController {
         }
 
         // ── 行9: 賃金総額（col1〜4）＋ 金額（①） ──────────────────
-        PdfPCell totalLabel = cell("賃 金 総 額", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
+        PdfPCell totalLabel = cell("賃 金 総 額 ①", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
         totalLabel.setColspan(4);
         wageTable.addCell(totalLabel);
         PdfPCell totalAmtCell = cell(
@@ -696,8 +696,9 @@ public class ReceiptMenuController {
         feeTable.addCell(cell(String.format("%,d 円", consumptionTax), normalFont, Rectangle.BOX, Element.ALIGN_RIGHT));
 
         // 手数料合計 D＝②＋③＋④
-        feeTable.addCell(cell("手数料合計　（②＋③＋④）", boldFont, Rectangle.BOX, Element.ALIGN_LEFT));
-        feeTable.addCell(cell("D", boldFont, Rectangle.BOX, Element.ALIGN_CENTER));
+        PdfPCell feeTotalLabel = cell("手数料合計　（②＋③＋④）", boldFont, Rectangle.BOX, Element.ALIGN_LEFT);
+        feeTotalLabel.setColspan(2);
+        feeTable.addCell(feeTotalLabel);
         feeTable.addCell(cell(String.format("%,d 円", grandTotal), boldFont, Rectangle.BOX, Element.ALIGN_RIGHT));
 
         doc.add(feeTable);
