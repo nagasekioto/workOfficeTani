@@ -4,8 +4,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -114,6 +117,10 @@ public class ReceiptMenuController {
             int nextNo = salesDetailRepository.findMaxReceiptNo() + 1;
             receiptNo  = String.format("%04d", nextNo);
             detail.setReceiptNo(receiptNo);
+            detail.setIssuedAt(LocalDateTime.now());
+            salesDetailRepository.save(detail);
+        } else if (detail.getIssuedAt() == null) {
+            detail.setIssuedAt(LocalDateTime.now());
             salesDetailRepository.save(detail);
         }
 
@@ -179,6 +186,10 @@ public class ReceiptMenuController {
             int nextNo = salesDetailRepository.findMaxReceiptNo() + 1;
             receiptNo  = String.format("%04d", nextNo);
             detail.setReceiptNo(receiptNo);
+            detail.setIssuedAt(LocalDateTime.now());
+            salesDetailRepository.save(detail);
+        } else if (detail.getIssuedAt() == null) {
+            detail.setIssuedAt(LocalDateTime.now());
             salesDetailRepository.save(detail);
         }
 
@@ -210,14 +221,18 @@ public class ReceiptMenuController {
             for (SalesDetail d : details) {
                 if (d.getReceiptNo() == null || d.getReceiptNo().isEmpty()) continue;
 
-                LocalDate introDate = d.getIntroductionDate();
-                if (introDate == null) continue;
-                String detailMonth = String.format("%d-%02d", introDate.getYear(), introDate.getMonthValue());
+                // 発行日時（issuedAt優先、なければintroductionDate）で月フィルタ
+                LocalDateTime issuedAt = d.getIssuedAt();
+                LocalDate filterDate = issuedAt != null ? issuedAt.toLocalDate()
+                                       : d.getIntroductionDate();
+                if (filterDate == null) continue;
+                String detailMonth = String.format("%d-%02d", filterDate.getYear(), filterDate.getMonthValue());
                 if (!detailMonth.equals(month)) continue;
 
                 IssuedListRow row = new IssuedListRow();
                 row.receiptNumber = d.getReceiptNo();
                 row.salesDetailId = d.getId();
+                row.issuedAt      = issuedAt;
 
                 boolean isCustomer  = d.getCustomerFee()  != null && d.getCustomerFee()  > 0;
                 boolean isJobseeker = d.getReceptionFee() != null && d.getReceptionFee() > 0;
@@ -232,7 +247,7 @@ public class ReceiptMenuController {
                     row.amount = d.getReceptionFee() != null ? d.getReceptionFee() : 0;
                 }
                 row.amountStr = "¥" + String.format("%,d", row.amount);
-                row.issuedDate = introDate;
+                row.issuedDate = filterDate;
 
                 if (isCustomer && d.getCustomerId() != null) {
                     customerRepository.findById(d.getCustomerId()).ifPresent(c ->
@@ -259,6 +274,75 @@ public class ReceiptMenuController {
         model.addAttribute("totalCount",     rows.size());
         model.addAttribute("selectedMonth",  month);
         return "receipt-issued-list";
+    }
+
+    // ─── 発行済み一覧 PDF一括ZIP ──────────────────────────
+    @GetMapping("/issued-list/export-pdf")
+    public void issuedListExportPdf(@RequestParam(required = false) String month,
+                                     HttpSession session, HttpServletResponse response)
+            throws IOException, DocumentException {
+        if (session.getAttribute("authenticated") == null) { response.sendError(401); return; }
+        if (month == null || month.isBlank()) {
+            month = String.format("%d-%02d",
+                LocalDateTime.now().getYear(), LocalDateTime.now().getMonthValue());
+        }
+        final String targetMonth = month;
+
+        // 対象データ収集（issuedListと同じ月フィルタ）
+        List<Object[]> targets = new ArrayList<>();
+        for (Sales s : salesRepository.findAll()) {
+            for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {
+                if (d.getReceiptNo() == null || d.getReceiptNo().isEmpty()) continue;
+                LocalDateTime issuedAt = d.getIssuedAt();
+                LocalDate filterDate = issuedAt != null ? issuedAt.toLocalDate() : d.getIntroductionDate();
+                if (filterDate == null) continue;
+                String dm = String.format("%d-%02d", filterDate.getYear(), filterDate.getMonthValue());
+                if (!dm.equals(targetMonth)) continue;
+                targets.add(new Object[]{d, s});
+            }
+        }
+
+        String zipName = "領収書一括_" + targetMonth + "_"
+            + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmm")) + ".zip";
+        response.setContentType("application/zip");
+        response.setHeader("Content-Disposition",
+            "attachment; filename*=UTF-8''"
+            + java.net.URLEncoder.encode(zipName, "UTF-8").replace("+", "%20"));
+
+        try (ZipOutputStream zos = new ZipOutputStream(response.getOutputStream())) {
+            for (Object[] row : targets) {
+                SalesDetail d = (SalesDetail) row[0];
+                Sales s       = (Sales) row[1];
+                boolean isCustomer = d.getCustomerFee() != null && d.getCustomerFee() > 0;
+
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                String fileName;
+
+                if (isCustomer) {
+                    Customer customer = d.getCustomerId() != null
+                        ? customerRepository.findById(d.getCustomerId()).orElse(null) : null;
+                    Person person = s.getPersonId() != null
+                        ? personRepository.findById(s.getPersonId()).orElse(null) : null;
+                    createCustomerReceiptPdf(d, customer, person, d.getReceiptNo(), baos);
+                    String name = customer != null
+                        ? (customer.getLastNameKanji() + customer.getFirstNameKanji()).replaceAll("[/:*?<>|]", "_")
+                        : "不明";
+                    fileName = d.getReceiptNo() + "_求人者宛_" + name + ".pdf";
+                } else {
+                    Person person = s.getPersonId() != null
+                        ? personRepository.findById(s.getPersonId()).orElse(null) : null;
+                    createJobseekerReceiptPdf(d, person, d.getReceiptNo(), baos);
+                    String name = person != null
+                        ? (person.getLastNameKanji() + person.getFirstNameKanji()).replaceAll("[/:*?<>|]", "_")
+                        : "不明";
+                    fileName = d.getReceiptNo() + "_求職受付_" + name + ".pdf";
+                }
+
+                zos.putNextEntry(new ZipEntry(fileName));
+                zos.write(baos.toByteArray());
+                zos.closeEntry();
+            }
+        }
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -700,5 +784,6 @@ public class ReceiptMenuController {
         public String    amountStr;
         public LocalDate issuedDate;
         public Long      salesDetailId;
+        public LocalDateTime issuedAt;
     }
 }

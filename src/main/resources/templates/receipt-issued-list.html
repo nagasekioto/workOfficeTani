@@ -34,7 +34,14 @@
 <body>
 <div class="header">
     <h1>&#128203; 発行済み領収書一覧（1-7-1 / 1-7-2）</h1>
-    <a href="/receipt-menu" class="back-btn">&#8592; 戻る</a>
+    <div style="display:flex;gap:8px;align-items:center;">
+        <a th:if="${not #lists.isEmpty(rows)}"
+           th:href="@{/receipt-menu/issued-list/export-pdf(month=${selectedMonth})}"
+           style="background:#E53935;color:white;padding:10px 20px;border:none;border-radius:5px;text-decoration:none;font-weight:bold;">
+            &#128196; PDF一括保存（ZIP）
+        </a>
+        <a href="/receipt-menu" class="back-btn">&#8592; 戻る</a>
+    </div>
 </div>
 <div class="container">
     <form method="get" action="/receipt-menu/issued-list">
@@ -81,7 +88,7 @@
                     </td>
                     <td th:text="${r.partyName}"></td>
                     <td th:text="${r.amountStr}"></td>
-                    <td th:text="${r.issuedAt != null ? #temporals.format(r.issuedAt, 'MM/dd HH:mm') : '-'}"></td>
+                    <td th:text="${r.issuedAt != null ? #temporals.format(r.issuedAt, 'MM/dd HH:mm') : (r.issuedDate != null ? r.issuedDate.toString() : '-')}"></td>
                     <td>
                         <a th:if="${r.receiptType.contains('1-7-1')}"
                            th:href="@{/receipt-menu/customer-receipt/pdf(detailId=${r.salesDetailId})}"

@@ -44,6 +44,9 @@ public class SalesDetail {
     // 備考
     private String remarks;
 
+    // 領収書発行日時
+    private java.time.LocalDateTime issuedAt;
+
     public SalesDetail() {}
 
     public void calculateAmounts() {
@@ -100,4 +103,6 @@ public class SalesDetail {
     public void setReceiptNo(String receiptNo) { this.receiptNo = receiptNo; }
     public String getRemarks() { return remarks; }
     public void setRemarks(String remarks) { this.remarks = remarks; }
+    public java.time.LocalDateTime getIssuedAt() { return issuedAt; }
+    public void setIssuedAt(java.time.LocalDateTime issuedAt) { this.issuedAt = issuedAt; }
 }
