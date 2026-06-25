@@ -45,10 +45,10 @@
         </div>
     </form>
 
-    <div th:if="${selectedMonth != null}">
+    <div th:if="${selectedMonth != null and items != null}">
         <div class="month-label" th:text="${selectedMonth + ' の手数料管理簿'}"></div>
 
-        <table th:if="${not #lists.isEmpty(items)}">
+        <table th:if="${items != null and not #lists.isEmpty(items)}">
             <thead>
                 <tr>
                     <th>No</th>
@@ -77,7 +77,7 @@
             </tbody>
         </table>
 
-        <div class="empty" th:if="${#lists.isEmpty(items)}">
+        <div class="empty" th:if="${items == null or #lists.isEmpty(items)}">
             <span th:text="${selectedMonth + ' の記録はありません。'}"></span>
         </div>
     </div>

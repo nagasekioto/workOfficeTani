@@ -93,7 +93,9 @@ public class ReportMenuController {
         LocalDate monthEnd = ym.atEndOfMonth();
         List<FeeLedgerRow> items = new ArrayList<>();
 
-        for (Sales s : salesRepository.findAll()) {
+        Iterable<Sales> allSales = salesRepository.findAll();
+        for (Sales s : allSales) {
+            if (s.getId() == null) continue;
             List<SalesDetail> details = salesDetailRepository.findBySalesId(s.getId());
             for (SalesDetail d : details) {
                 if (d.getReceiptNo() == null || d.getReceiptNo().isEmpty()) continue;
@@ -188,7 +190,7 @@ public class ReportMenuController {
         // ── ヘッダー行2 ──
         addHdr(table, "年月日",     boldFont, 1, 1);
         addHdr(table, "",           boldFont, 1, 1);
-        addHdr(table, "届出手数料", boldFont, 1, 1);
+        addHdr(table, "届出手数料", boldFont);
         addHdr(table, "",           boldFont, 1, 1);
         addHdr(table, "事務費",     boldFont, 1, 1);
         addHdr(table, "割合",       boldFont, 1, 1);
@@ -272,14 +274,13 @@ public class ReportMenuController {
     }
 
     // ヘッダーセル
-    private void addHdr(PdfPTable t, String text, Font f, int rowspan, int colspan) {
+    private void addHdr(PdfPTable t, String text, Font f) {
         PdfPCell c = new PdfPCell(new Phrase(text, f));
         c.setBorder(Rectangle.BOX);
         c.setHorizontalAlignment(Element.ALIGN_CENTER);
         c.setVerticalAlignment(Element.ALIGN_MIDDLE);
         c.setPadding(3);
-        if (rowspan > 1) c.setRowspan(rowspan);
-        if (colspan > 1) c.setColspan(colspan);
+        c.setFixedHeight(16f);
         t.addCell(c);
     }
 
