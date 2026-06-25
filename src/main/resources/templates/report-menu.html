@@ -19,7 +19,6 @@
         td { padding: 8px; border-bottom: 1px solid #e0e0e0; vertical-align: middle; }
         .empty { text-align: center; padding: 40px; color: #999; }
         .month-label { font-size: 18px; font-weight: bold; color: #4a148c; margin-bottom: 16px; }
-        .error-box { color: red; padding: 10px; background: #fff3f3; border: 1px solid red; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -39,15 +38,11 @@
                 <a th:href="@{/report-menu/pdf(month=${selectedMonth})}" target="_blank"
                    class="pdf-btn" style="background:#4CAF50;">&#128196; 印刷内容確認</a>
                 <button class="pdf-btn" style="background:#1976D2; margin-left:4px;"
-                        type="button"
-                        th:onclick="|printPdf('/report-menu/pdf?month=${selectedMonth}')|">&#128424; 印刷</button>
+                        type="button" id="printBtn"
+                        th:data-month="${selectedMonth}">&#128424; 印刷</button>
             </th:block>
         </div>
     </form>
-
-    <div th:if="${errorMsg != null}" class="error-box">
-        エラー: <span th:text="${errorMsg}">-</span>
-    </div>
 
     <th:block th:if="${selectedMonth != null}">
         <div class="month-label" th:text="${selectedMonth + ' の手数料管理簿'}">-</div>
@@ -89,19 +84,24 @@
     </th:block>
 </div>
 <script>
-function printPdf(url) {
-    var iframe = document.getElementById('printFrame');
-    if (!iframe) {
-        iframe = document.createElement('iframe');
-        iframe.id = 'printFrame';
-        iframe.style.display = 'none';
-        document.body.appendChild(iframe);
-    }
-    iframe.onload = function() {
-        try { iframe.contentWindow.focus(); iframe.contentWindow.print(); }
-        catch(e) { window.open(url, '_blank'); }
-    };
-    iframe.src = url;
+var btn = document.getElementById('printBtn');
+if (btn) {
+    btn.addEventListener('click', function() {
+        var m = this.getAttribute('data-month');
+        var url = '/report-menu/pdf?month=' + m;
+        var iframe = document.getElementById('printFrame');
+        if (!iframe) {
+            iframe = document.createElement('iframe');
+            iframe.id = 'printFrame';
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+        }
+        iframe.onload = function() {
+            try { iframe.contentWindow.focus(); iframe.contentWindow.print(); }
+            catch(e) { window.open(url, '_blank'); }
+        };
+        iframe.src = url;
+    });
 }
 </script>
 </body>
