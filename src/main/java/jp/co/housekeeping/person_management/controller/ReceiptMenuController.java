@@ -73,7 +73,7 @@ public class ReceiptMenuController {
                 for (SalesDetail d : details) {
                     if (d.getCustomerId() == null) continue;
                     if (!d.getCustomerId().equals(c.getId())) continue;
-                    // 手数料有無に関わらず売上入力登録があれば表示
+                    if (d.getReceptionFee() == null || d.getReceptionFee() <= 0) continue;
 
                     ReceiptItem item   = new ReceiptItem();
                     item.customer      = c;
@@ -148,7 +148,7 @@ public class ReceiptMenuController {
 
             List<SalesDetail> details = salesDetailRepository.findBySalesId(s.getId());
             for (SalesDetail d : details) {
-                // 手数料有無に関わらず売上入力登録があれば表示
+                if (d.getReceptionFee() == null || d.getReceptionFee() <= 0) continue;
 
                 JobseekerReceiptItem item = new JobseekerReceiptItem();
                 item.person        = person;
@@ -268,7 +268,7 @@ public class ReceiptMenuController {
                     int tw = d.getMonthlyTotal() != null ? d.getMonthlyTotal() : 0;
                     int commission = (int)(tw * FEE_RATE);
                     int tax = (int)(commission * 0.10);
-                    row.amount = (d.getCustomerFee() != null ? d.getCustomerFee() : 1000) + commission + tax;
+                    row.amount = (d.getCustomerFee() != null ? d.getCustomerFee() : 0) + commission + tax;
                 } else {
                     row.amount = d.getReceptionFee() != null ? d.getReceptionFee() : 0;
                 }
@@ -452,7 +452,7 @@ public class ReceiptMenuController {
 
         // ── ④ 金額算定 ───────────────────────────────────────
         int totalWage      = detail.getMonthlyTotal() != null ? detail.getMonthlyTotal() : 0;
-        int customerFee    = detail.getCustomerFee()  != null ? detail.getCustomerFee()  : 1000;
+        int customerFee    = detail.getCustomerFee()  != null ? detail.getCustomerFee()  : 0;
         int commission     = (int)(totalWage * FEE_RATE);
         int consumptionTax = (int)(commission * 0.10);
         int grandTotal     = customerFee + commission + consumptionTax;
@@ -669,7 +669,7 @@ public class ReceiptMenuController {
 
         // ②：求人受付手数料
         addFeeRow(feeTable, normalFont, boldFont, FEE_ROW_H,
-            "求人受付手数料（求人1件につき1回）", "②", String.format("%,d 円", customerFee));
+            "求人受付手数料（求人1件につき1回）", "②", customerFee > 0 ? String.format("%,d 円", customerFee) : "");
 
         // ③：紹介手数料
         addFeeRow(feeTable, normalFont, boldFont, FEE_ROW_H,
