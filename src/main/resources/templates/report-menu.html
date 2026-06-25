@@ -54,12 +54,13 @@
                         <th>No</th>
                         <th>領収年月日</th>
                         <th>支払者名</th>
+                        <th>賃金</th>
                         <th>手数料※1<br>届出手数料③</th>
                         <th>手数料※2<br>消費税④</th>
                         <th>求人受付事務費②</th>
                         <th>手数料割合</th>
                         <th>備考（領収番号）</th>
-                        <th>日雇1ヶ月①</th>
+                        <th>日雇1ヶ月</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -67,6 +68,7 @@
                         <td th:text="${stat.count}">-</td>
                         <td th:text="${item.receiptDate}">-</td>
                         <td th:text="${item.customerName}">-</td>
+                        <td th:text="${item.wageStr}">-</td>
                         <td th:text="${item.commissionStr}">-</td>
                         <td th:text="${item.taxStr}">-</td>
                         <td th:text="${item.customerFeeStr}">-</td>
