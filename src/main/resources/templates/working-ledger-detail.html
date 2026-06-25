@@ -76,7 +76,6 @@
                     <th>紹介年月日</th>
                     <th>求人者</th>
                     <th>時給（日給）</th>
-                    <th>時給（残業）</th>
                     <th>日給①</th>
                     <th>日給②</th>
                     <th>日給③</th>
@@ -99,7 +98,6 @@
                     <td th:text="${row.detail.introductionDate}">-</td>
                     <td th:text="${row.customerName}">-</td>
                     <td th:text="${row.hourlyWageStr}">-</td>
-                    <td th:text="${row.hourlyWageOTStr}">-</td>
 
                     <!-- 日給（最大5枠） -->
                     <td th:text="${row.dailyWageStrs.length > 0 ? row.dailyWageStrs[0] : '-'}" class="daily-cell">-</td>
