@@ -140,7 +140,10 @@ public class ReceiptMenuController {
     public String jobseekerReceipt(HttpSession session, Model model) {
         if (session.getAttribute("authenticated") == null) return "redirect:/login";
 
-        List<JobseekerReceiptItem> items = new ArrayList<>();
+        // 求職者×年月 でグループ化（最大3件まとめて1領収書）
+        // キー: personId_year_month
+        java.util.Map<String, JobseekerReceiptItem> groupMap = new java.util.LinkedHashMap<>();
+
         for (Sales s : salesRepository.findAll()) {
             if (s.getPersonId() == null) continue;
             Person person = personRepository.findById(s.getPersonId()).orElse(null);
@@ -150,14 +153,34 @@ public class ReceiptMenuController {
             for (SalesDetail d : details) {
                 if (d.getReceptionFee() == null || d.getReceptionFee() <= 0) continue;
 
-                JobseekerReceiptItem item = new JobseekerReceiptItem();
-                item.person        = person;
-                item.detail        = d;
-                item.salesId       = s.getId();
-                item.issued        = d.getReceiptNo() != null && !d.getReceiptNo().isEmpty();
-                item.receiptNumber = item.issued ? d.getReceiptNo() : "";
-                items.add(item);
+                LocalDate iDate = d.getIntroductionDate();
+                if (iDate == null) iDate = LocalDate.now();
+                String key = s.getPersonId() + "_" + iDate.getYear() + "_" + iDate.getMonthValue();
+
+                if (!groupMap.containsKey(key)) {
+                    JobseekerReceiptItem item = new JobseekerReceiptItem();
+                    item.person      = person;
+                    item.detail      = d;  // 代表レコード
+                    item.groupDetails = new ArrayList<>();
+                    item.salesId     = s.getId();
+                    groupMap.put(key, item);
+                }
+                JobseekerReceiptItem item = groupMap.get(key);
+                if (item.groupDetails.size() < 3) {
+                    item.groupDetails.add(d);
+                }
             }
+        }
+
+        // グループ情報を集計
+        List<JobseekerReceiptItem> items = new ArrayList<>();
+        for (JobseekerReceiptItem item : groupMap.values()) {
+            item.groupCount = item.groupDetails.size();
+            item.totalFee   = 710 * item.groupCount;
+            // 発行状態は代表レコードで判定
+            item.issued        = item.detail.getReceiptNo() != null && !item.detail.getReceiptNo().isEmpty();
+            item.receiptNumber = item.issued ? item.detail.getReceiptNo() : "";
+            items.add(item);
         }
         model.addAttribute("items", items);
         return "receipt-jobseeker-list";
@@ -181,7 +204,22 @@ public class ReceiptMenuController {
         if (sales != null && sales.getPersonId() != null)
             person = personRepository.findById(sales.getPersonId()).orElse(null);
 
-        // 領収番号
+        // グループ（同求職者×同年月）のdetailを全取得（最大3件）
+        LocalDate repDate = detail.getIntroductionDate() != null ? detail.getIntroductionDate() : LocalDate.now();
+        List<SalesDetail> groupDetails = new ArrayList<>();
+        if (detail.getSalesId() != null) {
+            for (SalesDetail d : salesDetailRepository.findBySalesId(detail.getSalesId())) {
+                if (d.getReceptionFee() == null || d.getReceptionFee() <= 0) continue;
+                LocalDate dd = d.getIntroductionDate() != null ? d.getIntroductionDate() : LocalDate.now();
+                if (dd.getYear() == repDate.getYear() && dd.getMonthValue() == repDate.getMonthValue()) {
+                    groupDetails.add(d);
+                    if (groupDetails.size() >= 3) break;
+                }
+            }
+        }
+        if (groupDetails.isEmpty()) groupDetails.add(detail);
+
+        // 領収番号（代表レコードに付番）
         String receiptNo = detail.getReceiptNo();
         if (receiptNo == null || receiptNo.isEmpty()) {
             int nextNo = salesDetailRepository.findMaxReceiptNo() + 1;
@@ -195,7 +233,7 @@ public class ReceiptMenuController {
         }
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        createJobseekerReceiptPdf(detail, person, receiptNo, baos);
+        createJobseekerReceiptPdf(detail, groupDetails, person, receiptNo, baos);
 
         response.setContentType("application/pdf");
         response.setHeader("Content-Disposition", "inline; filename=jobseeker-receipt.pdf");
@@ -379,7 +417,7 @@ public class ReceiptMenuController {
                 } else {
                     Person person = s.getPersonId() != null
                         ? personRepository.findById(s.getPersonId()).orElse(null) : null;
-                    createJobseekerReceiptPdf(d, person, d.getReceiptNo(), baos);
+                    createJobseekerReceiptPdf(d, java.util.Collections.singletonList(d), person, d.getReceiptNo(), baos);
                     String name = person != null
                         ? (person.getLastNameKanji() + person.getFirstNameKanji()).replaceAll("[/:*?<>|]", "_")
                         : "不明";
@@ -669,7 +707,7 @@ public class ReceiptMenuController {
 
         // ②：求人受付手数料
         addFeeRow(feeTable, normalFont, boldFont, FEE_ROW_H,
-            "求人受付手数料（求人1件につき1回）", "②", customerFee > 0 ? String.format("%,d 円", customerFee) : "");
+            "求人受付手数料（求人1件につき1回）", "②", String.format("%,d 円", customerFee));
 
         // ③：紹介手数料
         addFeeRow(feeTable, normalFont, boldFont, FEE_ROW_H,
@@ -723,7 +761,7 @@ public class ReceiptMenuController {
     //  1-7-2  求職受付手数料領収書 PDF生成
     //  PDFレイアウト参照：求職受付手数料領収書.pdf
     // ═══════════════════════════════════════════════════════════
-    private void createJobseekerReceiptPdf(SalesDetail detail, Person person,
+    private void createJobseekerReceiptPdf(SalesDetail detail, List<SalesDetail> groupDetails, Person person,
                                             String receiptNo, ByteArrayOutputStream baos)
             throws DocumentException, IOException {
 
@@ -826,37 +864,24 @@ public class ReceiptMenuController {
         desc.setSpacingAfter(10);
         doc.add(desc);
 
-        // ── ⑤ 受付月日テーブル ──────────────────────────────────
-        // 構成:
-        //  ヘッダー行: [受付月日(横)] [年] [月] [日] [スペーサー] [合計] [金額]
-        //  データ行1:  [空           ] [年] [月] [日] [スペーサー] [空  ] [空  ]
-        //  データ行2:  [空           ] [年] [月] [日] [スペーサー] [空  ] [空  ]
-        //  データ行3:  [空           ] [年] [月] [日] [スペーサー] [空  ] [空  ]
-        LocalDate introDate = detail.getIntroductionDate();
-        int receptionFee = detail.getReceptionFee() != null ? detail.getReceptionFee() : 710;
-
-        int yr1 = introDate != null ? introDate.getYear()       : 0;
-        int mo1 = introDate != null ? introDate.getMonthValue() : 0;
-        int dy1 = introDate != null ? introDate.getDayOfMonth() : 0;
+        // ── ⑤ 受付月日テーブル（グループ最大3件）──────────────────
+        // 行構成: ヘッダー(年/月/日) + データ3行、最下行に合計
+        int totalFee = 710 * (groupDetails != null && !groupDetails.isEmpty() ? groupDetails.size() : 1);
 
         final float ROW_H2 = 30f;
-        // 列: [受付月日 rowspan=4] [年] [月] [日] [スペーサー] [合計] [金額]
-        // 受付月日はrowspan=4（ヘッダー1行＋データ3行）
         PdfPTable dateTable = new PdfPTable(new float[]{2f, 1.4f, 0.9f, 0.9f, 0.3f, 1.2f, 2f});
         dateTable.setWidthPercentage(100);
         dateTable.setSpacingBefore(10);
 
-        // col0: 「受付月日」4行結合 - Paragraphで中央揃え
+        // col0: 「受付月日」4行結合
         PdfPCell rcLabel = new PdfPCell();
         rcLabel.setBorder(Rectangle.BOX);
         rcLabel.setRowspan(4);
         rcLabel.setVerticalAlignment(Element.ALIGN_MIDDLE);
         rcLabel.setHorizontalAlignment(Element.ALIGN_CENTER);
-        // Paragraphでテキストのalignmentを明示的に設定
         Paragraph rcP = new Paragraph("受付月日", boldFont);
         rcP.setAlignment(Element.ALIGN_CENTER);
         rcLabel.addElement(rcP);
-        // useAscenderで垂直中央が効くようにする
         rcLabel.setUseAscender(true);
         rcLabel.setUseDescender(true);
         dateTable.addCell(rcLabel);
@@ -869,28 +894,31 @@ public class ReceiptMenuController {
         PdfPCell hD = cell("日", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
         hD.setVerticalAlignment(Element.ALIGN_MIDDLE); dateTable.addCell(hD);
         PdfPCell hSp = cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT);
-        hSp.setColspan(3);
-        dateTable.addCell(hSp);
+        hSp.setColspan(3); dateTable.addCell(hSp);
 
-        // データ行1（1件目：紹介年月日を初期値に）
-        String[][] dataRows = {
-            {yr1 > 0 ? String.valueOf(yr1) : "", mo1 > 0 ? String.valueOf(mo1) : "", dy1 > 0 ? String.valueOf(dy1) : ""},
-            {"", "", ""},
-            {"", "", ""}
-        };
+        // データ行3行（グループ件数分だけ日付を埋める、残りは空欄）
         for (int i = 0; i < 3; i++) {
-            PdfPCell cy = cell(dataRows[i][0], normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
+            String yr = "", mo = "", dy = "";
+            if (groupDetails != null && i < groupDetails.size()) {
+                LocalDate d2 = groupDetails.get(i).getIntroductionDate();
+                if (d2 != null) {
+                    yr = String.valueOf(d2.getYear());
+                    mo = String.valueOf(d2.getMonthValue());
+                    dy = String.valueOf(d2.getDayOfMonth());
+                }
+            }
+            PdfPCell cy = cell(yr, normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
             cy.setFixedHeight(ROW_H2); cy.setVerticalAlignment(Element.ALIGN_MIDDLE); dateTable.addCell(cy);
-            PdfPCell cm = cell(dataRows[i][1], normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
+            PdfPCell cm = cell(mo, normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
             cm.setFixedHeight(ROW_H2); cm.setVerticalAlignment(Element.ALIGN_MIDDLE); dateTable.addCell(cm);
-            PdfPCell cd = cell(dataRows[i][2], normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
+            PdfPCell cd = cell(dy, normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
             cd.setFixedHeight(ROW_H2); cd.setVerticalAlignment(Element.ALIGN_MIDDLE); dateTable.addCell(cd);
             if (i == 2) {
-                // 最下行：合計を右側に（中央揃え）
+                // 最下行：合計を右側に
                 dateTable.addCell(cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT));
                 PdfPCell gLabel = cell("合計", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
                 gLabel.setVerticalAlignment(Element.ALIGN_MIDDLE); dateTable.addCell(gLabel);
-                PdfPCell gAmt = cell(String.format("%,d　円", receptionFee), boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
+                PdfPCell gAmt = cell(String.format("%,d　円", totalFee), boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
                 gAmt.setVerticalAlignment(Element.ALIGN_MIDDLE); dateTable.addCell(gAmt);
             } else {
                 PdfPCell sp = cell("", normalFont, Rectangle.NO_BORDER, Element.ALIGN_LEFT);
@@ -971,11 +999,14 @@ public class ReceiptMenuController {
 
     // ─── 内部クラス ────────────────────────────────────────────
     public static class JobseekerReceiptItem {
-        public Person      person;
-        public SalesDetail detail;
-        public Long        salesId;
-        public boolean     issued;
-        public String      receiptNumber;
+        public Person             person;
+        public SalesDetail        detail;       // 代表レコード（領収番号管理用）
+        public List<SalesDetail>  groupDetails; // グループ内の全明細（最大3件）
+        public Long               salesId;
+        public boolean            issued;
+        public String             receiptNumber;
+        public int                groupCount;   // グループ件数
+        public int                totalFee;     // 710×件数
     }
 
     public static class ReceiptItem {

@@ -36,8 +36,8 @@
         <thead>
             <tr>
                 <th>求職者</th>
-                <th>紹介年月日</th>
-                <th>受付手数料</th>
+                <th>紹介年月日（最大3件）</th>
+                <th>受付手数料（合計）</th>
                 <th>領収番号</th>
                 <th>状態</th>
                 <th>操作</th>
@@ -46,8 +46,12 @@
         <tbody>
             <tr th:each="item : ${items}">
                 <td th:text="${item.person.lastNameKanji + ' ' + item.person.firstNameKanji}"></td>
-                <td th:text="${item.detail.introductionDate}"></td>
-                <td th:text="${item.detail.receptionFee != null ? item.detail.receptionFee + '円' : '-'}"></td>
+                <td>
+                    <span th:each="d,iter : ${item.groupDetails}">
+                        <span th:text="${d.introductionDate}"></span><br th:if="${!iter.last}">
+                    </span>
+                </td>
+                <td th:text="${item.totalFee + '円（' + item.groupCount + '件）'}"></td>
                 <td>
                     <span th:if="${item.issued}" class="receipt-no" th:text="${item.receiptNumber}"></span>
                     <span th:unless="${item.issued}">未発行</span>
