@@ -60,6 +60,8 @@
                     <span th:unless="${item.issued}" class="badge badge-pending">未発行</span>
                 </td>
                 <td>
+                    <button class="pdf-btn" style="background:#1976D2;"
+                        th:onclick="|printPdf('/receipt-menu/customer-receipt/pdf?detailId=' + ${item.detail.id})|">&#128424; 印刷</button>
                     <form th:if="${item.issued}" th:action="@{/receipt-menu/customer-receipt/reset}" method="post"
                           style="display:inline;" onsubmit="return confirm('領収番号をリセットしますか？')">
                         <input type="hidden" name="detailId" th:value="${item.detail.id}">
@@ -75,5 +77,25 @@
         売上入力で「求人受付手数料」にチェックを入れて保存してください。
     </div>
 </div>
+<script>
+function printPdf(url) {
+    var iframe = document.getElementById('printFrame');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'printFrame';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+    }
+    iframe.onload = function() {
+        try {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+        } catch(e) {
+            window.open(url, '_blank');
+        }
+    };
+    iframe.src = url;
+}
+</script>
 </body>
 </html>
