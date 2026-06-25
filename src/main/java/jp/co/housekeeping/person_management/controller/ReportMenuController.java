@@ -263,15 +263,17 @@ public class ReportMenuController {
         return c;
     }
 
-    // rowspan=2ヘッダーセル（支払者名・賃金・手数料※2・備考）
+    // rowspan=2ヘッダーセル（支払者名・賃金・手数料※2・備考）- 下辺も二重線
     private PdfPCell hdrSpan(String text, Font f) {
         PdfPCell c = new PdfPCell(new Phrase(text, f));
         c.setRowspan(2);
-        c.setBorder(Rectangle.BOX);
-        c.setBorderWidth(0.5f);
         c.setHorizontalAlignment(Element.ALIGN_CENTER);
         c.setVerticalAlignment(Element.ALIGN_MIDDLE);
         c.setPadding(3);
+        c.setBorderWidthTop(0.5f);
+        c.setBorderWidthLeft(0.5f);
+        c.setBorderWidthRight(0.5f);
+        c.setBorderWidthBottom(2.5f);  // 下辺を二重線（太線）
         return c;
     }
 
