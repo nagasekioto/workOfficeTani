@@ -122,11 +122,13 @@ public class ReportMenuController {
             if (s.getId() == null) continue;
             for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {
                 if (d.getReceiptNo() == null || d.getReceiptNo().isEmpty()) continue;
-                // 就労期間の月で判定（workEndDate優先→workStartDate）
+
+                // 紹介日→就労終了日→就労開始日→発行日 の優先順で月判定
                 LocalDate rd = null;
-                if (d.getWorkEndDate()   != null) rd = d.getWorkEndDate();
-                else if (d.getWorkStartDate() != null) rd = d.getWorkStartDate();
-                else if (d.getIssuedAt() != null) rd = d.getIssuedAt().toLocalDate();
+                if      (d.getIntroductionDate() != null) rd = d.getIntroductionDate();
+                else if (d.getWorkEndDate()       != null) rd = d.getWorkEndDate();
+                else if (d.getWorkStartDate()     != null) rd = d.getWorkStartDate();
+                else if (d.getIssuedAt()          != null) rd = d.getIssuedAt().toLocalDate();
                 if (rd == null) continue;
                 if (rd.getYear() != ym.getYear() || rd.getMonthValue() != ym.getMonthValue()) continue;
 
