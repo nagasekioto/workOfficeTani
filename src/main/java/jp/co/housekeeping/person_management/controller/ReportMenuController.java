@@ -171,11 +171,25 @@ public class ReportMenuController {
         t.setWidthPercentage(100);
         t.setSpacingBefore(4);
 
-        // ── ヘッダー2行 ──
-        String[] h1 = {"領収","支払者名","賃金","手数料※1","手数料※2","求人受付","手数料","備考","日雇","臨時"};
-        String[] h2 = {"年月日","","","届出手数料","","事務費","割合","","1ヶ月","3ヶ月"};
-        for (String s : h1) t.addCell(hdr(s, bold));
-        for (String s : h2) t.addCell(hdr(s, bold));
+        // ── ヘッダー（rowspan/二重線対応） ──
+        // 行1: 領収 | 支払者名(rs2) | 賃金(rs2) | 手数料※1 | 手数料※2(rs2) | 求人受付 | 手数料 | 備考(rs2) | 日雇 | 臨時
+        t.addCell(hdr("領収",      bold, false));   // 行1のみ
+        t.addCell(hdrSpan("支払者名", bold));         // rowspan=2
+        t.addCell(hdrSpan("賃金",    bold));          // rowspan=2
+        t.addCell(hdr("手数料※1",  bold, false));
+        t.addCell(hdrSpan("手数料※2", bold));        // rowspan=2
+        t.addCell(hdr("求人受付",   bold, false));
+        t.addCell(hdr("手数料",     bold, false));
+        t.addCell(hdrSpan("備考",   bold));           // rowspan=2
+        t.addCell(hdr("日雇",       bold, false));
+        t.addCell(hdr("臨時",       bold, false));
+        // 行2: 年月日 | (skip) | (skip) | 届出手数料 | (skip) | 事務費 | 割合 | (skip) | 1ヶ月 | 3ヶ月
+        t.addCell(hdr("年月日",     bold, true));     // 二重下線
+        t.addCell(hdr("届出手数料", bold, true));
+        t.addCell(hdr("事務費",     bold, true));
+        t.addCell(hdr("割合",       bold, true));
+        t.addCell(hdr("1ヶ月",      bold, true));
+        t.addCell(hdr("3ヶ月",      bold, true));
 
         // ── データ行（空行なし・データ分のみ） ──
         int sw=0, sc=0, st=0, sf=0, sd=0;
@@ -229,14 +243,35 @@ public class ReportMenuController {
         return c;
     }
 
-    // ヘッダーセル
-    private PdfPCell hdr(String text, Font f) {
+    // ヘッダーセル（doubleBottom=trueで下二重線）
+    private PdfPCell hdr(String text, Font f, boolean doubleBottom) {
         PdfPCell c = new PdfPCell(new Phrase(text, f));
-        c.setBorder(Rectangle.BOX);
         c.setHorizontalAlignment(Element.ALIGN_CENTER);
         c.setVerticalAlignment(Element.ALIGN_MIDDLE);
         c.setPadding(3);
         c.setFixedHeight(16f);
+        if (doubleBottom) {
+            // 上・左・右は通常線、下は二重線（太線で代替）
+            c.setBorderWidthTop(0.5f);
+            c.setBorderWidthLeft(0.5f);
+            c.setBorderWidthRight(0.5f);
+            c.setBorderWidthBottom(2.5f);  // 太線で二重線を表現
+        } else {
+            c.setBorder(Rectangle.BOX);
+            c.setBorderWidth(0.5f);
+        }
+        return c;
+    }
+
+    // rowspan=2ヘッダーセル（支払者名・賃金・手数料※2・備考）
+    private PdfPCell hdrSpan(String text, Font f) {
+        PdfPCell c = new PdfPCell(new Phrase(text, f));
+        c.setRowspan(2);
+        c.setBorder(Rectangle.BOX);
+        c.setBorderWidth(0.5f);
+        c.setHorizontalAlignment(Element.ALIGN_CENTER);
+        c.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        c.setPadding(3);
         return c;
     }
 
