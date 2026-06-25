@@ -47,9 +47,6 @@ public class SalesDetail {
     // 領収書発行日時
     private java.time.LocalDateTime issuedAt;
 
-    // 日雇1ヶ月（手入力）
-    private Integer dailyWage1Month;
-
     public SalesDetail() {}
 
     public void calculateAmounts() {
@@ -108,6 +105,4 @@ public class SalesDetail {
     public void setRemarks(String remarks) { this.remarks = remarks; }
     public java.time.LocalDateTime getIssuedAt() { return issuedAt; }
     public void setIssuedAt(java.time.LocalDateTime issuedAt) { this.issuedAt = issuedAt; }
-    public Integer getDailyWage1Month() { return dailyWage1Month; }
-    public void setDailyWage1Month(Integer dailyWage1Month) { this.dailyWage1Month = dailyWage1Month; }
 }

@@ -41,6 +41,7 @@ import jp.co.housekeeping.person_management.model.SalesDetail;
 import jp.co.housekeeping.person_management.repository.CustomerRepository;
 import jp.co.housekeeping.person_management.repository.SalesDetailRepository;
 import jp.co.housekeeping.person_management.repository.SalesRepository;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @Controller
 @RequestMapping("/report-menu")
@@ -49,6 +50,7 @@ public class ReportMenuController {
     @Autowired private SalesDetailRepository salesDetailRepository;
     @Autowired private SalesRepository       salesRepository;
     @Autowired private CustomerRepository    customerRepository;
+    @Autowired private JdbcTemplate          jdbcTemplate;
 
     private static final double FEE_RATE = 0.15;
 
@@ -85,12 +87,10 @@ public class ReportMenuController {
                 try {
                     Long detailId = Long.parseLong(key.substring(3));
                     int val = value == null || value.isBlank() ? 0 : Integer.parseInt(value.trim());
-                    SalesDetail d = salesDetailRepository.findById(detailId).orElse(null);
-                    if (d != null) {
-                        d.setDailyWage1Month(val);
-                        salesDetailRepository.save(d);
-                    }
-                } catch (NumberFormatException ignored) {}
+                    jdbcTemplate.update(
+                        "UPDATE sales_details SET daily_wage_1month = ? WHERE id = ?",
+                        val, detailId);
+                } catch (Exception ignored) {}
             }
         });
         return "redirect:/report-menu?month=" + (month != null ? month : "");
@@ -142,8 +142,12 @@ public class ReportMenuController {
                 int comm   = (int)(wage * FEE_RATE);
                 int tax    = (int)(comm * 0.10);
                 int dw1m = 0;
-                try { dw1m = d.getDailyWage1Month() != null ? d.getDailyWage1Month() : 0; }
-                catch (Exception ignored) {}
+                try {
+                    Integer fetched = jdbcTemplate.queryForObject(
+                        "SELECT daily_wage_1month FROM sales_details WHERE id = ?",
+                        Integer.class, d.getId());
+                    if (fetched != null) dw1m = fetched;
+                } catch (Exception ignored) {}
 
                 FeeLedgerRow row = new FeeLedgerRow();
                 row.detailId       = d.getId();
