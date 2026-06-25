@@ -177,26 +177,26 @@ public class ReportMenuController {
         table.setSpacingBefore(2);
 
         // ── ヘッダー行1 ──
-        addHdr(table, "領収",       boldFont, 1, 1);
-        addHdr(table, "",           boldFont, 1, 1);  // 支払者名（列名なし）
-        addHdr(table, "手数料※1",  boldFont, 1, 1);
-        addHdr(table, "手数料※2",  boldFont, 1, 1);
-        addHdr(table, "求人受付",   boldFont, 1, 1);
-        addHdr(table, "手数料",     boldFont, 1, 1);
-        addHdr(table, "備考",       boldFont, 1, 1);
-        addHdr(table, "日雇",       boldFont, 1, 1);
-        addHdr(table, "臨時",       boldFont, 1, 1);
+        addHdr(table, "領収", boldFont);
+        addHdr(table, "", boldFont);  // 支払者名（列名なし）
+        addHdr(table, "手数料※1", boldFont);
+        addHdr(table, "手数料※2", boldFont);
+        addHdr(table, "求人受付", boldFont);
+        addHdr(table, "手数料", boldFont);
+        addHdr(table, "備考", boldFont);
+        addHdr(table, "日雇", boldFont);
+        addHdr(table, "臨時", boldFont);
 
         // ── ヘッダー行2 ──
-        addHdr(table, "年月日",     boldFont, 1, 1);
-        addHdr(table, "",           boldFont, 1, 1);
+        addHdr(table, "年月日", boldFont);
+        addHdr(table, "", boldFont);
         addHdr(table, "届出手数料", boldFont);
-        addHdr(table, "",           boldFont, 1, 1);
-        addHdr(table, "事務費",     boldFont, 1, 1);
-        addHdr(table, "割合",       boldFont, 1, 1);
-        addHdr(table, "",           boldFont, 1, 1);
-        addHdr(table, "1ヶ月",      boldFont, 1, 1);
-        addHdr(table, "3ヶ月",      boldFont, 1, 1);
+        addHdr(table, "", boldFont);
+        addHdr(table, "事務費", boldFont);
+        addHdr(table, "割合", boldFont);
+        addHdr(table, "", boldFont);
+        addHdr(table, "1ヶ月", boldFont);
+        addHdr(table, "3ヶ月", boldFont);
 
         // ── データ行（30行固定）──
         String lastDate = "";
