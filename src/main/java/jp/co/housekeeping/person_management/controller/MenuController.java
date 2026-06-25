@@ -31,9 +31,5 @@ public class MenuController {
         return "register-menu";
     }
 
-    @GetMapping("/report-menu")
-    public String reportMenu(HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
-        return "person-report";
-    }
+
 }
