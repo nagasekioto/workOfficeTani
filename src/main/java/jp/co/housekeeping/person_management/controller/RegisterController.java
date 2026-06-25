@@ -234,9 +234,13 @@ public class RegisterController {
             List<Sales> salesList = salesRepository.findByPersonId(personId);
             for (Sales s : salesList) {
                 for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {
-                    LocalDate endDate = d.getWorkEndDate() != null ? d.getWorkEndDate() : d.getWorkStartDate();
-                    if (endDate == null) continue;
-                    if (!YearMonth.from(endDate).equals(ym)) continue;
+                    // 就労終了日→就労開始日→紹介日 の優先順で月判定
+                    LocalDate refDate = null;
+                    if      (d.getWorkEndDate()      != null) refDate = d.getWorkEndDate();
+                    else if (d.getWorkStartDate()    != null) refDate = d.getWorkStartDate();
+                    else if (d.getIntroductionDate() != null) refDate = d.getIntroductionDate();
+                    if (refDate == null) continue;
+                    if (!YearMonth.from(refDate).equals(ym)) continue;
                     ledgerTotal += d.getMonthlyTotal() != null ? d.getMonthlyTotal() : 0;
                 }
             }
