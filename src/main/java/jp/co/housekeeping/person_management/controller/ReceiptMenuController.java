@@ -588,12 +588,22 @@ public class ReceiptMenuController {
         kinCell.addElement(kinP);
         wageTable.addCell(kinCell);
 
-        // ── 行1: 就労日数 ────────────────────────────────────────
-        PdfPCell period2 = cell("就 労 日 数", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
+        // ── 行1: 就労期間 ────────────────────────────────────────
+        PdfPCell period2 = cell("就 労 期 間", boldFont, Rectangle.BOX, Element.ALIGN_CENTER);
         period2.setColspan(3); period2.setFixedHeight(ROW_H);
         wageTable.addCell(period2);
+        // 月初〜月末の範囲文字列を生成
+        String periodRangeStr = "";
+        if (startDate != null) {
+            int periodMonth = startDate.getMonthValue();
+            int lastDay = startDate.withDayOfMonth(startDate.lengthOfMonth()).getDayOfMonth();
+            periodRangeStr = periodMonth + "月1日〜" + periodMonth + "月" + lastDay + "日";
+        }
         String workDaysStr = workDays > 0 ? workDays + " 日" : "－";
-        PdfPCell period3 = cell(workDaysStr, normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
+        String periodCellStr = periodRangeStr.isEmpty()
+            ? workDaysStr
+            : periodRangeStr + "　" + workDaysStr;
+        PdfPCell period3 = cell(periodCellStr, normalFont, Rectangle.BOX, Element.ALIGN_CENTER);
         period3.setColspan(2); period3.setFixedHeight(ROW_H);
         wageTable.addCell(period3);
 
@@ -663,11 +673,11 @@ public class ReceiptMenuController {
 
         // ③：紹介手数料
         addFeeRow(feeTable, normalFont, boldFont, FEE_ROW_H,
-            "紹介手数料（賃金総額①×15% ※円未満切り捨て）", "③", String.format("%,d 円", commission));
+            "紹介手数料（賃金総額①×15% ※円未満切り捨て）　税抜き", "③", String.format("%,d 円", commission));
 
         // ④：消費税
         addFeeRow(feeTable, normalFont, boldFont, FEE_ROW_H,
-            "消費税（10%）", "④", String.format("%,d 円", consumptionTax));
+            "消費税額（10%）", "④", String.format("%,d 円", consumptionTax));
 
         // 手数料合計額
         PdfPCell feeTotalLabel = cell("手数料合計額　（②＋③＋④）", boldFont, Rectangle.BOX, Element.ALIGN_LEFT);

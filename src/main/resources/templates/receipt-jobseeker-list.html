@@ -58,6 +58,8 @@
                 </td>
                 <td>
                     <a th:href="@{/receipt-menu/jobseeker-receipt/pdf(detailId=${item.detail.id})}" target="_blank" class="pdf-btn">&#128196; PDF出力</a>
+                    <button class="pdf-btn" style="background:#1976D2;margin-left:4px;"
+                        th:onclick="|printPdf('/receipt-menu/jobseeker-receipt/pdf?detailId=' + ${item.detail.id})|">&#128424; 印刷</button>
                     <form th:if="${item.issued}" th:action="@{/receipt-menu/jobseeker-receipt/reset}" method="post"
                           style="display:inline;" onsubmit="return confirm('領収番号をリセットしますか？')">
                         <input type="hidden" name="detailId" th:value="${item.detail.id}">
@@ -73,5 +75,25 @@
         売上入力で「受付料」にチェックを入れて保存してください。
     </div>
 </div>
+<script>
+function printPdf(url) {
+    var iframe = document.getElementById('printFrame');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'printFrame';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+    }
+    iframe.onload = function() {
+        try {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+        } catch(e) {
+            window.open(url, '_blank');
+        }
+    };
+    iframe.src = url;
+}
+</script>
 </body>
 </html>
