@@ -9,14 +9,17 @@
         h1 { margin: 0; color: #333; }
         .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
         .container { max-width: 1300px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .filter-row { display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px; }
+        .filter-row { display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap; }
         .filter-row label { font-weight: bold; color: #555; font-size: 14px; display: block; margin-bottom: 4px; }
         .filter-row input[type=month] { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
         .filter-btn { background: #7B1FA2; color: white; border: none; border-radius: 4px; padding: 9px 20px; cursor: pointer; font-size: 14px; }
-        .pdf-btn { color: white; border: none; border-radius: 4px; padding: 6px 14px; cursor: pointer; font-size: 13px; text-decoration: none; display: inline-block; }
+        .save-btn  { background: #E65100; color: white; border: none; border-radius: 4px; padding: 9px 20px; cursor: pointer; font-size: 14px; }
+        .pdf-btn   { color: white; border: none; border-radius: 4px; padding: 6px 14px; cursor: pointer; font-size: 13px; text-decoration: none; display: inline-block; }
         table { width: 100%; border-collapse: collapse; font-size: 13px; }
         th { background: #7B1FA2; color: white; padding: 8px; text-align: center; }
-        td { padding: 8px; border-bottom: 1px solid #e0e0e0; vertical-align: middle; }
+        td { padding: 6px 8px; border-bottom: 1px solid #e0e0e0; vertical-align: middle; text-align: center; }
+        td.num { text-align: right; }
+        .dw-input { width: 80px; padding: 4px 6px; border: 1px solid #bbb; border-radius: 3px; text-align: right; font-size: 13px; }
         .empty { text-align: center; padding: 40px; color: #999; }
         .month-label { font-size: 18px; font-weight: bold; color: #4a148c; margin-bottom: 16px; }
     </style>
@@ -48,36 +51,48 @@
         <div class="month-label" th:text="${selectedMonth + ' の手数料管理簿'}">-</div>
 
         <th:block th:if="${items != null and not #lists.isEmpty(items)}">
-            <table>
-                <thead>
-                    <tr>
-                        <th>No</th>
-                        <th>領収年月日</th>
-                        <th>支払者名</th>
-                        <th>賃金</th>
-                        <th>手数料※1<br>届出手数料③</th>
-                        <th>手数料※2<br>消費税④</th>
-                        <th>求人受付事務費②</th>
-                        <th>手数料割合</th>
-                        <th>備考（領収番号）</th>
-                        <th>日雇1ヶ月</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr th:each="item, stat : ${items}">
-                        <td th:text="${stat.count}">-</td>
-                        <td th:text="${item.receiptDate}">-</td>
-                        <td th:text="${item.customerName}">-</td>
-                        <td th:text="${item.wageStr}">-</td>
-                        <td th:text="${item.commissionStr}">-</td>
-                        <td th:text="${item.taxStr}">-</td>
-                        <td th:text="${item.customerFeeStr}">-</td>
-                        <td>15%</td>
-                        <td th:text="${item.receiptNo}">-</td>
-                        <td th:text="${item.dailyWageStr}">-</td>
-                    </tr>
-                </tbody>
-            </table>
+            <form method="post" action="/report-menu/save-daily-wage">
+                <input type="hidden" name="month" th:value="${selectedMonth}">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>領収年月日</th>
+                            <th>支払者名</th>
+                            <th>賃金</th>
+                            <th>手数料※1<br>届出手数料③</th>
+                            <th>手数料※2<br>消費税④</th>
+                            <th>求人受付事務費②</th>
+                            <th>手数料割合</th>
+                            <th>備考（領収番号）</th>
+                            <th>日雇1ヶ月<br><small>（手入力）</small></th>
+                            <th>臨時3ヶ月</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="item, stat : ${items}">
+                            <td th:text="${stat.count}">-</td>
+                            <td th:text="${item.receiptDate}">-</td>
+                            <td th:text="${item.customerName}">-</td>
+                            <td class="num" th:text="${item.wageStr}">-</td>
+                            <td class="num" th:text="${item.commissionStr}">-</td>
+                            <td class="num" th:text="${item.taxStr}">-</td>
+                            <td class="num" th:text="${item.customerFeeStr}">-</td>
+                            <td>15%</td>
+                            <td th:text="${item.receiptNo}">-</td>
+                            <td>
+                                <input type="number" class="dw-input" min="0"
+                                    th:name="|dw_${item.detailId}|"
+                                    th:value="${item.dailyWage1Month}">
+                            </td>
+                            <td style="color:#bbb;">－</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="margin-top:12px;">
+                    <button type="submit" class="save-btn">&#128190; 日雇1ヶ月を保存</button>
+                </div>
+            </form>
         </th:block>
 
         <div class="empty" th:if="${items == null or #lists.isEmpty(items)}">
