@@ -599,28 +599,28 @@ public class ReceiptMenuController {
 
         // ── 行2〜8: 賃金内訳（種別 | 前置き | 金額） ─────────────
         // 日給
-        String dailyUnitAmt = dailyWageUnit > 0 ? String.format("%,d円 ）", dailyWageUnit) : "円 ）";
+        String dailyUnitAmt = dailyWageUnit > 0 ? String.format("%,d円", dailyWageUnit) : "円";
         addWageDetailRow(wageTable, smallNormal, ROW_H,
-            "日給", "（1日", dailyUnitAmt,
+            "日給", "1日", dailyUnitAmt,
             dailyDays > 0 ? String.format("%d日間", dailyDays) : "日間",
             dailyTotalAmt > 0 ? String.format("%,d円", dailyTotalAmt) : "0円");
 
         // 時間給
-        String hw1Amt = hw > 0 ? String.format("%,d円 ）", hw) : "円 ）";
+        String hw1Amt = hw > 0 ? String.format("%,d円", hw) : "円";
         String wh1Str = wh > 0 ? String.format("%.0f時間", wh) : "時間";
         String hwAmt1 = hw > 0 && wh > 0 ? String.format("%,d円", (int)(hw * wh)) : "0円";
         addWageDetailRow(wageTable, smallNormal, ROW_H,
-            "時間給", "（1時間", hw1Amt, wh1Str, hwAmt1);
+            "時間給", "1時間", hw1Amt, wh1Str, hwAmt1);
 
         // 時間給（残業）
-        String hw2Amt = hwOt > 0 ? String.format("%,d円 ）", hwOt) : "円 ）";
+        String hw2Amt = hwOt > 0 ? String.format("%,d円", hwOt) : "円";
         addWageDetailRow(wageTable, smallNormal, ROW_H,
-            "", "（1時間", hw2Amt, "時間", "0円");
+            "", "1時間", hw2Amt, "時間", "0円");
 
         // 諸手当4行
         for (int i = 0; i < 4; i++) {
             addWageDetailRow(wageTable, smallNormal, ROW_H,
-                "", "（1時間", "円 ）", "時間", "0円");
+                "", "1時間", "円", "時間", "0円");
         }
 
         // ── 行9: 賃金総額① ──────────────────────────────────────
