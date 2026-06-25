@@ -100,12 +100,26 @@ public class SalesController {
             sales = existing.get(0);
         }
 
-        // 既存詳細を削除して再登録
-        for (SalesDetail od : salesDetailRepository.findBySalesId(sales.getId())) {
-            salesDetailRepository.deleteById(od.getId());
+        // 既存詳細を取得（receiptNo/issuedAt保持のため削除せず上書き）
+        List<SalesDetail> oldDetails = salesDetailRepository.findBySalesId(sales.getId());
+
+        if (customerIds == null) {
+            // 行が全削除された場合：receiptNo発行済みのものは保持、未発行のみ削除
+            for (SalesDetail od : oldDetails) {
+                if (od.getReceiptNo() == null || od.getReceiptNo().isEmpty()) {
+                    salesDetailRepository.deleteById(od.getId());
+                }
+            }
+            return "redirect:/person/sales?saved=" + personId;
         }
 
-        if (customerIds == null) return "redirect:/person/sales?saved=" + personId;
+        // 新しい行セット（customerId×detailOrder）をキーにマップ化
+        java.util.Map<String, SalesDetail> oldMap = new java.util.LinkedHashMap<>();
+        for (SalesDetail od : oldDetails) {
+            String key = (od.getCustomerId() != null ? od.getCustomerId() : "") + "_" + od.getDetailOrder();
+            oldMap.put(key, od);
+        }
+        java.util.Set<Long> newDetailIds = new java.util.HashSet<>();
 
         for (int i = 0; i < customerIds.length; i++) {
             // 求人者未選択はスキップ
@@ -113,7 +127,9 @@ public class SalesController {
             Long customerId;
             try { customerId = Long.parseLong(customerIds[i]); } catch (NumberFormatException e) { continue; }
 
-            SalesDetail detail = new SalesDetail();
+            // 同じcustomerId×detailOrderの既存レコードがあれば再利用（receiptNo保持）
+            String key = customerId + "_" + (i + 1);
+            SalesDetail detail = oldMap.containsKey(key) ? oldMap.get(key) : new SalesDetail();
             detail.setSalesId(sales.getId());
             detail.setCustomerId(customerId);
             detail.setDetailOrder(i + 1);
@@ -167,7 +183,17 @@ public class SalesController {
             }
 
             detail.calculateAmounts();
-            salesDetailRepository.save(detail);
+            SalesDetail saved = salesDetailRepository.save(detail);
+            if (saved.getId() != null) newDetailIds.add(saved.getId());
+        }
+
+        // 今回の保存に含まれなかった旧レコードを削除（receiptNo発行済みは保持）
+        for (SalesDetail od : oldDetails) {
+            if (!newDetailIds.contains(od.getId())) {
+                if (od.getReceiptNo() == null || od.getReceiptNo().isEmpty()) {
+                    salesDetailRepository.deleteById(od.getId());
+                }
+            }
         }
 
         return "redirect:/person/sales?saved=" + personId;

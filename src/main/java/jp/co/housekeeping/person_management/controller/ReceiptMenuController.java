@@ -73,7 +73,7 @@ public class ReceiptMenuController {
                 for (SalesDetail d : details) {
                     if (d.getCustomerId() == null) continue;
                     if (!d.getCustomerId().equals(c.getId())) continue;
-                    if (d.getCustomerFee() == null || d.getCustomerFee() <= 0) continue;
+                    // 手数料有無に関わらず売上入力登録があれば表示
 
                     ReceiptItem item   = new ReceiptItem();
                     item.customer      = c;
@@ -148,7 +148,7 @@ public class ReceiptMenuController {
 
             List<SalesDetail> details = salesDetailRepository.findBySalesId(s.getId());
             for (SalesDetail d : details) {
-                if (d.getReceptionFee() == null || d.getReceptionFee() <= 0) continue;
+                // 手数料有無に関わらず売上入力登録があれば表示
 
                 JobseekerReceiptItem item = new JobseekerReceiptItem();
                 item.person        = person;
