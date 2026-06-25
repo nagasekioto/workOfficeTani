@@ -73,7 +73,7 @@ public class ReceiptMenuController {
                 for (SalesDetail d : details) {
                     if (d.getCustomerId() == null) continue;
                     if (!d.getCustomerId().equals(c.getId())) continue;
-                    if (d.getReceptionFee() == null || d.getReceptionFee() <= 0) continue;
+                    // 手数料有無に関わらず売上入力登録があれば表示
 
                     ReceiptItem item   = new ReceiptItem();
                     item.customer      = c;
