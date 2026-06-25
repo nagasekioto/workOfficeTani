@@ -54,7 +54,7 @@ public class ReportMenuController {
 
     // ─── 一覧 ─────────────────────────────────────────────────
     @GetMapping("")
-    public String index(@RequestParam(required = false) String month,
+    public String list(@RequestParam(required = false) String month,
                         HttpSession session, Model model) {
         if (session.getAttribute("authenticated") == null) return "redirect:/login";
         if (month == null || month.isBlank()) {
@@ -121,7 +121,8 @@ public class ReportMenuController {
         for (Sales s : salesRepository.findAll()) {
             if (s.getId() == null) continue;
             for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {
-                if (d.getReceiptNo() == null || d.getReceiptNo().isEmpty()) continue;
+                try { if (d.getReceiptNo() == null || d.getReceiptNo().isEmpty()) continue; }
+                catch (Exception e2) { continue; }
 
                 // 紹介日→就労終了日→就労開始日→発行日 の優先順で月判定
                 LocalDate rd = null;
@@ -140,7 +141,9 @@ public class ReportMenuController {
                 int cFee   = d.getCustomerFee()  != null ? d.getCustomerFee()  : 0;
                 int comm   = (int)(wage * FEE_RATE);
                 int tax    = (int)(comm * 0.10);
-                int dw1m   = d.getDailyWage1Month() != null ? d.getDailyWage1Month() : 0;
+                int dw1m = 0;
+                try { dw1m = d.getDailyWage1Month() != null ? d.getDailyWage1Month() : 0; }
+                catch (Exception ignored) {}
 
                 FeeLedgerRow row = new FeeLedgerRow();
                 row.detailId       = d.getId();

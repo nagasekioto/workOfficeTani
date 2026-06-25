@@ -7,6 +7,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class MenuController {
 
+    @GetMapping("/")
+    public String root(HttpSession session) {
+        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+        return "menu";
+    }
+
     @GetMapping("/person-menu")
     public String personMenu(HttpSession session) {
         if (session.getAttribute("authenticated") == null) return "redirect:/login";
