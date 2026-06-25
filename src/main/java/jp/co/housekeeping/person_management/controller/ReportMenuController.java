@@ -3,6 +3,7 @@ package jp.co.housekeeping.person_management.controller;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +18,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.itextpdf.text.BaseColor;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Element;
@@ -46,48 +46,47 @@ public class ReportMenuController {
     @Autowired private SalesRepository       salesRepository;
     @Autowired private CustomerRepository    customerRepository;
 
-    private static final double FEE_RATE = 0.15;
+    private static final double FEE_RATE     = 0.15;
     private static final int    ROWS_PER_PAGE = 30;
 
-    // ─── 一覧表示 ──────────────────────────────────────────────
+    // ─── 一覧 ─────────────────────────────────────────────────
     @GetMapping("")
-    public String reportMenu(@RequestParam(required = false) String month,
-                             HttpSession session, Model model) {
+    public String index(@RequestParam(required = false) String month,
+                        HttpSession session, Model model) {
         if (session.getAttribute("authenticated") == null) return "redirect:/login";
 
-        // monthパラメータがない場合は現在月にリダイレクト
         if (month == null || month.isBlank()) {
-            String currentMonth = java.time.LocalDateTime.now().getYear() + "-"
-                + String.format("%02d", java.time.LocalDateTime.now().getMonthValue());
-            return "redirect:/report-menu?month=" + currentMonth;
+            String cur = LocalDateTime.now().getYear() + "-"
+                + String.format("%02d", LocalDateTime.now().getMonthValue());
+            return "redirect:/report-menu?month=" + cur;
         }
 
         model.addAttribute("selectedMonth", month);
+        model.addAttribute("items", new ArrayList<FeeLedgerRow>());
 
         try {
             YearMonth ym = YearMonth.parse(month);
-            List<FeeLedgerRow> items = buildRows(ym);
-            model.addAttribute("items", items);
+            List<FeeLedgerRow> rows = buildRows(ym);
+            model.addAttribute("items", rows);
         } catch (Exception e) {
             e.printStackTrace();
-            model.addAttribute("items", new ArrayList<>());
-            model.addAttribute("errorMsg", e.getMessage());
+            model.addAttribute("errorMsg", e.getClass().getSimpleName() + ": " + e.getMessage());
         }
         return "report-menu";
     }
 
-    // ─── PDF出力 ───────────────────────────────────────────────
+    // ─── PDF ──────────────────────────────────────────────────
     @GetMapping("/pdf")
-    public void reportMenuPdf(@RequestParam(required = false) String month,
-                               HttpSession session, HttpServletResponse response)
+    public void pdf(@RequestParam(required = false) String month,
+                    HttpSession session, HttpServletResponse response)
             throws IOException, DocumentException {
         if (session.getAttribute("authenticated") == null) { response.sendError(401); return; }
 
         YearMonth ym = (month != null && !month.isBlank()) ? YearMonth.parse(month) : YearMonth.now();
-        List<FeeLedgerRow> items = buildRows(ym);
+        List<FeeLedgerRow> rows = buildRows(ym);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        createFeeLedgerPdf(items, ym, baos);
+        buildPdf(rows, ym, baos);
 
         response.setContentType("application/pdf");
         response.setHeader("Content-Disposition", "inline; filename=fee-ledger.pdf");
@@ -96,234 +95,166 @@ public class ReportMenuController {
         response.getOutputStream().flush();
     }
 
-    // ─── データ構築 ────────────────────────────────────────────
+    // ─── データ取得 ───────────────────────────────────────────
     private List<FeeLedgerRow> buildRows(YearMonth ym) {
+        List<FeeLedgerRow> list = new ArrayList<>();
         LocalDate monthEnd = ym.atEndOfMonth();
-        List<FeeLedgerRow> items = new ArrayList<>();
+        String dateStr = monthEnd.getYear() + "/" + monthEnd.getMonthValue() + "/" + monthEnd.getDayOfMonth();
 
-        Iterable<Sales> allSales = salesRepository.findAll();
-        for (Sales s : allSales) {
+        for (Sales s : salesRepository.findAll()) {
             if (s.getId() == null) continue;
-            List<SalesDetail> details = salesDetailRepository.findBySalesId(s.getId());
-            for (SalesDetail d : details) {
+            for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {
                 if (d.getReceiptNo() == null || d.getReceiptNo().isEmpty()) continue;
 
-                // 領収日（issuedAt優先 → workEndDate → workStartDate）
-                LocalDate receiptDate = null;
-                if (d.getIssuedAt() != null) receiptDate = d.getIssuedAt().toLocalDate();
-                else if (d.getWorkEndDate() != null) receiptDate = d.getWorkEndDate();
-                else if (d.getWorkStartDate() != null) receiptDate = d.getWorkStartDate();
-                if (receiptDate == null) continue;
+                LocalDate rd = null;
+                if (d.getIssuedAt()      != null) rd = d.getIssuedAt().toLocalDate();
+                else if (d.getWorkEndDate()   != null) rd = d.getWorkEndDate();
+                else if (d.getWorkStartDate() != null) rd = d.getWorkStartDate();
+                if (rd == null) continue;
+                if (rd.getYear() != ym.getYear() || rd.getMonthValue() != ym.getMonthValue()) continue;
 
-                // 月フィルタ：同年同月のみ
-                if (receiptDate.getYear() != ym.getYear() ||
-                    receiptDate.getMonthValue() != ym.getMonthValue()) continue;
-
-                Customer customer = d.getCustomerId() != null
+                Customer c = d.getCustomerId() != null
                     ? customerRepository.findById(d.getCustomerId()).orElse(null) : null;
-                String customerName = customer != null
-                    ? customer.getLastNameKanji() + "　" + customer.getFirstNameKanji() : "";
+                String cName = c != null ? c.getLastNameKanji() + "　" + c.getFirstNameKanji() : "";
 
-                int totalWage   = d.getMonthlyTotal() != null ? d.getMonthlyTotal() : 0;
-                int customerFee = d.getCustomerFee()  != null ? d.getCustomerFee()  : 0;
-                int commission  = (int)(totalWage * FEE_RATE);
-                int consTax     = (int)(commission * 0.10);
+                int wage   = d.getMonthlyTotal() != null ? d.getMonthlyTotal() : 0;
+                int cFee   = d.getCustomerFee()  != null ? d.getCustomerFee()  : 0;
+                int comm   = (int)(wage * FEE_RATE);
+                int tax    = (int)(comm * 0.10);
 
                 FeeLedgerRow row = new FeeLedgerRow();
-                // 領収年月日は末日
-                row.receiptDate    = String.format("%d/%d/%d",
-                    monthEnd.getYear(), monthEnd.getMonthValue(), monthEnd.getDayOfMonth());
-                row.customerName   = customerName;
-                row.commission     = commission;   // 手数料※1 届出手数料 ③
-                row.tax            = consTax;       // 手数料※2 ④
-                row.customerFee    = customerFee;  // 求人受付事務費 ②
-                row.feeRate        = "15%";
-                row.receiptNo      = d.getReceiptNo();  // 備考
-                row.dailyWage      = totalWage;     // 日雇1ヶ月 ①
-                row.commissionStr  = commission > 0  ? String.format("%,d", commission)  : "0";
-                row.taxStr         = consTax > 0     ? String.format("%,d", consTax)     : "0";
-                row.customerFeeStr = customerFee > 0 ? String.format("%,d", customerFee) : "";
-                row.dailyWageStr   = totalWage > 0   ? String.format("%,d", totalWage)   : "0";
-                items.add(row);
+                row.receiptDate    = dateStr;
+                row.customerName   = cName;
+                row.commission     = comm;
+                row.tax            = tax;
+                row.customerFee    = cFee;
+                row.receiptNo      = d.getReceiptNo();
+                row.dailyWage      = wage;
+                row.commissionStr  = String.format("%,d", comm);
+                row.taxStr         = String.format("%,d", tax);
+                row.customerFeeStr = cFee > 0 ? String.format("%,d", cFee) : "";
+                row.dailyWageStr   = String.format("%,d", wage);
+                list.add(row);
             }
         }
 
-        // 領収番号順ソート
-        items.sort((a, b) -> {
+        list.sort((a, b) -> {
             try { return Integer.compare(Integer.parseInt(a.receiptNo), Integer.parseInt(b.receiptNo)); }
             catch (NumberFormatException e) { return a.receiptNo.compareTo(b.receiptNo); }
         });
-        return items;
+        return list;
     }
 
-    // ─── PDF生成（実物フォーマット完全再現） ──────────────────
-    private void createFeeLedgerPdf(List<FeeLedgerRow> items, YearMonth ym,
-                                     ByteArrayOutputStream baos)
+    // ─── PDF生成 ──────────────────────────────────────────────
+    private void buildPdf(List<FeeLedgerRow> rows, YearMonth ym, ByteArrayOutputStream baos)
             throws DocumentException, IOException {
 
-        // A4縦
         Document doc = new Document(PageSize.A4, 28, 28, 28, 28);
         PdfWriter.getInstance(doc, baos);
         doc.open();
 
         BaseFont bf = BaseFont.createFont("HeiseiMin-W3", "UniJIS-UCS2-H", BaseFont.NOT_EMBEDDED);
-        Font titleFont  = new Font(bf, 11, Font.BOLD);
-        Font boldFont   = new Font(bf, 8,  Font.BOLD);
-        Font normalFont = new Font(bf, 8);
-        Font smallFont  = new Font(bf, 7);
-        Font noteFont   = new Font(bf, 7);
+        Font title8  = new Font(bf, 11, Font.BOLD);
+        Font bold    = new Font(bf, 8,  Font.BOLD);
+        Font normal  = new Font(bf, 8);
+        Font note    = new Font(bf, 7);
 
-        // ── タイトル ──
-        Paragraph title = new Paragraph("手数料管理簿〔届出制手数料用〕", titleFont);
-        title.setSpacingAfter(4);
-        doc.add(title);
+        doc.add(para("手数料管理簿〔届出制手数料用〕", title8, Element.ALIGN_LEFT, 4));
 
-        // 列幅: 領収年月日 | 支払者名 | 手数料※1 | 手数料※2 | 求人受付事務費 | 手数料割合 | 備考 | 日雇1ヶ月 | 臨時3ヶ月
-        float[] widths = {2.2f, 2.8f, 1.6f, 1.4f, 1.6f, 1.2f, 1.2f, 1.6f, 1.4f};
-        PdfPTable table = new PdfPTable(widths);
-        table.setWidthPercentage(100);
-        table.setSpacingBefore(2);
+        float[] w = {2.2f, 2.8f, 1.6f, 1.4f, 1.6f, 1.2f, 1.2f, 1.6f, 1.4f};
+        PdfPTable t = new PdfPTable(w);
+        t.setWidthPercentage(100);
+        t.setSpacingBefore(2);
 
-        // ── ヘッダー行1 ──
-        addHdr(table, "領収", boldFont);
-        addHdr(table, "", boldFont);  // 支払者名（列名なし）
-        addHdr(table, "手数料※1", boldFont);
-        addHdr(table, "手数料※2", boldFont);
-        addHdr(table, "求人受付", boldFont);
-        addHdr(table, "手数料", boldFont);
-        addHdr(table, "備考", boldFont);
-        addHdr(table, "日雇", boldFont);
-        addHdr(table, "臨時", boldFont);
+        // ヘッダー2行
+        for (String s : new String[]{"領収","","手数料※1","手数料※2","求人受付","手数料","備考","日雇","臨時"})
+            t.addCell(hdr(s, bold));
+        for (String s : new String[]{"年月日","","届出手数料","","事務費","割合","","1ヶ月","3ヶ月"})
+            t.addCell(hdr(s, bold));
 
-        // ── ヘッダー行2 ──
-        addHdr(table, "年月日", boldFont);
-        addHdr(table, "", boldFont);
-        addHdr(table, "届出手数料", boldFont);
-        addHdr(table, "", boldFont);
-        addHdr(table, "事務費", boldFont);
-        addHdr(table, "割合", boldFont);
-        addHdr(table, "", boldFont);
-        addHdr(table, "1ヶ月", boldFont);
-        addHdr(table, "3ヶ月", boldFont);
-
-        // ── データ行（30行固定）──
+        // データ30行
         String lastDate = "";
-        int sumComm = 0, sumTax = 0, sumCustFee = 0, sumDailyWage = 0;
-
+        int sc=0, st=0, sf=0, sw=0;
         for (int i = 0; i < ROWS_PER_PAGE; i++) {
-            if (i < items.size()) {
-                FeeLedgerRow r = items.get(i);
-                // 領収年月日：初行は実日付、同じ日付が続く場合は〃
-                String dateStr = r.receiptDate.equals(lastDate) ? "〃" : r.receiptDate;
+            if (i < rows.size()) {
+                FeeLedgerRow r = rows.get(i);
+                String ds = r.receiptDate.equals(lastDate) ? "〃" : r.receiptDate;
                 lastDate = r.receiptDate;
-
-                addData(table, dateStr,          normalFont, Element.ALIGN_LEFT);
-                addData(table, r.customerName,   normalFont, Element.ALIGN_LEFT);
-                addData(table, r.commissionStr,  normalFont, Element.ALIGN_RIGHT);
-                addData(table, r.taxStr,         normalFont, Element.ALIGN_RIGHT);
-                addData(table, r.customerFeeStr, normalFont, Element.ALIGN_RIGHT);
-                addData(table, r.feeRate,        normalFont, Element.ALIGN_CENTER);
-                addData(table, r.receiptNo,      normalFont, Element.ALIGN_CENTER);
-                addData(table, r.dailyWageStr,   normalFont, Element.ALIGN_RIGHT);
-                addData(table, "0",              normalFont, Element.ALIGN_RIGHT);
-
-                sumComm     += r.commission;
-                sumTax      += r.tax;
-                sumCustFee  += r.customerFee;
-                sumDailyWage += r.dailyWage;
+                t.addCell(dat(ds,             normal, Element.ALIGN_LEFT));
+                t.addCell(dat(r.customerName, normal, Element.ALIGN_LEFT));
+                t.addCell(dat(r.commissionStr,normal, Element.ALIGN_RIGHT));
+                t.addCell(dat(r.taxStr,       normal, Element.ALIGN_RIGHT));
+                t.addCell(dat(r.customerFeeStr,normal,Element.ALIGN_RIGHT));
+                t.addCell(dat("15%",          normal, Element.ALIGN_CENTER));
+                t.addCell(dat(r.receiptNo,    normal, Element.ALIGN_CENTER));
+                t.addCell(dat(r.dailyWageStr, normal, Element.ALIGN_RIGHT));
+                t.addCell(dat("0",            normal, Element.ALIGN_RIGHT));
+                sc+=r.commission; st+=r.tax; sf+=r.customerFee; sw+=r.dailyWage;
             } else {
-                // 空行
-                addData(table, "〃",  normalFont, Element.ALIGN_LEFT);
-                addData(table, "",    normalFont, Element.ALIGN_LEFT);
-                addData(table, "0",   normalFont, Element.ALIGN_RIGHT);
-                addData(table, "0",   normalFont, Element.ALIGN_RIGHT);
-                addData(table, "",    normalFont, Element.ALIGN_RIGHT);
-                addData(table, "〃",  normalFont, Element.ALIGN_CENTER);
-                addData(table, "",    normalFont, Element.ALIGN_CENTER);
-                addData(table, "0",   normalFont, Element.ALIGN_RIGHT);
-                addData(table, "0",   normalFont, Element.ALIGN_RIGHT);
+                t.addCell(dat("〃","",normal,Element.ALIGN_LEFT));
+                t.addCell(dat("",   normal, Element.ALIGN_LEFT));
+                t.addCell(dat("0",  normal, Element.ALIGN_RIGHT));
+                t.addCell(dat("0",  normal, Element.ALIGN_RIGHT));
+                t.addCell(dat("",   normal, Element.ALIGN_RIGHT));
+                t.addCell(dat("〃", normal, Element.ALIGN_CENTER));
+                t.addCell(dat("",   normal, Element.ALIGN_CENTER));
+                t.addCell(dat("0",  normal, Element.ALIGN_RIGHT));
+                t.addCell(dat("0",  normal, Element.ALIGN_RIGHT));
             }
         }
 
-        // ── ページ計行 ──
-        PdfPCell pgLabel = sumCell("ページ計", boldFont, 2);
-        table.addCell(pgLabel);
-        addSum(table, sumComm,     boldFont);
-        addSum(table, sumTax,      boldFont);
-        addSum(table, sumCustFee,  boldFont);
-        addData(table, "",    boldFont, Element.ALIGN_CENTER);
-        addData(table, "",    boldFont, Element.ALIGN_CENTER);
-        addSum(table, sumDailyWage, boldFont);
-        addSum(table, 0,           boldFont);
+        // ページ計
+        PdfPCell pg = new PdfPCell(new Phrase("ページ計", bold));
+        pg.setColspan(2); pg.setBorder(Rectangle.BOX); pg.setHorizontalAlignment(Element.ALIGN_CENTER);
+        pg.setPadding(3); pg.setFixedHeight(18f); t.addCell(pg);
+        t.addCell(sum(sc, bold)); t.addCell(sum(st, bold)); t.addCell(sum(sf, bold));
+        t.addCell(dat("", bold, Element.ALIGN_CENTER)); t.addCell(dat("", bold, Element.ALIGN_CENTER));
+        t.addCell(sum(sw, bold)); t.addCell(sum(0, bold));
 
-        // ── 月分累計行 ──
-        String monthLabel = ym.getMonthValue() + "月分累計";
-        PdfPCell mnLabel = sumCell(monthLabel, boldFont, 2);
-        table.addCell(mnLabel);
-        addSum(table, sumComm,     boldFont);
-        addSum(table, sumTax,      boldFont);
-        addSum(table, sumCustFee,  boldFont);
-        addData(table, "",    boldFont, Element.ALIGN_CENTER);
-        addData(table, "",    boldFont, Element.ALIGN_CENTER);
-        addSum(table, sumDailyWage, boldFont);
-        addSum(table, 0,           boldFont);
+        // 月分累計
+        PdfPCell mn = new PdfPCell(new Phrase(ym.getMonthValue() + "月分累計", bold));
+        mn.setColspan(2); mn.setBorder(Rectangle.BOX); mn.setHorizontalAlignment(Element.ALIGN_CENTER);
+        mn.setPadding(3); mn.setFixedHeight(18f); t.addCell(mn);
+        t.addCell(sum(sc, bold)); t.addCell(sum(st, bold)); t.addCell(sum(sf, bold));
+        t.addCell(dat("", bold, Element.ALIGN_CENTER)); t.addCell(dat("", bold, Element.ALIGN_CENTER));
+        t.addCell(sum(sw, bold)); t.addCell(sum(0, bold));
 
-        doc.add(table);
-
-        // ── 注記 ──
-        Paragraph note1 = new Paragraph(
-            "※1は、徴収した届け出手数料の総額から第二種特別加入料に充てるべき手数料額を除いた額を記載する。", noteFont);
-        note1.setSpacingBefore(6);
-        doc.add(note1);
-        Paragraph note2 = new Paragraph("※2は、第二種特別加入保険料に充てるべき手数料。", noteFont);
-        doc.add(note2);
-
+        doc.add(t);
+        doc.add(para("※1は、徴収した届け出手数料の総額から第二種特別加入料に充てるべき手数料額を除いた額を記載する。", note, Element.ALIGN_LEFT, 6));
+        doc.add(para("※2は、第二種特別加入保険料に充てるべき手数料。", note, Element.ALIGN_LEFT, 0));
         doc.close();
     }
 
-    // ヘッダーセル
-    private void addHdr(PdfPTable t, String text, Font f) {
-        PdfPCell c = new PdfPCell(new Phrase(text, f));
-        c.setBorder(Rectangle.BOX);
-        c.setHorizontalAlignment(Element.ALIGN_CENTER);
-        c.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        c.setPadding(3);
-        c.setFixedHeight(16f);
-        t.addCell(c);
+    private Paragraph para(String text, Font f, int align, float spaceBefore) {
+        Paragraph p = new Paragraph(text, f);
+        p.setAlignment(align);
+        p.setSpacingBefore(spaceBefore);
+        return p;
     }
 
-    // データセル
-    private void addData(PdfPTable t, String text, Font f, int align) {
-        PdfPCell c = new PdfPCell(new Phrase(text != null ? text : "", f));
-        c.setBorder(Rectangle.BOX);
-        c.setHorizontalAlignment(align);
-        c.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        c.setPadding(3);
-        c.setFixedHeight(17f);
-        t.addCell(c);
-    }
-
-    // 合計セル（colspan=2で支払者名欄まで結合）
-    private PdfPCell sumCell(String text, Font f, int colspan) {
+    private PdfPCell hdr(String text, Font f) {
         PdfPCell c = new PdfPCell(new Phrase(text, f));
-        c.setBorder(Rectangle.BOX);
-        c.setColspan(colspan);
-        c.setHorizontalAlignment(Element.ALIGN_CENTER);
-        c.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        c.setPadding(3);
-        c.setFixedHeight(18f);
+        c.setBorder(Rectangle.BOX); c.setHorizontalAlignment(Element.ALIGN_CENTER);
+        c.setVerticalAlignment(Element.ALIGN_MIDDLE); c.setPadding(3); c.setFixedHeight(16f);
         return c;
     }
 
-    // 合計数値セル
-    private void addSum(PdfPTable t, int val, Font f) {
-        PdfPCell c = new PdfPCell(new Phrase(val > 0 ? String.format("%,d", val) : "0", f));
-        c.setBorder(Rectangle.BOX);
-        c.setHorizontalAlignment(Element.ALIGN_RIGHT);
-        c.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        c.setPadding(3);
-        c.setFixedHeight(18f);
-        t.addCell(c);
+    private PdfPCell dat(String text, Font f, int align) {
+        PdfPCell c = new PdfPCell(new Phrase(text != null ? text : "", f));
+        c.setBorder(Rectangle.BOX); c.setHorizontalAlignment(align);
+        c.setVerticalAlignment(Element.ALIGN_MIDDLE); c.setPadding(3); c.setFixedHeight(17f);
+        return c;
+    }
+
+    private PdfPCell dat(String a, String b, Font f, int align) {
+        return dat(a, f, align);
+    }
+
+    private PdfPCell sum(int val, Font f) {
+        PdfPCell c = new PdfPCell(new Phrase(String.format("%,d", val), f));
+        c.setBorder(Rectangle.BOX); c.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        c.setVerticalAlignment(Element.ALIGN_MIDDLE); c.setPadding(3); c.setFixedHeight(18f);
+        return c;
     }
 
     // ─── DTO ──────────────────────────────────────────────────
@@ -333,7 +264,6 @@ public class ReportMenuController {
         public int    commission;
         public int    tax;
         public int    customerFee;
-        public String feeRate;
         public String receiptNo;
         public int    dailyWage;
         public String commissionStr;
@@ -341,13 +271,11 @@ public class ReportMenuController {
         public String customerFeeStr;
         public String dailyWageStr;
 
-        // Thymeleaf用getter
         public String getReceiptDate()    { return receiptDate; }
         public String getCustomerName()   { return customerName; }
         public int    getCommission()     { return commission; }
         public int    getTax()            { return tax; }
         public int    getCustomerFee()    { return customerFee; }
-        public String getFeeRate()        { return feeRate; }
         public String getReceiptNo()      { return receiptNo; }
         public int    getDailyWage()      { return dailyWage; }
         public String getCommissionStr()  { return commissionStr; }
