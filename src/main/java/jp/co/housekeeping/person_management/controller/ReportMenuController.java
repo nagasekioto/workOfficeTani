@@ -64,9 +64,15 @@ public class ReportMenuController {
 
         model.addAttribute("selectedMonth", month);
 
-        YearMonth ym = YearMonth.parse(month);
-        List<FeeLedgerRow> items = buildRows(ym);
-        model.addAttribute("items", items);
+        try {
+            YearMonth ym = YearMonth.parse(month);
+            List<FeeLedgerRow> items = buildRows(ym);
+            model.addAttribute("items", items);
+        } catch (Exception e) {
+            e.printStackTrace();
+            model.addAttribute("items", new ArrayList<>());
+            model.addAttribute("errorMsg", e.getMessage());
+        }
         return "report-menu";
     }
 
@@ -334,5 +340,19 @@ public class ReportMenuController {
         public String taxStr;
         public String customerFeeStr;
         public String dailyWageStr;
+
+        // Thymeleaf用getter
+        public String getReceiptDate()    { return receiptDate; }
+        public String getCustomerName()   { return customerName; }
+        public int    getCommission()     { return commission; }
+        public int    getTax()            { return tax; }
+        public int    getCustomerFee()    { return customerFee; }
+        public String getFeeRate()        { return feeRate; }
+        public String getReceiptNo()      { return receiptNo; }
+        public int    getDailyWage()      { return dailyWage; }
+        public String getCommissionStr()  { return commissionStr; }
+        public String getTaxStr()         { return taxStr; }
+        public String getCustomerFeeStr() { return customerFeeStr; }
+        public String getDailyWageStr()   { return dailyWageStr; }
     }
 }

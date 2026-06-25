@@ -45,6 +45,9 @@
         </div>
     </form>
 
+    <div th:if="${errorMsg != null}" style="color:red;padding:10px;background:#fff3f3;border:1px solid red;margin-bottom:10px;">
+        エラー: <span th:text="${errorMsg}"></span>
+    </div>
     <div th:if="${selectedMonth != null and items != null}">
         <div class="month-label" th:text="${selectedMonth + ' の手数料管理簿'}"></div>
 
