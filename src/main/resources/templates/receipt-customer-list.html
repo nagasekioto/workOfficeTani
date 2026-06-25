@@ -29,7 +29,7 @@
 </div>
 <div class="container">
     <div class="info-box">
-        &#9432; 求人受付手数料（1,000円）が登録されている求人者の一覧です。PDF出力すると領収番号が自動採番されます。
+        &#9432; 求人受付手数料（1,000円）が登録されている求人者の一覧です。
     </div>
 
     <table th:if="${not #lists.isEmpty(items)}">
@@ -60,7 +60,6 @@
                     <span th:unless="${item.issued}" class="badge badge-pending">未発行</span>
                 </td>
                 <td>
-                    <a th:href="@{/receipt-menu/customer-receipt/pdf(detailId=${item.detail.id})}" target="_blank" class="pdf-btn">&#128196; PDF出力</a>
                     <form th:if="${item.issued}" th:action="@{/receipt-menu/customer-receipt/reset}" method="post"
                           style="display:inline;" onsubmit="return confirm('領収番号をリセットしますか？')">
                         <input type="hidden" name="detailId" th:value="${item.detail.id}">
