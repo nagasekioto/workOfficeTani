@@ -597,7 +597,7 @@ public class ReceiptMenuController {
         if (startDate != null) {
             int periodMonth = startDate.getMonthValue();
             int lastDay = startDate.withDayOfMonth(startDate.lengthOfMonth()).getDayOfMonth();
-            periodRangeStr = periodMonth + "月1日〜" + periodMonth + "月" + lastDay + "日";
+            periodRangeStr = periodMonth + "月1日　〜　" + periodMonth + "月" + lastDay + "日";
         }
         String workDaysStr = workDays > 0 ? workDays + " 日" : "－";
         String periodCellStr = periodRangeStr.isEmpty()
