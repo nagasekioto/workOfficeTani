@@ -194,33 +194,33 @@ public class ReportMenuController {
         // ── データ行（空行なし・データ分のみ） ──
         int sw=0, sc=0, st=0, sf=0, sd=0;
         for (FeeLedgerRow r : rows) {
-            t.addCell(cen(r.receiptDate,    normal));
-            t.addCell(cen(r.customerName,   normal));
-            t.addCell(cen(r.wageStr,        normal));
-            t.addCell(cen(r.commissionStr,  normal));
-            t.addCell(cen(r.taxStr,         normal));
-            t.addCell(cen(r.customerFeeStr, normal));
-            t.addCell(cen("15%",            normal));
-            t.addCell(cen(r.receiptNo,      normal));
-            t.addCell(cen(r.dailyWageStr,   normal));
-            t.addCell(cen("0",              normal));
+            t.addCell(cen(r.receiptDate,    normal));           // 年月日：中央
+            t.addCell(cen(r.customerName,   normal));           // 支払者名：中央
+            t.addCell(rit(r.wageStr,        normal));           // 賃金：右
+            t.addCell(rit(r.commissionStr,  normal));           // 手数料※1：右
+            t.addCell(rit(r.taxStr,         normal));           // 手数料※2：右
+            t.addCell(rit(r.customerFeeStr, normal));           // 求人受付事務費：右
+            t.addCell(cen("15%",            normal));           // 割合：中央
+            t.addCell(cen(r.receiptNo,      normal));           // 備考：中央
+            t.addCell(rit(r.dailyWageStr,   normal));           // 日雇：右
+            t.addCell(rit("0",              normal));           // 臨時：右
             sw+=r.wage; sc+=r.commission; st+=r.tax; sf+=r.customerFee; sd+=r.dailyWage;
         }
 
         // ── ページ計 ──
         PdfPCell pg = spanCell("ページ計", bold, 2);
         t.addCell(pg);
-        t.addCell(cen(fmt(sw), bold)); t.addCell(cen(fmt(sc), bold));
-        t.addCell(cen(fmt(st), bold)); t.addCell(cen(fmt(sf), bold));
+        t.addCell(rit(fmt(sw), bold)); t.addCell(rit(fmt(sc), bold));
+        t.addCell(rit(fmt(st), bold)); t.addCell(rit(fmt(sf), bold));
         t.addCell(cen("", bold)); t.addCell(cen("", bold));
-        t.addCell(cen(fmt(sd), bold)); t.addCell(cen("0", bold));
+        t.addCell(rit(fmt(sd), bold)); t.addCell(rit("0", bold));
 
         // ── 月分累計 ──
         t.addCell(spanCell(ym.getMonthValue() + "月分累計", bold, 2));
-        t.addCell(cen(fmt(sw), bold)); t.addCell(cen(fmt(sc), bold));
-        t.addCell(cen(fmt(st), bold)); t.addCell(cen(fmt(sf), bold));
+        t.addCell(rit(fmt(sw), bold)); t.addCell(rit(fmt(sc), bold));
+        t.addCell(rit(fmt(st), bold)); t.addCell(rit(fmt(sf), bold));
         t.addCell(cen("", bold)); t.addCell(cen("", bold));
-        t.addCell(cen(fmt(sd), bold)); t.addCell(cen("0", bold));
+        t.addCell(rit(fmt(sd), bold)); t.addCell(rit("0", bold));
 
         doc.add(t);
 
@@ -237,6 +237,17 @@ public class ReportMenuController {
         PdfPCell c = new PdfPCell(new Phrase(text != null ? text : "", f));
         c.setBorder(Rectangle.BOX);
         c.setHorizontalAlignment(Element.ALIGN_CENTER);
+        c.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        c.setPadding(3);
+        c.setFixedHeight(18f);
+        return c;
+    }
+
+    // 右揃えセル（数値用）
+    private PdfPCell rit(String text, Font f) {
+        PdfPCell c = new PdfPCell(new Phrase(text != null ? text : "", f));
+        c.setBorder(Rectangle.BOX);
+        c.setHorizontalAlignment(Element.ALIGN_RIGHT);
         c.setVerticalAlignment(Element.ALIGN_MIDDLE);
         c.setPadding(3);
         c.setFixedHeight(18f);
