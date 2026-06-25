@@ -136,14 +136,13 @@ public class ReceiptMenuController {
     }
 
     // ─── 1-7-2 求職受付手数料領収書一覧 ─────────────────
+    // ─── 1-7-2 求職受付手数料領収書一覧 ─────────────────
     @GetMapping("/jobseeker-receipt")
     public String jobseekerReceipt(HttpSession session, Model model) {
         if (session.getAttribute("authenticated") == null) return "redirect:/login";
 
-        // 求職者×年月 でグループ化（最大3件まとめて1領収書）
-        // キー: personId_year_month
-        java.util.Map<String, JobseekerReceiptItem> groupMap = new java.util.LinkedHashMap<>();
-
+        // 全件個別表示（グループ化はPDF生成時のみ）
+        List<JobseekerReceiptItem> items = new ArrayList<>();
         for (Sales s : salesRepository.findAll()) {
             if (s.getPersonId() == null) continue;
             Person person = personRepository.findById(s.getPersonId()).orElse(null);
@@ -153,38 +152,19 @@ public class ReceiptMenuController {
             for (SalesDetail d : details) {
                 if (d.getReceptionFee() == null || d.getReceptionFee() <= 0) continue;
 
-                LocalDate iDate = d.getIntroductionDate();
-                if (iDate == null) iDate = LocalDate.now();
-                String key = s.getPersonId() + "_" + iDate.getYear() + "_" + iDate.getMonthValue();
-
-                if (!groupMap.containsKey(key)) {
-                    JobseekerReceiptItem item = new JobseekerReceiptItem();
-                    item.person      = person;
-                    item.detail      = d;  // 代表レコード
-                    item.groupDetails = new ArrayList<>();
-                    item.salesId     = s.getId();
-                    groupMap.put(key, item);
-                }
-                JobseekerReceiptItem item = groupMap.get(key);
-                if (item.groupDetails.size() < 3) {
-                    item.groupDetails.add(d);
-                }
+                JobseekerReceiptItem item = new JobseekerReceiptItem();
+                item.person        = person;
+                item.detail        = d;
+                item.salesId       = s.getId();
+                item.issued        = d.getReceiptNo() != null && !d.getReceiptNo().isEmpty();
+                item.receiptNumber = item.issued ? d.getReceiptNo() : "";
+                items.add(item);
             }
-        }
-
-        // グループ情報を集計
-        List<JobseekerReceiptItem> items = new ArrayList<>();
-        for (JobseekerReceiptItem item : groupMap.values()) {
-            item.groupCount = item.groupDetails.size();
-            item.totalFee   = 710 * item.groupCount;
-            // 発行状態は代表レコードで判定
-            item.issued        = item.detail.getReceiptNo() != null && !item.detail.getReceiptNo().isEmpty();
-            item.receiptNumber = item.issued ? item.detail.getReceiptNo() : "";
-            items.add(item);
         }
         model.addAttribute("items", items);
         return "receipt-jobseeker-list";
     }
+
 
     // ─── 1-7-2 PDF出力 ────────────────────────────────
     @GetMapping("/jobseeker-receipt/pdf")
