@@ -55,12 +55,14 @@ public class ReportMenuController {
                              HttpSession session, Model model) {
         if (session.getAttribute("authenticated") == null) return "redirect:/login";
 
-        model.addAttribute("selectedMonth", month);
-
+        // monthパラメータがない場合は現在月にリダイレクト
         if (month == null || month.isBlank()) {
-            model.addAttribute("items", new ArrayList<>());
-            return "report-menu";
+            String currentMonth = java.time.LocalDateTime.now().getYear() + "-"
+                + String.format("%02d", java.time.LocalDateTime.now().getMonthValue());
+            return "redirect:/report-menu?month=" + currentMonth;
         }
+
+        model.addAttribute("selectedMonth", month);
 
         YearMonth ym = YearMonth.parse(month);
         List<FeeLedgerRow> items = buildRows(ym);

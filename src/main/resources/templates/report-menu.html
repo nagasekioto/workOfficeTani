@@ -35,10 +35,10 @@
                 <input type="month" id="month" name="month" th:value="${selectedMonth}">
             </div>
             <button type="submit" class="filter-btn">&#128269; 表示</button>
-            <a th:if="${selectedMonth != null and not #lists.isEmpty(items)}"
+            <a th:if="${selectedMonth != null and items != null and not #lists.isEmpty(items)}"
                th:href="@{/report-menu/pdf(month=${selectedMonth})}" target="_blank"
                class="pdf-btn" style="background:#4CAF50;">&#128196; 印刷内容確認</a>
-            <button th:if="${selectedMonth != null and not #lists.isEmpty(items)}"
+            <button th:if="${selectedMonth != null and items != null and not #lists.isEmpty(items)}"
                     class="pdf-btn" style="background:#1976D2;margin-left:4px;"
                     type="button"
                     th:onclick="|printPdf('/report-menu/pdf?month=${selectedMonth}')|">&#128424; 印刷</button>
