@@ -494,8 +494,8 @@ public class CustomerController {
             filled++;
         }
         for (int i = filled; i < DATA_ROWS; i++) {
-            for (int c = 0; c < 18; c++) {
-                addTdC(tbl, (c == 1 || c == 4) ? "〜" : "", norm6);
+            for (int col = 0; col < 18; col++) {
+                addTdC(tbl, (col == 1 || col == 4) ? "〜" : "", norm6);
             }
         }
         doc.add(tbl);
