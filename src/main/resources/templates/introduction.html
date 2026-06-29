@@ -146,13 +146,17 @@
                     <label><input type="radio" name="workStyle" value="泊込み" onchange="update()"> 泊込み</label>
                 </div>
                 <div class="cbg" style="margin-top:6px;">
-                    <label><input type="checkbox" class="dow" value="月"> 月</label>
-                    <label><input type="checkbox" class="dow" value="火"> 火</label>
-                    <label><input type="checkbox" class="dow" value="水"> 水</label>
-                    <label><input type="checkbox" class="dow" value="木"> 木</label>
-                    <label><input type="checkbox" class="dow" value="金"> 金</label>
-                    <label><input type="checkbox" class="dow" value="土"> 土</label>
-                    <label><input type="checkbox" class="dow" value="日"> 日</label>
+                    <label><input type="radio" name="workFreq" value="毎週" checked onchange="update()"> 毎週</label>
+                    <label><input type="radio" name="workFreq" value="隔週" onchange="update()"> 隔週</label>
+                </div>
+                <div class="cbg" style="margin-top:6px;">
+                    <label><input type="checkbox" class="dow" value="月" onchange="update()"> 月</label>
+                    <label><input type="checkbox" class="dow" value="火" onchange="update()"> 火</label>
+                    <label><input type="checkbox" class="dow" value="水" onchange="update()"> 水</label>
+                    <label><input type="checkbox" class="dow" value="木" onchange="update()"> 木</label>
+                    <label><input type="checkbox" class="dow" value="金" onchange="update()"> 金</label>
+                    <label><input type="checkbox" class="dow" value="土" onchange="update()"> 土</label>
+                    <label><input type="checkbox" class="dow" value="日" onchange="update()"> 日</label>
                 </div>
             </div>
             <div class="fg"><label>勤務時間</label>
@@ -162,8 +166,15 @@
                     <select id="wEH" onchange="update()" style="width:65px;padding:5px;"></select><span>時</span>
                     <select id="wEM" onchange="update()" style="width:65px;padding:5px;"></select><span>分</span>
                 </div>
-                <label style="margin-top:6px;">実働時間</label>
-                <input type="text" id="actualHours" placeholder="例：7時間" oninput="update()">
+                <label style="margin-top:6px;">実働時間（数字で入力）</label>
+                <div style="display:flex;gap:6px;align-items:center;">
+                    <span style="font-size:13px;color:#555;">実働</span>
+                    <input type="number" id="actualHoursNum" min="0" max="24" step="0.25" placeholder="例：4" oninput="calcActual()" style="width:70px;padding:6px 8px;border:1px solid #ddd;border-radius:4px;font-size:13px;">
+                    <span style="font-size:13px;color:#555;">時間</span>
+                    <input type="number" id="actualMinsNum" min="0" max="59" step="1" placeholder="00" oninput="calcActual()" style="width:55px;padding:6px 8px;border:1px solid #ddd;border-radius:4px;font-size:13px;">
+                    <span style="font-size:13px;color:#555;">分</span>
+                </div>
+                <input type="hidden" id="actualHours">
             </div>
         </div>
         <div class="row2">
@@ -179,10 +190,11 @@
         </div>
         <div class="fg"><label>休日</label>
             <div class="cbg">
-                <label><input type="checkbox" id="holWeekly"> 毎週</label>
-                <label><input type="checkbox" id="holBiWeekly"> 隔週</label>
-                <label><input type="checkbox" id="holHoliday"> 祝日</label>
-                <label><input type="checkbox" id="holOther"> その他</label>
+                <label><input type="checkbox" id="holWeekly" onchange="update()"> 毎週</label>
+                <label><input type="checkbox" id="holBiWeekly" onchange="update()"> 隔週</label>
+                <label><input type="checkbox" id="holHoliday" onchange="update()"> 祝日</label>
+                <label><input type="checkbox" id="holTekigi" onchange="update()"> 適宜</label>
+                <label><input type="checkbox" id="holOther" onchange="update()"> その他</label>
             </div>
             <div class="cbg" style="margin-top:4px;">
                 <label><input type="checkbox" class="hol-dow" value="月"> 月</label>
@@ -251,7 +263,7 @@
     </div>
 
     <div class="sec"><h3>&#9317; 備考</h3>
-        <textarea id="remarksField" oninput="update()"></textarea>
+        <textarea id="remarksField" rows="5" oninput="update()"></textarea>
     </div>
 
     <div class="btn-area">
@@ -283,7 +295,7 @@
         </table></td></tr>
         <tr><th>雇用期間</th><td><span class="d-emp-type"></span>　<span class="d-emp-period"></span></td></tr>
         <tr><th>試用期間</th><td><span class="d-trial"></span></td></tr>
-        <tr><th>勤務日</th><td><span class="d-work-style"></span>　<span class="d-dow"></span></td></tr>
+        <tr><th>勤務日</th><td><span class="d-work-style"></span>　<span class="d-work-freq"></span>　<span class="d-dow"></span></td></tr>
         <tr><th>勤務時間</th><td><span class="d-hours"></span>　〔実働　<span class="d-actual"></span>〕</td></tr>
         <tr><th>時間外労働</th><td><span class="d-overtime-type"></span></td></tr>
         <tr><th>休憩時間</th><td><span class="d-break"></span></td></tr>
@@ -293,15 +305,15 @@
         <tr><th>交通費</th><td><span class="d-transport"></span></td></tr>
         <tr><th>昇給</th><td><span class="d-raise"></span></td></tr>
         <tr><th>賃金支払方法</th><td><span class="d-pay-method"></span></td></tr>
-        <tr><th>社会・労働保険<br>加入状況</th><td><span class="d-insurance"></span><div style="text-align:right;margin-top:3px;">紹介手数料15%　＋消費税</div></td></tr>
+        <tr><th>社会・労働保険<br>加入状況</th><td><span class="d-insurance"></span></td></tr>
         <tr><th>備考</th><td><span class="d-remarks"></span></td></tr>
     </table>
     <div class="doc-note">1. 手数料は別表のとおりです。2. 採否については至急に電話または書面によりご連絡をお願いいたします。</div>
     <div class="doc-footer">
-        <div>所在地　〒107-0052 東京都港区赤坂6-10-45-203</div>
-        <div class="co-name">紹介所　有限会社　ワークオフィス谷</div>
-        <div>代表者　代表取締役　谷 二三代</div>
-        <div>連絡先　TEL 03-5544-8315　FAX 03-5544-8316</div>
+        <div>〒107-0052 東京都港区赤坂6-10-45-203</div>
+        <div class="co-name">有限会社　ワークオフィス谷</div>
+        <div>代表取締役　谷 二三代</div>
+        <div>TEL 03-5544-8315　FAX 03-5544-8316</div>
     </div>
 </div>
 
@@ -319,7 +331,7 @@
         <tr><th>就業場所</th><td><table class="inner"><tr><td>〒<span class="d-work-postal"></span>　<span class="d-workplace"></span></td></tr><tr><td>最寄り駅　<span class="d-station"></span>　<span class="d-line"></span>線　　駅から 徒歩・バス　<span class="d-access"></span></td></tr><tr><td>受動喫煙防止措置状況　<span class="d-smoking"></span></td></tr></table></td></tr>
         <tr><th>雇用期間</th><td><span class="d-emp-type"></span>　<span class="d-emp-period"></span></td></tr>
         <tr><th>試用期間</th><td><span class="d-trial"></span></td></tr>
-        <tr><th>勤務日</th><td><span class="d-work-style"></span>　<span class="d-dow"></span></td></tr>
+        <tr><th>勤務日</th><td><span class="d-work-style"></span>　<span class="d-work-freq"></span>　<span class="d-dow"></span></td></tr>
         <tr><th>勤務時間</th><td><span class="d-hours"></span>　〔実働　<span class="d-actual"></span>〕</td></tr>
         <tr><th>時間外労働</th><td><span class="d-overtime-type"></span></td></tr>
         <tr><th>休憩時間</th><td><span class="d-break"></span></td></tr>
@@ -329,15 +341,15 @@
         <tr><th>交通費</th><td><span class="d-transport"></span></td></tr>
         <tr><th>昇給</th><td><span class="d-raise"></span></td></tr>
         <tr><th>賃金支払方法</th><td><span class="d-pay-method"></span></td></tr>
-        <tr><th>社会・労働保険<br>加入状況</th><td><span class="d-insurance"></span><div style="text-align:right;margin-top:3px;">紹介手数料15%　＋消費税</div></td></tr>
+        <tr><th>社会・労働保険<br>加入状況</th><td><span class="d-insurance"></span></td></tr>
         <tr><th>備考</th><td><span class="d-remarks"></span></td></tr>
     </table>
     <div class="doc-note">1. 手数料は別表のとおりです。2. 採否については至急に電話または書面によりご連絡をお願いいたします。</div>
     <div class="doc-footer">
-        <div>所在地　〒107-0052 東京都港区赤坂6-10-45-203</div>
-        <div class="co-name">紹介所　有限会社　ワークオフィス谷</div>
-        <div>代表者　代表取締役　谷 二三代</div>
-        <div>連絡先　TEL 03-5544-8315　FAX 03-5544-8316</div>
+        <div>〒107-0052 東京都港区赤坂6-10-45-203</div>
+        <div class="co-name">有限会社　ワークオフィス谷</div>
+        <div>代表取締役　谷 二三代</div>
+        <div>TEL 03-5544-8315　FAX 03-5544-8316</div>
     </div>
 </div>
 
@@ -355,7 +367,7 @@
         <tr><th>就業場所</th><td><table class="inner"><tr><td>〒<span class="d-work-postal"></span>　<span class="d-workplace"></span></td></tr><tr><td>最寄り駅　<span class="d-station"></span>　<span class="d-line"></span>線　　駅から 徒歩・バス　<span class="d-access"></span></td></tr><tr><td>受動喫煙防止措置状況　<span class="d-smoking"></span></td></tr></table></td></tr>
         <tr><th>雇用期間</th><td><span class="d-emp-type"></span>　<span class="d-emp-period"></span></td></tr>
         <tr><th>試用期間</th><td><span class="d-trial"></span></td></tr>
-        <tr><th>勤務日</th><td><span class="d-work-style"></span>　<span class="d-dow"></span></td></tr>
+        <tr><th>勤務日</th><td><span class="d-work-style"></span>　<span class="d-work-freq"></span>　<span class="d-dow"></span></td></tr>
         <tr><th>勤務時間</th><td><span class="d-hours"></span>　〔実働　<span class="d-actual"></span>〕</td></tr>
         <tr><th>時間外労働</th><td><span class="d-overtime-type"></span></td></tr>
         <tr><th>休憩時間</th><td><span class="d-break"></span></td></tr>
@@ -365,15 +377,15 @@
         <tr><th>交通費</th><td><span class="d-transport"></span></td></tr>
         <tr><th>昇給</th><td><span class="d-raise"></span></td></tr>
         <tr><th>賃金支払方法</th><td><span class="d-pay-method"></span></td></tr>
-        <tr><th>社会・労働保険<br>加入状況</th><td><span class="d-insurance"></span><div style="text-align:right;margin-top:3px;">紹介手数料15%　＋消費税</div></td></tr>
+        <tr><th>社会・労働保険<br>加入状況</th><td><span class="d-insurance"></span></td></tr>
         <tr><th>備考</th><td><span class="d-remarks"></span></td></tr>
     </table>
     <div class="doc-note">1. 手数料は別表のとおりです。2. 採否については至急に電話または書面によりご連絡をお願いいたします。</div>
     <div class="doc-footer">
-        <div>所在地　〒107-0052 東京都港区赤坂6-10-45-203</div>
-        <div class="co-name">紹介所　有限会社　ワークオフィス谷</div>
-        <div>代表者　代表取締役　谷 二三代</div>
-        <div>連絡先　TEL 03-5544-8315　FAX 03-5544-8316</div>
+        <div>〒107-0052 東京都港区赤坂6-10-45-203</div>
+        <div class="co-name">有限会社　ワークオフィス谷</div>
+        <div>代表取締役　谷 二三代</div>
+        <div>TEL 03-5544-8315　FAX 03-5544-8316</div>
     </div>
 </div>
 </div>
@@ -451,6 +463,20 @@ function toggleTrialPeriod(){
 
 function gc(name){var v=document.querySelector('input[name='+name+']:checked');return v?v.value:'';}
 function getDow(cls){return Array.from(document.querySelectorAll('.'+cls+':checked')).map(function(c){return c.value;}).join('・');}
+function getDowWithDay(cls){
+    var dayMap={'月':'月曜日','火':'火曜日','水':'水曜日','木':'木曜日','金':'金曜日','土':'土曜日','日':'日曜日'};
+    return Array.from(document.querySelectorAll('.'+cls+':checked')).map(function(c){return dayMap[c.value]||c.value;}).join('・');
+}
+function calcActual(){
+    var h=parseInt(g('actualHoursNum').value)||0;
+    var m=parseInt(g('actualMinsNum').value)||0;
+    if(g('actualHoursNum').value===''&&g('actualMinsNum').value===''){
+        g('actualHours').value=''; update(); return;
+    }
+    var mStr=String(m).padStart(2,'0');
+    g('actualHours').value=h+'時間'+mStr+'分';
+    update();
+}
 function getTime(hId,mId){var h=g(hId).value,m=g(mId).value;return(h&&m)?h+':'+m:'';}
 
 function update(){
@@ -478,6 +504,7 @@ function update(){
     if(g('holBiWeekly').checked) hol.push('隔週');
     var hDow=getDow('hol-dow'); if(hDow) hol.push(hDow+'曜日');
     if(g('holHoliday').checked) hol.push('祝日');
+    if(g('holTekigi').checked) hol.push('適宜');
     if(g('holOther').checked) hol.push('その他');
 
     var bw=g('baseWage').value?parseInt(g('baseWage').value).toLocaleString():'';
@@ -516,7 +543,8 @@ function update(){
     setAll('d-emp-period',  ePeriod);
     setAll('d-trial',       tStr);
     setAll('d-work-style',  gc('workStyle'));
-    setAll('d-dow',         getDow('dow'));
+    setAll('d-work-freq',   gc('workFreq'));
+    setAll('d-dow',         getDowWithDay('dow'));
     setAll('d-hours',       hoursStr);
     setAll('d-actual',      g('actualHours').value);
     setAll('d-overtime-type',gc('overtime'));
@@ -554,17 +582,21 @@ function collectFormData(){
         trialFrom:      g('trialFrom').value,
         trialTo:        g('trialTo').value,
         workStyle:      gc('workStyle'),
+        workFreq:       gc('workFreq'),
         dow:            getDow('dow'),
         wSH:            g('wSH').value,
         wSM:            g('wSM').value,
         wEH:            g('wEH').value,
         wEM:            g('wEM').value,
+        actualHoursNum: g('actualHoursNum').value,
+        actualMinsNum:  g('actualMinsNum').value,
         actualHours:    g('actualHours').value,
         overtime:       gc('overtime'),
         breakTime:      g('breakTime').value,
         holWeekly:      g('holWeekly').checked,
         holBiWeekly:    g('holBiWeekly').checked,
         holHoliday:     g('holHoliday').checked,
+        holTekigi:      g('holTekigi').checked,
         holOther:       g('holOther').checked,
         holDow:         getDow('hol-dow'),
         wageType:       gc('wageType'),
@@ -641,6 +673,7 @@ function restoreFormData(fd){
         if(data.trialPeriod==='有') g('trialPeriodArea').style.display='block';
     }
     if(data.workStyle) document.querySelectorAll('input[name=workStyle]').forEach(function(r){if(r.value===data.workStyle)r.checked=true;});
+    if(data.workFreq) document.querySelectorAll('input[name=workFreq]').forEach(function(r){if(r.value===data.workFreq)r.checked=true;});
 
     if(data.dow){
         var dows=data.dow.split('・');
@@ -650,13 +683,16 @@ function restoreFormData(fd){
     if(data.wSM) g('wSM').value=data.wSM;
     if(data.wEH) g('wEH').value=data.wEH;
     if(data.wEM) g('wEM').value=data.wEM;
-    if(data.actualHours) g('actualHours').value=data.actualHours;
+    if(data.actualHoursNum) g('actualHoursNum').value=data.actualHoursNum;
+    if(data.actualMinsNum)  g('actualMinsNum').value=data.actualMinsNum;
+    if(data.actualHours)    g('actualHours').value=data.actualHours;
     if(data.overtime) document.querySelectorAll('input[name=overtime]').forEach(function(r){if(r.value===data.overtime)r.checked=true;});
     if(data.breakTime) g('breakTime').value=data.breakTime;
 
     if(data.holWeekly)  g('holWeekly').checked=true;
     if(data.holBiWeekly) g('holBiWeekly').checked=true;
     if(data.holHoliday) g('holHoliday').checked=true;
+    if(data.holTekigi)  g('holTekigi').checked=true;
     if(data.holOther)   g('holOther').checked=true;
     if(data.holDow){
         var hdows=data.holDow.split('・');
@@ -749,6 +785,11 @@ window.addEventListener('load',function(){
     if(editId){
         var infoBox=document.querySelector('.info-box');
         if(infoBox) infoBox.textContent='✏️ 編集モード：変更後「保存する」を押してください。';
+    }
+
+    // 備考デフォルト値（新規作成時のみ）
+    if(!editId && (!formDataVal || formDataVal==='' || formDataVal==='{}')) {
+        g('remarksField').value='紹介手数料15%　＋消費税';
     }
 
     update();
