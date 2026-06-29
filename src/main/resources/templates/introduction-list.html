@@ -8,7 +8,6 @@
         .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         h1 { margin: 0; color: #333; font-size: 20px; }
         .back-btn   { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
-        .new-btn    { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; margin-right: 8px; }
         .pdf-btn { background: #E53935; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; margin-right: 8px; font-weight: bold; }
         .pdf-btn:hover { background: #b71c1c; }
         .del-all-btn { background: #d32f2f; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: bold; margin-right: 8px; }
@@ -29,6 +28,8 @@
         .edit-link:hover { background: #FF9800; color: white; }
         .detail-link { color: #1565c0; text-decoration: none; font-weight: bold; padding: 3px 8px; border: 1px solid #1565c0; border-radius: 3px; font-size: 12px; display: inline-block; vertical-align: middle; margin-left: 4px; }
         .detail-link:hover { background: #1565c0; color: white; }
+        .print-link  { color: #4CAF50; text-decoration: none; font-weight: bold; padding: 3px 8px; border: 1px solid #4CAF50; border-radius: 3px; font-size: 12px; display: inline-block; vertical-align: middle; }
+        .print-link:hover { background: #4CAF50; color: white; }
         .delete-link { color: #f44336; text-decoration: none; font-weight: bold; padding: 3px 8px; border: 1px solid #f44336; border-radius: 3px; font-size: 12px; display: inline-block; vertical-align: middle; margin-left: 4px; cursor: pointer; }
         .delete-link:hover { background: #f44336; color: white; }
         .empty { text-align: center; padding: 40px; color: #999; }
@@ -78,14 +79,13 @@
 <div class="header">
     <h1>&#128203; 紹介状一覧（1-6-2）</h1>
     <div>
-        <a href="/introduction" class="new-btn">&#43; 新規作成（1-6-1）</a>
         <a href="/introduction/export-pdf" class="pdf-btn"
            th:if="${not #lists.isEmpty(introductions)}">&#128196; PDF一括保存（ZIP）</a>
         <button class="del-all-btn" onclick="openModal1()"
                 th:if="${not #lists.isEmpty(introductions)}">
             &#128465; 全件削除
         </button>
-        <a href="/menu" class="back-btn">&#8592; 初期画面に戻る</a>
+        <a href="/introduction-menu" class="back-btn">&#8592; 紹介状（1-6）に戻る</a>
     </div>
 </div>
 
@@ -115,6 +115,7 @@
                 <td th:text="${customerMap.containsKey(intro.customerId) ? customerMap.get(intro.customerId) : '-'}"></td>
                 <td th:text="${intro.createdAt != null ? #temporals.format(intro.createdAt, 'yyyy/MM/dd HH:mm') : '-'}"></td>
                 <td>
+                    <a th:href="@{/introduction/edit/{id}(id=${intro.id})}" class="print-link">&#128196; 印刷内容確認</a>
                     <a th:href="@{/introduction/edit/{id}(id=${intro.id})}" class="edit-link">修正</a>
                     <a th:href="@{/introduction/detail/{id}(id=${intro.id})}" class="detail-link">詳細</a>
                     <a href="#" class="delete-link"
@@ -125,8 +126,7 @@
     </table>
 
     <div class="empty" th:if="${#lists.isEmpty(introductions)}">
-        保存済みの紹介状がありません。<br>
-        <a href="/introduction" style="color:#4CAF50;font-weight:bold;">&#43; 新規作成</a>
+        保存済みの紹介状がありません。
     </div>
 </div>
 
