@@ -53,7 +53,7 @@
         .day-checkbox { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
         .day-time-box { display: none; align-items: center; gap: 4px; }
         .day-time-box.show { display: flex; }
-        .day-time-box input[type="time"] { padding: 4px 6px; font-size: 12px; width: 90px; border: 1px solid #90CAF9; border-radius: 4px; background: #E3F2FD; }
+        .day-time-box select { padding: 4px 6px; font-size: 12px; width: 90px; border: 1px solid #90CAF9; border-radius: 4px; background: #E3F2FD; cursor: pointer; }
         .day-time-box span { font-size: 12px; color: #555; }
     </style>
 </head>
@@ -357,9 +357,9 @@
                             <span class="day-label">月</span>
                             <input type="checkbox" class="day-checkbox" id="day_月" value="月" onchange="toggleDayTime(this)">
                             <div class="day-time-box" id="time_月">
-                                <input type="time" id="from_月" step="900" onchange="updateSpecificDaysJson()">
+                                <select id="from_月" onchange="updateSpecificDaysJson()"><option value="">--</option></select>
                                 <span>〜</span>
-                                <input type="time" id="to_月" step="900" onchange="updateSpecificDaysJson()">
+                                <select id="to_月" onchange="updateSpecificDaysJson()"><option value="">--</option></select>
                             </div>
                         </div>
                         <!-- 火 -->
@@ -367,9 +367,9 @@
                             <span class="day-label">火</span>
                             <input type="checkbox" class="day-checkbox" id="day_火" value="火" onchange="toggleDayTime(this)">
                             <div class="day-time-box" id="time_火">
-                                <input type="time" id="from_火" step="900" onchange="updateSpecificDaysJson()">
+                                <select id="from_火" onchange="updateSpecificDaysJson()"><option value="">--</option></select>
                                 <span>〜</span>
-                                <input type="time" id="to_火" step="900" onchange="updateSpecificDaysJson()">
+                                <select id="to_火" onchange="updateSpecificDaysJson()"><option value="">--</option></select>
                             </div>
                         </div>
                         <!-- 水 -->
@@ -377,9 +377,9 @@
                             <span class="day-label">水</span>
                             <input type="checkbox" class="day-checkbox" id="day_水" value="水" onchange="toggleDayTime(this)">
                             <div class="day-time-box" id="time_水">
-                                <input type="time" id="from_水" step="900" onchange="updateSpecificDaysJson()">
+                                <select id="from_水" onchange="updateSpecificDaysJson()"><option value="">--</option></select>
                                 <span>〜</span>
-                                <input type="time" id="to_水" step="900" onchange="updateSpecificDaysJson()">
+                                <select id="to_水" onchange="updateSpecificDaysJson()"><option value="">--</option></select>
                             </div>
                         </div>
                         <!-- 木 -->
@@ -387,9 +387,9 @@
                             <span class="day-label">木</span>
                             <input type="checkbox" class="day-checkbox" id="day_木" value="木" onchange="toggleDayTime(this)">
                             <div class="day-time-box" id="time_木">
-                                <input type="time" id="from_木" step="900" onchange="updateSpecificDaysJson()">
+                                <select id="from_木" onchange="updateSpecificDaysJson()"><option value="">--</option></select>
                                 <span>〜</span>
-                                <input type="time" id="to_木" step="900" onchange="updateSpecificDaysJson()">
+                                <select id="to_木" onchange="updateSpecificDaysJson()"><option value="">--</option></select>
                             </div>
                         </div>
                         <!-- 金 -->
@@ -397,9 +397,9 @@
                             <span class="day-label">金</span>
                             <input type="checkbox" class="day-checkbox" id="day_金" value="金" onchange="toggleDayTime(this)">
                             <div class="day-time-box" id="time_金">
-                                <input type="time" id="from_金" step="900" onchange="updateSpecificDaysJson()">
+                                <select id="from_金" onchange="updateSpecificDaysJson()"><option value="">--</option></select>
                                 <span>〜</span>
-                                <input type="time" id="to_金" step="900" onchange="updateSpecificDaysJson()">
+                                <select id="to_金" onchange="updateSpecificDaysJson()"><option value="">--</option></select>
                             </div>
                         </div>
                         <!-- 土 -->
@@ -407,9 +407,9 @@
                             <span class="day-label">土</span>
                             <input type="checkbox" class="day-checkbox" id="day_土" value="土" onchange="toggleDayTime(this)">
                             <div class="day-time-box" id="time_土">
-                                <input type="time" id="from_土" step="900" onchange="updateSpecificDaysJson()">
+                                <select id="from_土" onchange="updateSpecificDaysJson()"><option value="">--</option></select>
                                 <span>〜</span>
-                                <input type="time" id="to_土" step="900" onchange="updateSpecificDaysJson()">
+                                <select id="to_土" onchange="updateSpecificDaysJson()"><option value="">--</option></select>
                             </div>
                         </div>
                         <!-- 日 -->
@@ -417,9 +417,9 @@
                             <span class="day-label">日</span>
                             <input type="checkbox" class="day-checkbox" id="day_日" value="日" onchange="toggleDayTime(this)">
                             <div class="day-time-box" id="time_日">
-                                <input type="time" id="from_日" step="900" onchange="updateSpecificDaysJson()">
+                                <select id="from_日" onchange="updateSpecificDaysJson()"><option value="">--</option></select>
                                 <span>〜</span>
-                                <input type="time" id="to_日" step="900" onchange="updateSpecificDaysJson()">
+                                <select id="to_日" onchange="updateSpecificDaysJson()"><option value="">--</option></select>
                             </div>
                         </div>
                     </div>
@@ -578,6 +578,28 @@ document.getElementById('personForm').addEventListener('submit', function() {
 
 // ─── 特定日 ─────────────────────────────────────────
 var DAYS = ['月','火','水','木','金','土','日'];
+
+// 15分単位の時間オプションを生成して全セレクトに適用
+(function() {
+    var times = [];
+    for (var h = 0; h < 24; h++) {
+        for (var m = 0; m < 60; m += 15) {
+            times.push(String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0'));
+        }
+    }
+    DAYS.forEach(function(day) {
+        ['from_' + day, 'to_' + day].forEach(function(id) {
+            var sel = document.getElementById(id);
+            if (!sel) return;
+            times.forEach(function(t) {
+                var opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = t;
+                sel.appendChild(opt);
+            });
+        });
+    });
+})();
 
 function toggleDayTime(checkbox) {
     var day = checkbox.value;
