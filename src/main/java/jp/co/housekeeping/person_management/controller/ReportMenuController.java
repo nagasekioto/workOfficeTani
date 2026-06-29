@@ -691,20 +691,21 @@ public class ReportMenuController {
         for (int m : months) t.addCell(hdrN(m + "月", bold));
         t.addCell(hdrN("決算額", bold));
 
-        String[] rowLabels = {"求職受付\n手数料", "", "紹介手数料", "サン・ケアネット", "月別合計"};
-        // 求職受付手数料 2行
-        PdfPCell lc1 = new PdfPCell(new Phrase("求職受付\n手数料", bold));
-        lc1.setRowspan(2); lc1.setBorder(Rectangle.BOX); lc1.setPadding(2);
-        lc1.setHorizontalAlignment(Element.ALIGN_CENTER); lc1.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        t.addCell(lc1);
+        // 求職受付手数料（710円×件数）1行
+        t.addCell(hdrN("求職受付\n手数料", bold));
         for (int m : months) t.addCell(rit(fmtN(sd.receptionFee710.getOrDefault(String.valueOf(m), 0)), normal));
         t.addCell(rit(fmtN(sd.receptionFee710Total), bold));
-        for (int m : months) t.addCell(rit(fmtN(sd.receptionFee1000.getOrDefault(String.valueOf(m), 0)), normal));
-        t.addCell(rit(fmtN(sd.receptionFee1000Total), bold));
 
+        // 紹介手数料 1行目（※1累計＋※2累計−サンケアネット）
         t.addCell(hdrN("紹介手数料", bold));
         for (int m : months) t.addCell(rit(fmtN(sd.introFee.getOrDefault(String.valueOf(m), 0)), normal));
         t.addCell(rit(fmtN(sd.introFeeTotal), bold));
+
+        // 紹介手数料 2行目（求人受付事務費 1,000円×件数）
+        Font smallF = new Font(bf, 6);
+        t.addCell(hdrN("(1,000円×件数)", smallF));
+        for (int m : months) t.addCell(rit(fmtN(sd.receptionFee1000.getOrDefault(String.valueOf(m), 0)), normal));
+        t.addCell(rit(fmtN(sd.receptionFee1000Total), bold));
 
         t.addCell(hdrN("サン・ケアネット", bold));
         for (int m : months) t.addCell(rit(fmtN(sd.sancareNet.getOrDefault(String.valueOf(m), 0)), normal));

@@ -135,26 +135,26 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- 求職受付手数料 1行目（710円×件数）-->
+                        <!-- 求職受付手数料（710円×件数 / 1行）-->
                         <tr>
-                            <td class="lbl-sub">求職受付手数料①<br><small style="color:#888;">（710円×件数）</small></td>
+                            <td class="lbl">求職受付手数料<br><small style="color:#888;font-weight:normal;">（710円×件数）</small></td>
                             <td th:each="m : ${compMonths}"
                                 th:text="${compData.receptionFee710[#strings.toString(m)] != null ? #numbers.formatInteger(compData.receptionFee710[#strings.toString(m)],1,'COMMA') : '0'}"></td>
                             <td class="tot" th:text="${#numbers.formatInteger(compData.receptionFee710Total,1,'COMMA')}"></td>
                         </tr>
-                        <!-- 求職受付手数料 2行目（1000円×件数）-->
-                        <tr>
-                            <td class="lbl-sub">求職受付手数料②<br><small style="color:#888;">（1,000円×件数）</small></td>
-                            <td th:each="m : ${compMonths}"
-                                th:text="${compData.receptionFee1000[#strings.toString(m)] != null ? #numbers.formatInteger(compData.receptionFee1000[#strings.toString(m)],1,'COMMA') : '0'}"></td>
-                            <td class="tot" th:text="${#numbers.formatInteger(compData.receptionFee1000Total,1,'COMMA')}"></td>
-                        </tr>
-                        <!-- 紹介手数料 -->
+                        <!-- 紹介手数料 1行目（※1累計＋※2累計－サンケアネット）-->
                         <tr>
                             <td class="lbl">紹介手数料</td>
                             <td th:each="m : ${compMonths}"
                                 th:text="${compData.introFee[#strings.toString(m)] != null ? #numbers.formatInteger(compData.introFee[#strings.toString(m)],1,'COMMA') : '0'}"></td>
                             <td class="tot" th:text="${#numbers.formatInteger(compData.introFeeTotal,1,'COMMA')}"></td>
+                        </tr>
+                        <!-- 紹介手数料 2行目（求人受付事務費 1,000円×件数）-->
+                        <tr>
+                            <td class="lbl-sub"><small style="color:#888;">（求人受付事務費 1,000円×件数）</small></td>
+                            <td th:each="m : ${compMonths}"
+                                th:text="${compData.receptionFee1000[#strings.toString(m)] != null ? #numbers.formatInteger(compData.receptionFee1000[#strings.toString(m)],1,'COMMA') : '0'}"></td>
+                            <td class="tot" th:text="${#numbers.formatInteger(compData.receptionFee1000Total,1,'COMMA')}"></td>
                         </tr>
                         <!-- サン・ケアネット（手入力） -->
                         <tr>
@@ -203,22 +203,22 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td class="lbl-sub">求職受付手数料①<br><small style="color:#888;">（710円×件数）</small></td>
+                            <td class="lbl">求職受付手数料<br><small style="color:#888;font-weight:normal;">（710円×件数）</small></td>
                             <td th:each="m : ${laborMonths}"
                                 th:text="${laborData.receptionFee710[#strings.toString(m)] != null ? #numbers.formatInteger(laborData.receptionFee710[#strings.toString(m)],1,'COMMA') : '0'}"></td>
                             <td class="tot" th:text="${#numbers.formatInteger(laborData.receptionFee710Total,1,'COMMA')}"></td>
-                        </tr>
-                        <tr>
-                            <td class="lbl-sub">求職受付手数料②<br><small style="color:#888;">（1,000円×件数）</small></td>
-                            <td th:each="m : ${laborMonths}"
-                                th:text="${laborData.receptionFee1000[#strings.toString(m)] != null ? #numbers.formatInteger(laborData.receptionFee1000[#strings.toString(m)],1,'COMMA') : '0'}"></td>
-                            <td class="tot" th:text="${#numbers.formatInteger(laborData.receptionFee1000Total,1,'COMMA')}"></td>
                         </tr>
                         <tr>
                             <td class="lbl">紹介手数料</td>
                             <td th:each="m : ${laborMonths}"
                                 th:text="${laborData.introFee[#strings.toString(m)] != null ? #numbers.formatInteger(laborData.introFee[#strings.toString(m)],1,'COMMA') : '0'}"></td>
                             <td class="tot" th:text="${#numbers.formatInteger(laborData.introFeeTotal,1,'COMMA')}"></td>
+                        </tr>
+                        <tr>
+                            <td class="lbl-sub"><small style="color:#888;">（求人受付事務費 1,000円×件数）</small></td>
+                            <td th:each="m : ${laborMonths}"
+                                th:text="${laborData.receptionFee1000[#strings.toString(m)] != null ? #numbers.formatInteger(laborData.receptionFee1000[#strings.toString(m)],1,'COMMA') : '0'}"></td>
+                            <td class="tot" th:text="${#numbers.formatInteger(laborData.receptionFee1000Total,1,'COMMA')}"></td>
                         </tr>
                         <tr>
                             <td class="lbl">サン・ケアネット<br><small style="color:#888;font-weight:normal;">（手入力）</small></td>
