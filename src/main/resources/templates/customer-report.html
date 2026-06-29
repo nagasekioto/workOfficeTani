@@ -155,7 +155,13 @@
             <div><label style="font-size:11px;color:#777;">取扱状況</label><br><span>-</span></div>
         </div>
 
-        <button class="btn-print" onclick="window.print()">&#128438; 印刷</button>
+        <div style="display:flex;gap:10px;margin-top:15px;">
+            <a th:href="@{/customer/report/pdf(customerId=${selectedCustomer.id})}"
+               target="_blank" style="background:#4CAF50;color:white;border:none;border-radius:5px;padding:10px 20px;cursor:pointer;font-size:15px;text-decoration:none;display:inline-block;">&#128196; 印刷内容確認</a>
+            <button class="btn-print" onclick="printPdf()">&#128424; 印刷</button>
+            <a th:href="@{/customer/report/pdf(customerId=${selectedCustomer.id},mode='download')}"
+               style="background:#FF6F00;color:white;border:none;border-radius:5px;padding:10px 20px;cursor:pointer;font-size:15px;text-decoration:none;display:inline-block;">&#128190; 保存（PDF）</a>
+        </div>
     </div>
 
     <div class="empty-msg" th:if="${selectedCustomer == null}">
@@ -170,5 +176,13 @@
     .ledger-card { box-shadow: none; }
 }
 </style>
+<script>
+function printPdf() {
+    var id = new URLSearchParams(window.location.search).get('customerId');
+    if (!id) return;
+    var w = window.open('/customer/report/pdf?customerId=' + id, '_blank');
+    if (w) { w.onload = function() { w.print(); }; }
+}
+</script>
 </body>
 </html>
