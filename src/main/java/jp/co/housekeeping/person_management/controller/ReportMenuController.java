@@ -696,14 +696,18 @@ public class ReportMenuController {
         for (int m : months) t.addCell(rit(fmtN(sd.receptionFee710.getOrDefault(String.valueOf(m), 0)), normal));
         t.addCell(rit(fmtN(sd.receptionFee710Total), bold));
 
-        // 紹介手数料 1行目（※1累計＋※2累計−サンケアネット）
-        t.addCell(hdrN("紹介手数料", bold));
+        // 紹介手数料（ラベルを rowspan=2 で結合）
+        PdfPCell introLabel = new PdfPCell(new Phrase("紹介手数料", bold));
+        introLabel.setRowspan(2);
+        introLabel.setBorder(Rectangle.BOX);
+        introLabel.setPadding(2);
+        introLabel.setHorizontalAlignment(Element.ALIGN_CENTER);
+        introLabel.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        t.addCell(introLabel);
+        // 1行目（※1累計＋※2累計−サンケアネット）
         for (int m : months) t.addCell(rit(fmtN(sd.introFee.getOrDefault(String.valueOf(m), 0)), normal));
         t.addCell(rit(fmtN(sd.introFeeTotal), bold));
-
-        // 紹介手数料 2行目（求人受付事務費 1,000円×件数）
-        Font smallF = new Font(bf, 6);
-        t.addCell(hdrN("(1,000円×件数)", smallF));
+        // 2行目（求人受付事務費 1,000円×件数）※ラベルセルは rowspan で結合済みのため追加不要
         for (int m : months) t.addCell(rit(fmtN(sd.receptionFee1000.getOrDefault(String.valueOf(m), 0)), normal));
         t.addCell(rit(fmtN(sd.receptionFee1000Total), bold));
 
