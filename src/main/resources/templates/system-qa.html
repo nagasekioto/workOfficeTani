@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>システム診断（1-5-1） - 家政婦紹介事務所</title>
+    <style>
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; color: #333; }
+        .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
+        .container { max-width: 1100px; margin: 0 auto; }
+
+        /* チェック結果カード */
+        .check-card { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; overflow: hidden; }
+        .check-header { padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+        .check-header.ok    { background: #E8F5E9; border-left: 5px solid #4CAF50; }
+        .check-header.warn  { background: #FFF8E1; border-left: 5px solid #FF9800; }
+        .check-header.error { background: #FFEBEE; border-left: 5px solid #F44336; }
+        .check-icon { font-size: 24px; }
+        .check-title { font-size: 16px; font-weight: bold; color: #333; }
+        .check-count { margin-left: auto; font-size: 13px; font-weight: bold; padding: 3px 10px; border-radius: 12px; }
+        .count-ok    { background: #C8E6C9; color: #1B5E20; }
+        .count-warn  { background: #FFE0B2; color: #E65100; }
+        .count-error { background: #FFCDD2; color: #B71C1C; }
+
+        .check-body { padding: 0 20px 16px 20px; }
+        .cause-box { background: #FFF3E0; border: 1px solid #FFB74D; border-radius: 6px; padding: 12px 16px; margin: 10px 0; font-size: 13px; line-height: 1.7; }
+        .cause-box .cause-title { font-weight: bold; color: #E65100; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+        .fix-box { background: #E3F2FD; border: 1px solid #64B5F6; border-radius: 6px; padding: 12px 16px; margin: 10px 0; font-size: 13px; line-height: 1.7; }
+        .fix-box .fix-title { font-weight: bold; color: #0D47A1; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+        .fix-step { margin: 4px 0 4px 16px; }
+        .fix-link { display: inline-block; background: #1976D2; color: white; padding: 6px 14px; border-radius: 4px; text-decoration: none; font-size: 12px; margin-top: 8px; }
+        .fix-link:hover { background: #0D47A1; }
+
+        /* 未発行データ一覧テーブル */
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+        th { background: #F44336; color: white; padding: 8px 10px; text-align: center; }
+        th.warn-th { background: #FF9800; }
+        td { padding: 7px 10px; border-bottom: 1px solid #eee; vertical-align: middle; }
+        td a { color: #1976D2; text-decoration: none; font-weight: bold; }
+        td a:hover { text-decoration: underline; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; }
+        .badge-no  { background: #FFCDD2; color: #B71C1C; }
+        .badge-yes { background: #C8E6C9; color: #1B5E20; }
+
+        .ok-message { padding: 14px 0 4px 0; color: #388E3C; font-weight: bold; font-size: 14px; }
+
+        /* フィルタ */
+        .filter-row { display: flex; gap: 12px; align-items: flex-end; margin-bottom: 16px; flex-wrap: wrap; }
+        .filter-row label { font-weight: bold; color: #555; font-size: 13px; display: block; margin-bottom: 3px; }
+        .filter-row input[type=month] { padding: 7px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+        .filter-btn { background: #546E7A; color: white; border: none; border-radius: 4px; padding: 8px 18px; cursor: pointer; font-size: 13px; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>&#128270; システム診断（1-5-1）</h1>
+    <a href="/other-menu" class="back-btn">&#8592; その他に戻る</a>
+</div>
+<div class="container">
+
+    <!-- 月絞り込み -->
+    <div style="background:white;padding:18px 20px;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);margin-bottom:20px;">
+        <form method="get" action="/system-qa">
+            <div class="filter-row">
+                <div>
+                    <label>診断対象月（省略時：全期間）</label>
+                    <input type="month" name="month" th:value="${selectedMonth}">
+                </div>
+                <button type="submit" class="filter-btn">&#128270; 診断実行</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- チェック1: 領収書未発行データ（1-3-1に出てこない原因） -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="check-card">
+        <div th:class="${#lists.isEmpty(unissuedRows)} ? 'check-header ok' : 'check-header error'">
+            <span class="check-icon" th:text="${#lists.isEmpty(unissuedRows)} ? '✅' : '🚨'"></span>
+            <span class="check-title">【チェック①】領収書が未発行のデータ（紹介手数料管理簿・求職受付手数料管理簿に表示されない原因）</span>
+            <span th:class="${#lists.isEmpty(unissuedRows)} ? 'check-count count-ok' : 'check-count count-error'"
+                  th:text="${#lists.isEmpty(unissuedRows)} ? '問題なし' : (${#lists.size(unissuedRows)} + '件 未発行')"></span>
+        </div>
+        <div class="check-body">
+
+            <th:block th:if="${not #lists.isEmpty(unissuedRows)}">
+                <div class="cause-box">
+                    <div class="cause-title">&#9888; 原因</div>
+                    紹介手数料管理簿（1-3-1）・求職受付手数料管理簿（1-3-2）には、<strong>1-7（領収書作成）で領収書を発行済みのデータのみ</strong>が表示されます。<br>
+                    以下のデータは売上明細は存在しますが、領収書がまだ発行されていないため管理簿に表示されません。
+                </div>
+                <div class="fix-box">
+                    <div class="fix-title">&#128161; 解決方法</div>
+                    <div class="fix-step">① 下の一覧で対象のデータを確認する</div>
+                    <div class="fix-step">② 「1-7 領収書作成」画面を開き、該当する求職者の領収書を発行する</div>
+                    <div class="fix-step">③ 発行後、紹介手数料管理簿（1-3-1）または求職受付手数料管理簿（1-3-2）を再度確認する</div>
+                    <a href="/receipt-menu" class="fix-link">&#128196; 1-7 領収書作成へ移動</a>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>求職者名</th>
+                            <th>求人者名</th>
+                            <th>就労開始日</th>
+                            <th>就労終了日</th>
+                            <th>紹介日</th>
+                            <th>賃金</th>
+                            <th class="warn-th">領収書</th>
+                            <th>詳細</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="r : ${unissuedRows}">
+                            <td th:text="${r.personName}">-</td>
+                            <td th:text="${r.customerName}">-</td>
+                            <td th:text="${r.workStartDate}">-</td>
+                            <td th:text="${r.workEndDate}">-</td>
+                            <td th:text="${r.introductionDate}">-</td>
+                            <td th:text="${r.wageStr}">-</td>
+                            <td><span class="badge badge-no">未発行</span></td>
+                            <td><a th:href="@{/person/sales(personId=${r.personId})}">売上明細を開く</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </th:block>
+
+            <div class="ok-message" th:if="${#lists.isEmpty(unissuedRows)}">
+                ✅ 領収書未発行のデータはありません。すべての売上明細で領収書が発行済みです。
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- チェック2: issued_at が NULL（古いデータ） -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="check-card">
+        <div th:class="${#lists.isEmpty(noIssuedAtRows)} ? 'check-header ok' : 'check-header warn'">
+            <span class="check-icon" th:text="${#lists.isEmpty(noIssuedAtRows)} ? '✅' : '⚠️'"></span>
+            <span class="check-title">【チェック②】発行日時（issued_at）が未設定のデータ（管理簿の月がズレる可能性）</span>
+            <span th:class="${#lists.isEmpty(noIssuedAtRows)} ? 'check-count count-ok' : 'check-count count-warn'"
+                  th:text="${#lists.isEmpty(noIssuedAtRows)} ? '問題なし' : (${#lists.size(noIssuedAtRows)} + '件 要確認')"></span>
+        </div>
+        <div class="check-body">
+            <th:block th:if="${not #lists.isEmpty(noIssuedAtRows)}">
+                <div class="cause-box">
+                    <div class="cause-title">&#9888; 原因</div>
+                    領収書番号（receipt_no）はありますが、<strong>発行日時（issued_at）が設定されていない</strong>古いデータです。<br>
+                    この場合、紹介日（introduction_date）や就労日で月が判定されるため、<strong>意図した月と別の月に表示される</strong>ことがあります。
+                </div>
+                <div class="fix-box">
+                    <div class="fix-title">&#128161; 解決方法</div>
+                    <div class="fix-step">① 1-7（領収書作成）で該当の領収書を再度「印刷内容確認」ボタンで開く</div>
+                    <div class="fix-step">② 開くだけで issued_at が現在時刻にセットされます</div>
+                    <div class="fix-step">③ ただし月が変わる可能性があるため、実際の発行月を確認してから実行してください</div>
+                    <a href="/receipt-menu" class="fix-link">&#128196; 1-7 領収書作成へ移動</a>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>求職者名</th>
+                            <th>求人者名</th>
+                            <th>領収書番号</th>
+                            <th>就労開始日</th>
+                            <th>就労終了日</th>
+                            <th>紹介日</th>
+                            <th class="warn-th">issued_at</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="r : ${noIssuedAtRows}">
+                            <td th:text="${r.personName}">-</td>
+                            <td th:text="${r.customerName}">-</td>
+                            <td th:text="${r.receiptNo}">-</td>
+                            <td th:text="${r.workStartDate}">-</td>
+                            <td th:text="${r.workEndDate}">-</td>
+                            <td th:text="${r.introductionDate}">-</td>
+                            <td><span class="badge badge-no">未設定</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </th:block>
+            <div class="ok-message" th:if="${#lists.isEmpty(noIssuedAtRows)}">
+                ✅ 発行日時（issued_at）が未設定のデータはありません。
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════ -->
+    <!-- チェック3: 受付手数料なし（1-3-2に出てこない原因） -->
+    <!-- ═══════════════════════════════════════════════════ -->
+    <div class="check-card">
+        <div th:class="${#lists.isEmpty(noReceptionFeeRows)} ? 'check-header ok' : 'check-header warn'">
+            <span class="check-icon" th:text="${#lists.isEmpty(noReceptionFeeRows)} ? '✅' : '⚠️'"></span>
+            <span class="check-title">【チェック③】求人受付事務費（710円）が未設定のデータ（求職受付手数料管理簿に表示されない原因）</span>
+            <span th:class="${#lists.isEmpty(noReceptionFeeRows)} ? 'check-count count-ok' : 'check-count count-warn'"
+                  th:text="${#lists.isEmpty(noReceptionFeeRows)} ? '問題なし' : (${#lists.size(noReceptionFeeRows)} + '件 要確認')"></span>
+        </div>
+        <div class="check-body">
+            <th:block th:if="${not #lists.isEmpty(noReceptionFeeRows)}">
+                <div class="cause-box">
+                    <div class="cause-title">&#9888; 原因</div>
+                    領収書は発行済みですが、<strong>求人受付事務費（710円）が設定されていない</strong>ため、<br>
+                    求職受付手数料管理簿（1-3-2）に表示されません。<br>
+                    初めてその求人者のもとへ行く場合は 710円 が必要ですが、設定が漏れている可能性があります。
+                </div>
+                <div class="fix-box">
+                    <div class="fix-title">&#128161; 確認方法</div>
+                    <div class="fix-step">① 該当の求職者の売上明細（1-1-3）を開く</div>
+                    <div class="fix-step">② 「受付料（710円）」欄が空欄になっていれば、初回訪問かどうか確認する</div>
+                    <div class="fix-step">③ 初回訪問の場合は 710 を入力して保存し、領収書を再発行する</div>
+                    <div class="fix-step">④ 2回目以降であれば設定不要（1-3-2には表示されない）</div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>求職者名</th>
+                            <th>求人者名</th>
+                            <th>領収書番号</th>
+                            <th>就労開始日</th>
+                            <th class="warn-th">受付料（710円）</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="r : ${noReceptionFeeRows}">
+                            <td th:text="${r.personName}">-</td>
+                            <td th:text="${r.customerName}">-</td>
+                            <td th:text="${r.receiptNo}">-</td>
+                            <td th:text="${r.workStartDate}">-</td>
+                            <td><span class="badge badge-no">未設定（0円）</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </th:block>
+            <div class="ok-message" th:if="${#lists.isEmpty(noReceptionFeeRows)}">
+                ✅ 求人受付事務費が未設定の発行済みデータはありません。
+            </div>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>
