@@ -29,7 +29,7 @@
 
         /* 印刷 */
         .print-area{max-width:900px;margin:0 auto;}
-        .doc-page{background:white;padding:13mm 13mm 9mm;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.1);margin-bottom:20px;font-size:10pt;line-height:1.4;min-height:267mm;display:flex;flex-direction:column;}
+        .doc-page{background:white;padding:13mm 13mm 9mm;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.1);margin-bottom:20px;font-size:10pt;line-height:1.4;}
         .doc-head-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;}
         .doc-corner-box{border:1px solid #333;padding:2px 8px;font-size:9.5pt;}
         .doc-ref-no{font-size:9.5pt;}
@@ -45,15 +45,14 @@
         .inner td{border:none;border-bottom:1px solid #ccc;padding:2px 4px;font-size:9pt;}
         .inner tr:last-child td{border-bottom:none;}
         .doc-note{font-size:8pt;margin-top:6px;}
-        .doc-spacer{flex:1;}
-        .doc-footer{margin-top:auto;font-size:9pt;border:2px solid #000;padding:8px 10px 8px 0;text-align:right;line-height:2.1;}
+        .doc-footer{margin-top:8px;font-size:9pt;border:2px solid #000;padding:8px 10px 8px 0;text-align:right;line-height:2.1;}
         .doc-footer .co-name{font-size:11pt;font-weight:bold;}
 
         @media print{
             body{background:white;padding:0;margin:0;}
             .header,.input-area,.no-print{display:none!important;}
             .print-area{max-width:100%;margin:0;}
-            .doc-page{box-shadow:none;border-radius:0;page-break-after:always;margin:0;padding:7mm 11mm 5mm;min-height:277mm;}
+            .doc-page{box-shadow:none;border-radius:0;page-break-after:always;margin:0;padding:7mm 11mm 5mm;}
             .doc-page:last-child{page-break-after:avoid;}
         }
     </style>
@@ -331,7 +330,6 @@
         <tr><th>備考</th><td><span class="d-remarks"></span></td></tr>
     </table>
     <div class="doc-note">1. 手数料は別表のとおりです。2. 採否については至急に電話または書面によりご連絡をお願いいたします。</div>
-    <div class="doc-spacer"></div>
     <div class="doc-footer">
         <div>〒107-0052 東京都港区赤坂6-10-45-203</div>
         <div class="co-name">有限会社　ワークオフィス谷</div>
@@ -368,7 +366,6 @@
         <tr><th>備考</th><td><span class="d-remarks"></span></td></tr>
     </table>
     <div class="doc-note">1. 手数料は別表のとおりです。2. 採否については至急に電話または書面によりご連絡をお願いいたします。</div>
-    <div class="doc-spacer"></div>
     <div class="doc-footer">
         <div>〒107-0052 東京都港区赤坂6-10-45-203</div>
         <div class="co-name">有限会社　ワークオフィス谷</div>
@@ -405,7 +402,6 @@
         <tr><th>備考</th><td><span class="d-remarks"></span></td></tr>
     </table>
     <div class="doc-note">1. 手数料は別表のとおりです。2. 採否については至急に電話または書面によりご連絡をお願いいたします。</div>
-    <div class="doc-spacer"></div>
     <div class="doc-footer">
         <div>〒107-0052 東京都港区赤坂6-10-45-203</div>
         <div class="co-name">有限会社　ワークオフィス谷</div>
