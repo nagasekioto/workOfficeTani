@@ -111,7 +111,7 @@
             <div class="fg"><label>路線</label><input type="text" id="workLine" oninput="update()"></div>
             <div class="fg"><label>駅から（徒歩・バス）</label><input type="text" id="workAccess" placeholder="例：徒歩5分" oninput="update()"></div>
         </div>
-        <div class="fg"><label>受動喫煙防止措置状況</label><input type="text" id="smoking" placeholder="例：敷地内禁煙" oninput="update()"></div>
+        <input type="hidden" id="smoking" value="敷地内禁煙">
     </div>
 
     <div class="sec"><h3>&#9314; 雇用条件</h3>
@@ -185,7 +185,7 @@
                 </div>
             </div>
             <div class="fg"><label>休憩時間</label>
-                <input type="text" id="breakTime" placeholder="例：12:00〜13:00、なし" oninput="update()">
+                <input type="text" id="breakTime" placeholder="例：適宜" oninput="update()" value="適宜">
             </div>
         </div>
         <div class="fg"><label>休日</label>
@@ -193,7 +193,6 @@
                 <label><input type="checkbox" id="holWeekly" onchange="update()"> 毎週</label>
                 <label><input type="checkbox" id="holBiWeekly" onchange="update()"> 隔週</label>
                 <label><input type="checkbox" id="holHoliday" onchange="update()"> 祝日</label>
-                <label><input type="checkbox" id="holTekigi" onchange="update()"> 適宜</label>
                 <label><input type="checkbox" id="holOther" onchange="update()"> その他</label>
             </div>
             <div class="cbg" style="margin-top:4px;">
@@ -504,7 +503,6 @@ function update(){
     if(g('holBiWeekly').checked) hol.push('隔週');
     var hDow=getDow('hol-dow'); if(hDow) hol.push(hDow+'曜日');
     if(g('holHoliday').checked) hol.push('祝日');
-    if(g('holTekigi').checked) hol.push('適宜');
     if(g('holOther').checked) hol.push('その他');
 
     var bw=g('baseWage').value?parseInt(g('baseWage').value).toLocaleString():'';
@@ -596,7 +594,6 @@ function collectFormData(){
         holWeekly:      g('holWeekly').checked,
         holBiWeekly:    g('holBiWeekly').checked,
         holHoliday:     g('holHoliday').checked,
-        holTekigi:      g('holTekigi').checked,
         holOther:       g('holOther').checked,
         holDow:         getDow('hol-dow'),
         wageType:       gc('wageType'),
@@ -692,7 +689,6 @@ function restoreFormData(fd){
     if(data.holWeekly)  g('holWeekly').checked=true;
     if(data.holBiWeekly) g('holBiWeekly').checked=true;
     if(data.holHoliday) g('holHoliday').checked=true;
-    if(data.holTekigi)  g('holTekigi').checked=true;
     if(data.holOther)   g('holOther').checked=true;
     if(data.holDow){
         var hdows=data.holDow.split('・');
@@ -787,8 +783,9 @@ window.addEventListener('load',function(){
         if(infoBox) infoBox.textContent='✏️ 編集モード：変更後「保存する」を押してください。';
     }
 
-    // 備考デフォルト値（新規作成時のみ）
+    // デフォルト値（新規作成時のみ）
     if(!editId && (!formDataVal || formDataVal==='' || formDataVal==='{}')) {
+        g('breakTime').value='適宜';
         g('remarksField').value='紹介手数料15%　＋消費税';
     }
 
