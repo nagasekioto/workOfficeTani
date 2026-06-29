@@ -29,7 +29,7 @@
 
         /* 印刷 */
         .print-area{max-width:900px;margin:0 auto;}
-        .doc-page{background:white;padding:13mm 13mm 9mm;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.1);margin-bottom:20px;font-size:10pt;line-height:1.4;}
+        .doc-page{background:white;padding:13mm 13mm 9mm;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,.1);margin-bottom:20px;font-size:10pt;line-height:1.4;min-height:267mm;display:flex;flex-direction:column;}
         .doc-head-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;}
         .doc-corner-box{border:1px solid #333;padding:2px 8px;font-size:9.5pt;}
         .doc-ref-no{font-size:9.5pt;}
@@ -38,21 +38,22 @@
         .doc-kyunin{font-size:10.5pt;margin-bottom:3px;border-bottom:1px solid #333;padding-bottom:3px;}
         .doc-notice{font-size:8.5pt;color:#555;margin-bottom:3px;}
         .doc-kyushoku{display:flex;align-items:center;gap:8px;border:1px solid #333;padding:3px 8px;margin-bottom:5px;font-size:10.5pt;}
-        .doc-table{width:100%;border-collapse:collapse;margin-bottom:3px;}
-        .doc-table th{background:#f0f0f0;border:1px solid #555;padding:3px 5px;text-align:center;font-size:9pt;white-space:nowrap;width:70px;vertical-align:middle;}
-        .doc-table td{border:1px solid #555;padding:3px 5px;font-size:9pt;vertical-align:top;}
+        .doc-table{width:100%;border-collapse:collapse;margin-bottom:3px;flex-shrink:0;}
+        .doc-table th{background:#f0f0f0;border:1px solid #555;padding:5px 5px;text-align:center;font-size:9pt;white-space:nowrap;width:70px;vertical-align:middle;min-height:22px;}
+        .doc-table td{border:1px solid #555;padding:5px 5px;font-size:9pt;vertical-align:top;min-height:22px;}
         .inner{width:100%;border-collapse:collapse;}
         .inner td{border:none;border-bottom:1px solid #ccc;padding:2px 4px;font-size:9pt;}
         .inner tr:last-child td{border-bottom:none;}
-        .doc-note{font-size:8pt;margin-top:3px;}
-        .doc-footer{margin-top:5px;font-size:9pt;border:2px solid #000;padding:6px 10px 6px 0;text-align:right;line-height:1.9;}
+        .doc-note{font-size:8pt;margin-top:6px;}
+        .doc-spacer{flex:1;}
+        .doc-footer{margin-top:auto;font-size:9pt;border:2px solid #000;padding:8px 10px 8px 0;text-align:right;line-height:2.1;}
         .doc-footer .co-name{font-size:11pt;font-weight:bold;}
 
         @media print{
             body{background:white;padding:0;margin:0;}
             .header,.input-area,.no-print{display:none!important;}
             .print-area{max-width:100%;margin:0;}
-            .doc-page{box-shadow:none;border-radius:0;page-break-after:always;margin:0;padding:7mm 11mm 5mm;}
+            .doc-page{box-shadow:none;border-radius:0;page-break-after:always;margin:0;padding:7mm 11mm 5mm;min-height:277mm;}
             .doc-page:last-child{page-break-after:avoid;}
         }
     </style>
@@ -262,7 +263,29 @@
     </div>
 
     <div class="sec"><h3>&#9317; 備考</h3>
-        <textarea id="remarksField" rows="5" oninput="update()"></textarea>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:12px;color:#888;white-space:nowrap;">1行目</span>
+                <input type="text" id="remarks1" placeholder="例：紹介手数料15%　＋消費税" oninput="updateRemarks()">
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:12px;color:#888;white-space:nowrap;">2行目</span>
+                <input type="text" id="remarks2" placeholder="" oninput="updateRemarks()">
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:12px;color:#888;white-space:nowrap;">3行目</span>
+                <input type="text" id="remarks3" placeholder="" oninput="updateRemarks()">
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:12px;color:#888;white-space:nowrap;">4行目</span>
+                <input type="text" id="remarks4" placeholder="" oninput="updateRemarks()">
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:12px;color:#888;white-space:nowrap;">5行目</span>
+                <input type="text" id="remarks5" placeholder="" oninput="updateRemarks()">
+            </div>
+        </div>
+        <input type="hidden" id="remarksField">
     </div>
 
     <div class="btn-area">
@@ -308,6 +331,7 @@
         <tr><th>備考</th><td><span class="d-remarks"></span></td></tr>
     </table>
     <div class="doc-note">1. 手数料は別表のとおりです。2. 採否については至急に電話または書面によりご連絡をお願いいたします。</div>
+    <div class="doc-spacer"></div>
     <div class="doc-footer">
         <div>〒107-0052 東京都港区赤坂6-10-45-203</div>
         <div class="co-name">有限会社　ワークオフィス谷</div>
@@ -344,6 +368,7 @@
         <tr><th>備考</th><td><span class="d-remarks"></span></td></tr>
     </table>
     <div class="doc-note">1. 手数料は別表のとおりです。2. 採否については至急に電話または書面によりご連絡をお願いいたします。</div>
+    <div class="doc-spacer"></div>
     <div class="doc-footer">
         <div>〒107-0052 東京都港区赤坂6-10-45-203</div>
         <div class="co-name">有限会社　ワークオフィス谷</div>
@@ -380,6 +405,7 @@
         <tr><th>備考</th><td><span class="d-remarks"></span></td></tr>
     </table>
     <div class="doc-note">1. 手数料は別表のとおりです。2. 採否については至急に電話または書面によりご連絡をお願いいたします。</div>
+    <div class="doc-spacer"></div>
     <div class="doc-footer">
         <div>〒107-0052 東京都港区赤坂6-10-45-203</div>
         <div class="co-name">有限会社　ワークオフィス谷</div>
@@ -461,6 +487,22 @@ function toggleTrialPeriod(){
 }
 
 function gc(name){var v=document.querySelector('input[name='+name+']:checked');return v?v.value:'';}
+function updateRemarks(){
+    var lines = [
+        g('remarks1').value,
+        g('remarks2').value,
+        g('remarks3').value,
+        g('remarks4').value,
+        g('remarks5').value
+    ].filter(function(v){ return v.trim() !== ''; });
+    var combined = lines.join('\n');
+    g('remarksField').value = combined;
+    // PDF表示用：改行を<br>に変換してsetAll
+    var htmlLines = lines.join('<br>');
+    document.querySelectorAll('.d-remarks').forEach(function(el){
+        el.innerHTML = htmlLines;
+    });
+}
 function getDow(cls){return Array.from(document.querySelectorAll('.'+cls+':checked')).map(function(c){return c.value;}).join('・');}
 function getDowWithDay(cls){
     var dayMap={'月':'月曜日','火':'火曜日','水':'水曜日','木':'木曜日','金':'金曜日','土':'土曜日','日':'日曜日'};
@@ -555,7 +597,7 @@ function update(){
     setAll('d-raise',       gc('raise'));
     setAll('d-pay-method',  pay.join('　'));
     setAll('d-insurance',   ins.join('　'));
-    setAll('d-remarks',     g('remarksField').value);
+    updateRemarks();
 
     ['doc1','doc2','doc3'].forEach(function(id){g(id).style.display='block';});
 }
@@ -617,6 +659,11 @@ function collectFormData(){
         insWorkSpecial: g('insWorkSpecial').checked,
         insOther:       g('insOther').checked,
         insOtherText:   g('insOtherText').value,
+        remarks1:       g('remarks1').value,
+        remarks2:       g('remarks2').value,
+        remarks3:       g('remarks3').value,
+        remarks4:       g('remarks4').value,
+        remarks5:       g('remarks5').value,
         remarks:        g('remarksField').value
     };
 }
@@ -718,7 +765,18 @@ function restoreFormData(fd){
     if(data.insWorkSpecial) g('insWorkSpecial').checked=true;
     if(data.insOther)       g('insOther').checked=true;
     if(data.insOtherText)   g('insOtherText').value=data.insOtherText;
-    if(data.remarks)        g('remarksField').value=data.remarks;
+    if(data.remarks1) g('remarks1').value=data.remarks1;
+    if(data.remarks2) g('remarks2').value=data.remarks2;
+    if(data.remarks3) g('remarks3').value=data.remarks3;
+    if(data.remarks4) g('remarks4').value=data.remarks4;
+    if(data.remarks5) g('remarks5').value=data.remarks5;
+    // 旧データ（remarks単一テキスト）との後方互換
+    if(data.remarks && !data.remarks1) {
+        var oldLines = data.remarks.split('\n');
+        ['remarks1','remarks2','remarks3','remarks4','remarks5'].forEach(function(id,i){
+            if(oldLines[i]) g(id).value=oldLines[i];
+        });
+    }
 }
 
 document.querySelectorAll('input[type=checkbox]').forEach(function(cb){cb.addEventListener('change',update);});
@@ -786,7 +844,8 @@ window.addEventListener('load',function(){
     // デフォルト値（新規作成時のみ）
     if(!editId && (!formDataVal || formDataVal==='' || formDataVal==='{}')) {
         g('breakTime').value='適宜';
-        g('remarksField').value='紹介手数料15%　＋消費税';
+        g('remarks1').value='紹介手数料15%　＋消費税';
+        updateRemarks();
     }
 
     update();
