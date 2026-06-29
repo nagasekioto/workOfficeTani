@@ -308,7 +308,7 @@
     <div class="doc-kyushoku">求職者氏名　<strong class="d-person" style="min-width:170px;border-bottom:1px solid #333;display:inline-block;"></strong></div>
     <p style="font-size:8.5pt;margin:2px 0;">ご依頼の内容及び雇用条件</p>
     <table class="doc-table">
-        <tr><th>職務内容</th><td>&#9633;家事サービス　&#9633;介護サービス　&#9633;その他〔<span class="d-job-other" style="min-width:55px;display:inline-block;"></span>〕<br><strong class="d-job-checked"></strong></td></tr>
+        <tr><th>職務内容</th><td><span class="d-job-line"></span></td></tr>
         <tr><th>就業場所</th><td><table class="inner">
             <tr><td>〒<span class="d-work-postal"></span>　<span class="d-workplace"></span></td></tr>
             <tr><td>最寄り駅　<span class="d-station"></span>　<span class="d-line"></span>線　　駅から 徒歩・バス　<span class="d-access"></span></td></tr>
@@ -348,7 +348,7 @@
     <div class="doc-kyushoku">求職者氏名　<strong class="d-person" style="min-width:170px;border-bottom:1px solid #333;display:inline-block;"></strong></div>
     <p style="font-size:8.5pt;margin:2px 0;">ご依頼の内容及び雇用条件</p>
     <table class="doc-table">
-        <tr><th>職務内容</th><td>&#9633;家事サービス　&#9633;介護サービス　&#9633;その他〔<span class="d-job-other" style="min-width:55px;display:inline-block;"></span>〕<br><strong class="d-job-checked"></strong></td></tr>
+        <tr><th>職務内容</th><td><span class="d-job-line"></span></td></tr>
         <tr><th>就業場所</th><td><table class="inner"><tr><td>〒<span class="d-work-postal"></span>　<span class="d-workplace"></span></td></tr><tr><td>最寄り駅　<span class="d-station"></span>　<span class="d-line"></span>線　　駅から 徒歩・バス　<span class="d-access"></span></td></tr><tr><td>受動喫煙防止措置状況　<span class="d-smoking"></span></td></tr></table></td></tr>
         <tr><th>雇用期間</th><td><span class="d-emp-type"></span>　<span class="d-emp-period"></span></td></tr>
         <tr><th>試用期間</th><td><span class="d-trial"></span></td></tr>
@@ -384,7 +384,7 @@
     <div class="doc-kyushoku">求職者氏名　<strong class="d-person" style="min-width:170px;border-bottom:1px solid #333;display:inline-block;"></strong></div>
     <p style="font-size:8.5pt;margin:2px 0;">ご依頼の内容及び雇用条件</p>
     <table class="doc-table">
-        <tr><th>職務内容</th><td>&#9633;家事サービス　&#9633;介護サービス　&#9633;その他〔<span class="d-job-other" style="min-width:55px;display:inline-block;"></span>〕<br><strong class="d-job-checked"></strong></td></tr>
+        <tr><th>職務内容</th><td><span class="d-job-line"></span></td></tr>
         <tr><th>就業場所</th><td><table class="inner"><tr><td>〒<span class="d-work-postal"></span>　<span class="d-workplace"></span></td></tr><tr><td>最寄り駅　<span class="d-station"></span>　<span class="d-line"></span>線　　駅から 徒歩・バス　<span class="d-access"></span></td></tr><tr><td>受動喫煙防止措置状況　<span class="d-smoking"></span></td></tr></table></td></tr>
         <tr><th>雇用期間</th><td><span class="d-emp-type"></span>　<span class="d-emp-period"></span></td></tr>
         <tr><th>試用期間</th><td><span class="d-trial"></span></td></tr>
@@ -522,8 +522,9 @@ function update(){
     var pName=(pOpt&&pOpt.value)?pOpt.text:'';
     var cName=(cOpt&&cOpt.value)?cOpt.text:'';
 
-    var jc=[]; if(g('jobKaji').checked) jc.push('✓家事サービス'); if(g('jobKaigo').checked) jc.push('✓介護サービス');
     var joTxt=g('jobOther').checked?g('jobOtherText').value.trim():'';
+    // 職務内容表示: チェック済みは☑、未チェックは□
+    var jobLine = (g('jobKaji').checked?'☑':'□')+'家事サービス　'+(g('jobKaigo').checked?'☑':'□')+'介護サービス　'+(g('jobOther').checked?'☑':'□')+'その他〔'+joTxt+'〕';
 
     var eType=gc('empPeriod');
     var ePeriod='';if(eType==='有期') ePeriod=(g('empFrom').value||'')+' 〜 '+(g('empTo').value||'');
@@ -567,8 +568,7 @@ function update(){
     setAll('d-date',        g('introDate').value);
     setAll('d-person',      pName);
     setAll('d-customer',    cName);
-    setAll('d-job-checked', jc.join('　'));
-    setAll('d-job-other',   joTxt);
+    setAll('d-job-line',    jobLine);
     setAll('d-work-postal', g('workPostal').value);
     setAll('d-workplace',   g('workPlace').value);
     setAll('d-station',     g('workStation').value);
