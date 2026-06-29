@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>手数料収入決算表（1-3-3） - 家政婦紹介事務所</title>
+    <style>
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; color: #333; font-size: 20px; }
+        .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; white-space: nowrap; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .section { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .section-title { font-size: 17px; font-weight: bold; color: #333; margin: 0 0 16px 0; border-left: 4px solid #7B1FA2; padding-left: 10px; }
+        .filter-row { display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap; }
+        .filter-row label { font-weight: bold; color: #555; font-size: 14px; display: block; margin-bottom: 4px; }
+        .filter-row select, .filter-row input[type=number] { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .filter-btn { background: #7B1FA2; color: white; border: none; border-radius: 4px; padding: 9px 20px; cursor: pointer; font-size: 14px; }
+        .act-btn   { color: white; border: none; border-radius: 4px; padding: 9px 16px; cursor: pointer; font-size: 13px; text-decoration: none; display: inline-block; }
+        .save-btn  { background: #E65100; color: white; border: none; border-radius: 4px; padding: 9px 20px; cursor: pointer; font-size: 14px; }
+        /* 決算表テーブル */
+        .settlement-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 8px; }
+        .settlement-table th { background: #7B1FA2; color: white; padding: 7px 6px; text-align: center; white-space: nowrap; font-size: 12px; }
+        .settlement-table td { padding: 5px 6px; border: 1px solid #ddd; text-align: right; font-size: 12px; min-width: 60px; }
+        .settlement-table td.row-label { text-align: left; font-weight: bold; white-space: nowrap; background: #f8f3ff; min-width: 120px; }
+        .settlement-table td.row-sublabel { text-align: left; font-size: 11px; color: #555; background: #fafafa; padding-left: 16px; white-space: nowrap; }
+        .settlement-table td.total-col { background: #ede7f6; font-weight: bold; }
+        .settlement-table tr.total-row td { background: #d1c4e9; font-weight: bold; border-top: 2px solid #7B1FA2; }
+        .sancare-input { width: 70px; padding: 2px 4px; border: 1px solid #bbb; border-radius: 3px; text-align: right; font-size: 12px; }
+        .tab-bar { display: flex; gap: 8px; margin-bottom: 20px; }
+        .tab-btn { padding: 10px 22px; border: 2px solid #7B1FA2; background: white; color: #7B1FA2; border-radius: 6px 6px 0 0; cursor: pointer; font-size: 14px; font-weight: bold; }
+        .tab-btn.active { background: #7B1FA2; color: white; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+        .year-label { font-size: 15px; font-weight: bold; color: #4a148c; margin-bottom: 12px; }
+        /* 事業報告書テーブル */
+        .report-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .report-table th { background: #37474F; color: white; padding: 7px 6px; text-align: center; white-space: nowrap; font-size: 12px; }
+        .report-table td { padding: 5px 6px; border: 1px solid #ddd; text-align: right; font-size: 12px; min-width: 60px; }
+        .report-table td.row-label { text-align: center; background: #eceff1; font-weight: bold; white-space: nowrap; }
+        .report-table td.row-sublabel { text-align: left; background: #fafafa; white-space: nowrap; }
+        .report-table td.total-col { background: #cfd8dc; font-weight: bold; }
+        .report-table td.group-header { background: #546E7A; color: white; font-weight: bold; text-align: center; }
+        .wip-badge { display: inline-block; background: #FF8F00; color: white; padding: 3px 10px; border-radius: 10px; font-size: 12px; margin-left: 10px; vertical-align: middle; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>&#128200; 手数料収入決算表（1-3-3）</h1>
+    <a href="/fee-menu" class="back-btn">&#8592; 手数料管理に戻る</a>
+</div>
+<div class="container">
+
+    <!-- 年度選択 -->
+    <div class="section">
+        <form method="get" action="/fee-settlement" id="yearForm">
+            <div class="filter-row">
+                <div>
+                    <label>会計年度（会社決算：2月～翌1月）</label>
+                    <select name="compYear" id="compYear" onchange="document.getElementById('yearForm').submit()">
+                        <option value="">-- 年を選択 --</option>
+                        <option th:each="y : ${yearList}" th:value="${y}" th:text="${y + '年度'}"
+                                th:selected="${y == selectedCompYear}"></option>
+                    </select>
+                </div>
+                <div>
+                    <label>会計年度（労働局：4月～翌3月）</label>
+                    <select name="laborYear" id="laborYear" onchange="document.getElementById('yearForm').submit()">
+                        <option value="">-- 年を選択 --</option>
+                        <option th:each="y : ${yearList}" th:value="${y}" th:text="${y + '年度'}"
+                                th:selected="${y == selectedLaborYear}"></option>
+                    </select>
+                </div>
+                <th:block th:if="${selectedCompYear != null or selectedLaborYear != null}">
+                    <a th:href="@{/fee-settlement/pdf(compYear=${selectedCompYear},laborYear=${selectedLaborYear})}"
+                       target="_blank" class="act-btn" style="background:#4CAF50;">&#128196; 印刷内容確認</a>
+                    <button class="act-btn" style="background:#1976D2;" type="button" id="printBtn"
+                            th:data-comp="${selectedCompYear}" th:data-labor="${selectedLaborYear}">&#128424; 印刷</button>
+                    <a th:href="@{/fee-settlement/pdf(compYear=${selectedCompYear},laborYear=${selectedLaborYear},dl=1)}"
+                       class="act-btn" style="background:#FF6F00;">&#128190; 保存（PDF）</a>
+                </th:block>
+            </div>
+        </form>
+    </div>
+
+    <!-- タブ -->
+    <div class="tab-bar">
+        <button class="tab-btn active" onclick="showTab('company')">会社決算表</button>
+        <button class="tab-btn" onclick="showTab('labor')">労働局用決算表</button>
+        <button class="tab-btn" onclick="showTab('report')">事業報告書月別表<span class="wip-badge">準備中</span></button>
+    </div>
+
+    <!-- ===== 会社決算表 ===== -->
+    <div id="tab-company" class="tab-panel active">
+        <div class="section">
+            <div class="section-title">手数料収入決算表（会社決算表）</div>
+            <th:block th:if="${selectedCompYear != null}">
+                <div class="year-label"
+                     th:text="${selectedCompYear + '年 2月 〜 ' + (selectedCompYear + 1) + '年 1月'}">-</div>
+
+                <!-- サンケアネット入力フォーム -->
+                <form method="post" action="/fee-settlement/save-sancare">
+                    <input type="hidden" name="compYear" th:value="${selectedCompYear}">
+                    <input type="hidden" name="laborYear" th:value="${selectedLaborYear}">
+                    <table class="settlement-table">
+                        <thead>
+                            <tr>
+                                <th style="min-width:130px;">月　別</th>
+                                <th th:each="m : ${compMonths}" th:text="${m + '月'}">2月</th>
+                                <th>決算額</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 求職受付手数料 行1: 求職受付管理簿の求人受付事務費累計(710円×a) -->
+                            <tr>
+                                <td class="row-label" rowspan="2">求職受付手数料</td>
+                                <td th:each="m : ${compMonths}" class="num"
+                                    th:text="${compData.receptionFee710[m] != null ? #numbers.formatInteger(compData.receptionFee710[m], 1, 'COMMA') : '0'}">0</td>
+                                <td class="total-col"
+                                    th:text="${compData.receptionFee710Total != null ? #numbers.formatInteger(compData.receptionFee710Total, 1, 'COMMA') : '0'}">0</td>
+                            </tr>
+                            <!-- 求職受付手数料 行2: 紹介手数料管理簿の求人受付事務費累計(1000円×a) -->
+                            <tr>
+                                <td th:each="m : ${compMonths}" class="num"
+                                    th:text="${compData.receptionFee1000[m] != null ? #numbers.formatInteger(compData.receptionFee1000[m], 1, 'COMMA') : '0'}">0</td>
+                                <td class="total-col"
+                                    th:text="${compData.receptionFee1000Total != null ? #numbers.formatInteger(compData.receptionFee1000Total, 1, 'COMMA') : '0'}">0</td>
+                            </tr>
+                            <!-- 紹介手数料: ※1累計 + ※2累計 - サンケアネット -->
+                            <tr>
+                                <td class="row-label">紹介手数料</td>
+                                <td th:each="m : ${compMonths}" class="num"
+                                    th:text="${compData.introFee[m] != null ? #numbers.formatInteger(compData.introFee[m], 1, 'COMMA') : '0'}">0</td>
+                                <td class="total-col"
+                                    th:text="${compData.introFeeTotal != null ? #numbers.formatInteger(compData.introFeeTotal, 1, 'COMMA') : '0'}">0</td>
+                            </tr>
+                            <!-- サンケアネット: 手入力 -->
+                            <tr>
+                                <td class="row-label">サン・ケアネット</td>
+                                <td th:each="m : ${compMonths}">
+                                    <input type="number" class="sancare-input" min="0"
+                                           th:name="|sc_${selectedCompYear}_${m}|"
+                                           th:value="${compData.sancareNet[m] != null ? compData.sancareNet[m] : 0}">
+                                </td>
+                                <td class="total-col"
+                                    th:text="${compData.sancareNetTotal != null ? #numbers.formatInteger(compData.sancareNetTotal, 1, 'COMMA') : '0'}">0</td>
+                            </tr>
+                            <!-- 月別合計 -->
+                            <tr class="total-row">
+                                <td class="row-label">月別合計</td>
+                                <td th:each="m : ${compMonths}"
+                                    th:text="${compData.monthTotal[m] != null ? #numbers.formatInteger(compData.monthTotal[m], 1, 'COMMA') : '0'}">0</td>
+                                <td class="total-col"
+                                    th:text="${compData.grandTotal != null ? #numbers.formatInteger(compData.grandTotal, 1, 'COMMA') : '0'}">0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div style="margin-top:10px;">
+                        <button type="submit" class="save-btn">&#128190; サン・ケアネットを保存</button>
+                    </div>
+                </form>
+            </th:block>
+            <div th:if="${selectedCompYear == null}" style="text-align:center;padding:30px;color:#999;">
+                上部で会計年度を選択してください
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 労働局用決算表 ===== -->
+    <div id="tab-labor" class="tab-panel">
+        <div class="section">
+            <div class="section-title">手数料収入決算表（労働局用決算表）</div>
+            <th:block th:if="${selectedLaborYear != null}">
+                <div class="year-label"
+                     th:text="${selectedLaborYear + '年 4月 〜 ' + (selectedLaborYear + 1) + '年 3月'}">-</div>
+
+                <form method="post" action="/fee-settlement/save-sancare">
+                    <input type="hidden" name="compYear" th:value="${selectedCompYear}">
+                    <input type="hidden" name="laborYear" th:value="${selectedLaborYear}">
+                    <table class="settlement-table">
+                        <thead>
+                            <tr>
+                                <th style="min-width:130px;">月　別</th>
+                                <th th:each="m : ${laborMonths}" th:text="${m + '月'}">4月</th>
+                                <th>決算額</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="row-label" rowspan="2">求職受付手数料</td>
+                                <td th:each="m : ${laborMonths}" class="num"
+                                    th:text="${laborData.receptionFee710[m] != null ? #numbers.formatInteger(laborData.receptionFee710[m], 1, 'COMMA') : '0'}">0</td>
+                                <td class="total-col"
+                                    th:text="${laborData.receptionFee710Total != null ? #numbers.formatInteger(laborData.receptionFee710Total, 1, 'COMMA') : '0'}">0</td>
+                            </tr>
+                            <tr>
+                                <td th:each="m : ${laborMonths}" class="num"
+                                    th:text="${laborData.receptionFee1000[m] != null ? #numbers.formatInteger(laborData.receptionFee1000[m], 1, 'COMMA') : '0'}">0</td>
+                                <td class="total-col"
+                                    th:text="${laborData.receptionFee1000Total != null ? #numbers.formatInteger(laborData.receptionFee1000Total, 1, 'COMMA') : '0'}">0</td>
+                            </tr>
+                            <tr>
+                                <td class="row-label">紹介手数料</td>
+                                <td th:each="m : ${laborMonths}" class="num"
+                                    th:text="${laborData.introFee[m] != null ? #numbers.formatInteger(laborData.introFee[m], 1, 'COMMA') : '0'}">0</td>
+                                <td class="total-col"
+                                    th:text="${laborData.introFeeTotal != null ? #numbers.formatInteger(laborData.introFeeTotal, 1, 'COMMA') : '0'}">0</td>
+                            </tr>
+                            <tr>
+                                <td class="row-label">サン・ケアネット</td>
+                                <td th:each="m : ${laborMonths}">
+                                    <input type="number" class="sancare-input" min="0"
+                                           th:name="|scl_${selectedLaborYear}_${m}|"
+                                           th:value="${laborData.sancareNet[m] != null ? laborData.sancareNet[m] : 0}">
+                                </td>
+                                <td class="total-col"
+                                    th:text="${laborData.sancareNetTotal != null ? #numbers.formatInteger(laborData.sancareNetTotal, 1, 'COMMA') : '0'}">0</td>
+                            </tr>
+                            <tr class="total-row">
+                                <td class="row-label">月別合計</td>
+                                <td th:each="m : ${laborMonths}"
+                                    th:text="${laborData.monthTotal[m] != null ? #numbers.formatInteger(laborData.monthTotal[m], 1, 'COMMA') : '0'}">0</td>
+                                <td class="total-col"
+                                    th:text="${laborData.grandTotal != null ? #numbers.formatInteger(laborData.grandTotal, 1, 'COMMA') : '0'}">0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div style="margin-top:10px;">
+                        <button type="submit" class="save-btn">&#128190; サン・ケアネットを保存</button>
+                    </div>
+                </form>
+            </th:block>
+            <div th:if="${selectedLaborYear == null}" style="text-align:center;padding:30px;color:#999;">
+                上部で会計年度を選択してください
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 事業報告書月別表（準備中） ===== -->
+    <div id="tab-report" class="tab-panel">
+        <div class="section">
+            <div class="section-title">事業報告書月別表（労働局用年度別）<span class="wip-badge">準備中</span></div>
+            <th:block th:if="${selectedLaborYear != null}">
+                <div class="year-label"
+                     th:text="${selectedLaborYear + '年 4月 〜 ' + (selectedLaborYear + 1) + '年 3月'}">-</div>
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th colspan="2" style="min-width:130px;">項目 月別</th>
+                            <th th:each="m : ${laborMonths}" th:text="${m + '月'}">4月</th>
+                            <th>決算額</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 求人 -->
+                        <tr>
+                            <td class="row-label" rowspan="3">求<br>人</td>
+                            <td class="row-sublabel">常用</td>
+                            <td th:each="m : ${laborMonths}">-</td>
+                            <td class="total-col">0</td>
+                        </tr>
+                        <tr>
+                            <td class="row-sublabel">臨時</td>
+                            <td th:each="m : ${laborMonths}">-</td>
+                            <td class="total-col">0</td>
+                        </tr>
+                        <tr>
+                            <td class="row-sublabel">日雇</td>
+                            <td th:each="m : ${laborMonths}">-</td>
+                            <td class="total-col">0</td>
+                        </tr>
+                        <!-- 求職 -->
+                        <tr>
+                            <td class="row-label" rowspan="2">求<br>職</td>
+                            <td class="row-sublabel">有効</td>
+                            <td th:each="m : ${laborMonths}">-</td>
+                            <td class="total-col">0</td>
+                        </tr>
+                        <tr>
+                            <td class="row-sublabel">新規申込み</td>
+                            <td th:each="m : ${laborMonths}">-</td>
+                            <td class="total-col">0</td>
+                        </tr>
+                        <!-- 就職 -->
+                        <tr>
+                            <td class="row-label" rowspan="3">就<br>職</td>
+                            <td class="row-sublabel">常用</td>
+                            <td th:each="m : ${laborMonths}">-</td>
+                            <td class="total-col">0</td>
+                        </tr>
+                        <tr>
+                            <td class="row-sublabel">臨時</td>
+                            <td th:each="m : ${laborMonths}">-</td>
+                            <td class="total-col">0</td>
+                        </tr>
+                        <tr>
+                            <td class="row-sublabel">日雇</td>
+                            <td th:each="m : ${laborMonths}">-</td>
+                            <td class="total-col">0</td>
+                        </tr>
+                        <!-- 手数料 -->
+                        <tr>
+                            <td class="row-label" rowspan="4">手<br>数<br>料</td>
+                            <td class="row-sublabel">常用</td>
+                            <td th:each="m : ${laborMonths}">-</td>
+                            <td class="total-col">0</td>
+                        </tr>
+                        <tr>
+                            <td class="row-sublabel">臨時</td>
+                            <td th:each="m : ${laborMonths}">-</td>
+                            <td class="total-col">0</td>
+                        </tr>
+                        <tr>
+                            <td class="row-sublabel">日雇</td>
+                            <td th:each="m : ${laborMonths}">-</td>
+                            <td class="total-col">0</td>
+                        </tr>
+                        <tr>
+                            <td class="row-sublabel">求職受付料</td>
+                            <td th:each="m : ${laborMonths}">-</td>
+                            <td class="total-col">0</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p style="color:#888;font-size:12px;margin-top:10px;">※ 中身は現在準備中です。</p>
+            </th:block>
+            <div th:if="${selectedLaborYear == null}" style="text-align:center;padding:30px;color:#999;">
+                上部で会計年度を選択してください
+            </div>
+        </div>
+    </div>
+
+</div>
+<script>
+function showTab(name) {
+    document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+    document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+}
+var printBtn = document.getElementById('printBtn');
+if (printBtn) {
+    printBtn.addEventListener('click', function() {
+        var comp = this.getAttribute('data-comp') || '';
+        var labor = this.getAttribute('data-labor') || '';
+        var url = '/fee-settlement/pdf?compYear=' + comp + '&laborYear=' + labor;
+        var w = window.open(url, '_blank');
+        if (w) { w.onload = function() { w.print(); }; }
+    });
+}
+</script>
+</body>
+</html>

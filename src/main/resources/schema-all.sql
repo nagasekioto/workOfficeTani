@@ -129,3 +129,16 @@ CREATE TABLE IF NOT EXISTS register_records (
 
 CREATE INDEX IF NOT EXISTS idx_register_records_work_month ON register_records(work_month);
 CREATE INDEX IF NOT EXISTS idx_register_records_person_id ON register_records(person_id);
+
+-- schema-update-8: 紹介手数料管理簿(1-3-1)拡張・手数料収入決算表(1-3-3)用
+ALTER TABLE sales_details ADD COLUMN IF NOT EXISTS daily_wage_1month INTEGER DEFAULT 0;
+ALTER TABLE sales_details ADD COLUMN IF NOT EXISTS temp_3month INTEGER DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS sancare_net_monthly (
+    id          BIGSERIAL PRIMARY KEY,
+    year_month  VARCHAR(7) NOT NULL,
+    amount      INTEGER    NOT NULL DEFAULT 0,
+    created_at  TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (year_month)
+);

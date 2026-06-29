@@ -6,6 +6,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -44,7 +46,6 @@ import jp.co.housekeeping.person_management.repository.SalesRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 @Controller
-@RequestMapping("/report-menu")
 public class ReportMenuController {
 
     @Autowired private SalesDetailRepository salesDetailRepository;
@@ -54,8 +55,15 @@ public class ReportMenuController {
 
     private static final double FEE_RATE = 0.15;
 
-    // ─── 一覧 ─────────────────────────────────────────────────
-    @GetMapping("")
+    // ─── 1-3 サブメニュー ────────────────────────────────────────
+    @GetMapping("/fee-menu")
+    public String feeMenu(HttpSession session) {
+        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+        return "fee-menu";
+    }
+
+    // ─── 1-3-1 紹介手数料管理簿 一覧 ────────────────────────────
+    @RequestMapping("/report-menu")
     public String list(@RequestParam(required = false) String month,
                         HttpSession session, Model model) {
         if (session.getAttribute("authenticated") == null) return "redirect:/login";
@@ -75,13 +83,12 @@ public class ReportMenuController {
         return "report-menu";
     }
 
-    // ─── 日雇1ヶ月 保存 ──────────────────────────────────────
-    @PostMapping("/save-daily-wage")
+    // ─── 1-3-1 日雇1ヶ月・臨時3ヶ月 保存 ───────────────────────
+    @PostMapping("/report-menu/save-daily-wage")
     public String saveDailyWage(@RequestParam Map<String,String> params,
                                  HttpSession session) {
         if (session.getAttribute("authenticated") == null) return "redirect:/login";
         String month = params.get("month");
-        // detailId -> dailyWage1Month を更新
         params.forEach((key, value) -> {
             if (key.startsWith("dw_")) {
                 try {
@@ -91,28 +98,166 @@ public class ReportMenuController {
                         "UPDATE sales_details SET daily_wage_1month = ? WHERE id = ?",
                         val, detailId);
                 } catch (Exception ignored) {}
+            } else if (key.startsWith("t3_")) {
+                try {
+                    Long detailId = Long.parseLong(key.substring(3));
+                    int val = value == null || value.isBlank() ? 0 : Integer.parseInt(value.trim());
+                    jdbcTemplate.update(
+                        "UPDATE sales_details SET temp_3month = ? WHERE id = ?",
+                        val, detailId);
+                } catch (Exception ignored) {}
             }
         });
         return "redirect:/report-menu?month=" + (month != null ? month : "");
     }
 
-    // ─── PDF ──────────────────────────────────────────────────
-    @GetMapping("/pdf")
+    // ─── 1-3-1 PDF ────────────────────────────────────────────────
+    @GetMapping("/report-menu/pdf")
     public void pdf(@RequestParam(required = false) String month,
+                    @RequestParam(required = false) String dl,
                     HttpSession session, HttpServletResponse response)
             throws IOException, DocumentException {
         if (session.getAttribute("authenticated") == null) { response.sendError(401); return; }
         YearMonth ym = (month != null && !month.isBlank()) ? YearMonth.parse(month) : YearMonth.now();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        buildPdf(buildRows(ym), ym, baos);
+        buildPdf131(buildRows(ym), ym, baos);
         response.setContentType("application/pdf");
-        response.setHeader("Content-Disposition", "inline; filename=fee-ledger.pdf");
+        boolean download = "1".equals(dl);
+        response.setHeader("Content-Disposition",
+            (download ? "attachment" : "inline") + "; filename=intro-fee-ledger-" + ym + ".pdf");
         response.setContentLength(baos.size());
         response.getOutputStream().write(baos.toByteArray());
         response.getOutputStream().flush();
     }
 
-    // ─── データ取得 ───────────────────────────────────────────
+    // ─── 1-3-2 求職受付手数料管理簿 一覧 ───────────────────────
+    @GetMapping("/fee-reception-ledger")
+    public String receptionLedger(@RequestParam(required = false) String month,
+                                   HttpSession session, Model model) {
+        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+        if (month == null || month.isBlank()) {
+            String cur = LocalDateTime.now().getYear() + "-"
+                + String.format("%02d", LocalDateTime.now().getMonthValue());
+            return "redirect:/fee-reception-ledger?month=" + cur;
+        }
+        model.addAttribute("selectedMonth", month);
+        try {
+            model.addAttribute("items", buildReceptionRows(YearMonth.parse(month)));
+        } catch (Exception e) {
+            model.addAttribute("items", new ArrayList<>());
+        }
+        return "fee-reception-ledger";
+    }
+
+    // ─── 1-3-2 PDF ────────────────────────────────────────────────
+    @GetMapping("/fee-reception-ledger/pdf")
+    public void receptionPdf(@RequestParam(required = false) String month,
+                              @RequestParam(required = false) String dl,
+                              HttpSession session, HttpServletResponse response)
+            throws IOException, DocumentException {
+        if (session.getAttribute("authenticated") == null) { response.sendError(401); return; }
+        YearMonth ym = (month != null && !month.isBlank()) ? YearMonth.parse(month) : YearMonth.now();
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        buildPdf132(buildReceptionRows(ym), ym, baos);
+        response.setContentType("application/pdf");
+        boolean download = "1".equals(dl);
+        response.setHeader("Content-Disposition",
+            (download ? "attachment" : "inline") + "; filename=reception-fee-ledger-" + ym + ".pdf");
+        response.setContentLength(baos.size());
+        response.getOutputStream().write(baos.toByteArray());
+        response.getOutputStream().flush();
+    }
+
+    // ─── 1-3-3 手数料収入決算表 ────────────────────────────────
+    @GetMapping("/fee-settlement")
+    public String feeSettlement(@RequestParam(required = false) Integer compYear,
+                                 @RequestParam(required = false) Integer laborYear,
+                                 HttpSession session, Model model) {
+        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+
+        int curYear = LocalDateTime.now().getYear();
+        List<Integer> yearList = new ArrayList<>();
+        for (int y = curYear + 1; y >= 2020; y--) yearList.add(y);
+        model.addAttribute("yearList", yearList);
+        model.addAttribute("selectedCompYear", compYear);
+        model.addAttribute("selectedLaborYear", laborYear);
+
+        // 会社決算: 2月〜翌1月
+        List<Integer> compMonths = List.of(2,3,4,5,6,7,8,9,10,11,12,1);
+        model.addAttribute("compMonths", compMonths);
+        // 労働局: 4月〜翌3月
+        List<Integer> laborMonths = List.of(4,5,6,7,8,9,10,11,12,1,2,3);
+        model.addAttribute("laborMonths", laborMonths);
+
+        if (compYear != null) {
+            model.addAttribute("compData", buildSettlementData(compYear, compMonths, "comp"));
+        }
+        if (laborYear != null) {
+            model.addAttribute("laborData", buildSettlementData(laborYear, laborMonths, "labor"));
+        }
+        return "fee-settlement";
+    }
+
+    // ─── 1-3-3 サンケアネット保存 ────────────────────────────────
+    @PostMapping("/fee-settlement/save-sancare")
+    public String saveSancare(@RequestParam Map<String,String> params,
+                               HttpSession session) {
+        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+        Integer compYear  = null;
+        Integer laborYear = null;
+        try { compYear  = Integer.parseInt(params.get("compYear"));  } catch (Exception ignored) {}
+        try { laborYear = Integer.parseInt(params.get("laborYear")); } catch (Exception ignored) {}
+
+        params.forEach((key, value) -> {
+            // sc_YYYY_M or scl_YYYY_M
+            if (key.startsWith("sc_") || key.startsWith("scl_")) {
+                try {
+                    String[] parts = key.split("_");
+                    // parts[0]=sc or scl, parts[1]=year, parts[2]=month
+                    int yr = Integer.parseInt(parts[1]);
+                    int mo = Integer.parseInt(parts[2]);
+                    String ym = yr + "-" + String.format("%02d", mo);
+                    int val = (value == null || value.isBlank()) ? 0 : Integer.parseInt(value.trim());
+                    jdbcTemplate.update(
+                        "INSERT INTO sancare_net_monthly (year_month, amount, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) " +
+                        "ON CONFLICT (year_month) DO UPDATE SET amount = EXCLUDED.amount, updated_at = CURRENT_TIMESTAMP",
+                        ym, val);
+                } catch (Exception ignored) {}
+            }
+        });
+
+        String redirect = "/fee-settlement";
+        if (compYear != null || laborYear != null) {
+            redirect += "?compYear=" + (compYear != null ? compYear : "")
+                      + "&laborYear=" + (laborYear != null ? laborYear : "");
+        }
+        return "redirect:" + redirect;
+    }
+
+    // ─── 1-3-3 PDF ────────────────────────────────────────────────
+    @GetMapping("/fee-settlement/pdf")
+    public void settlementPdf(@RequestParam(required = false) Integer compYear,
+                               @RequestParam(required = false) Integer laborYear,
+                               @RequestParam(required = false) String dl,
+                               HttpSession session, HttpServletResponse response)
+            throws IOException, DocumentException {
+        if (session.getAttribute("authenticated") == null) { response.sendError(401); return; }
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        buildPdf133(compYear, laborYear, baos);
+        response.setContentType("application/pdf");
+        boolean download = "1".equals(dl);
+        response.setHeader("Content-Disposition",
+            (download ? "attachment" : "inline") + "; filename=fee-settlement.pdf");
+        response.setContentLength(baos.size());
+        response.getOutputStream().write(baos.toByteArray());
+        response.getOutputStream().flush();
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // データ取得メソッド
+    // ═══════════════════════════════════════════════════════════════
+
+    /** 1-3-1: 紹介手数料管理簿 行データ */
     private List<FeeLedgerRow> buildRows(YearMonth ym) {
         List<FeeLedgerRow> list = new ArrayList<>();
         LocalDate monthEnd = ym.atEndOfMonth();
@@ -124,7 +269,6 @@ public class ReportMenuController {
                 try { if (d.getReceiptNo() == null || d.getReceiptNo().isEmpty()) continue; }
                 catch (Exception e2) { continue; }
 
-                // 紹介日→就労終了日→就労開始日→発行日 の優先順で月判定
                 LocalDate rd = null;
                 if      (d.getIntroductionDate() != null) rd = d.getIntroductionDate();
                 else if (d.getWorkEndDate()       != null) rd = d.getWorkEndDate();
@@ -141,29 +285,36 @@ public class ReportMenuController {
                 int cFee   = d.getCustomerFee()  != null ? d.getCustomerFee()  : 0;
                 int comm   = (int)(wage * FEE_RATE);
                 int tax    = (int)(comm * 0.10);
-                int dw1m = 0;
+
+                int dw1m = 0, t3m = 0;
                 try {
-                    Integer fetched = jdbcTemplate.queryForObject(
-                        "SELECT daily_wage_1month FROM sales_details WHERE id = ?",
-                        Integer.class, d.getId());
-                    if (fetched != null) dw1m = fetched;
+                    Integer v = jdbcTemplate.queryForObject(
+                        "SELECT daily_wage_1month FROM sales_details WHERE id = ?", Integer.class, d.getId());
+                    if (v != null) dw1m = v;
+                } catch (Exception ignored) {}
+                try {
+                    Integer v = jdbcTemplate.queryForObject(
+                        "SELECT temp_3month FROM sales_details WHERE id = ?", Integer.class, d.getId());
+                    if (v != null) t3m = v;
                 } catch (Exception ignored) {}
 
                 FeeLedgerRow row = new FeeLedgerRow();
-                row.detailId       = d.getId();
-                row.receiptDate    = dateStr;
-                row.customerName   = cName;
-                row.wage           = wage;
-                row.commission     = comm;
-                row.tax            = tax;
-                row.customerFee    = cFee;
-                row.receiptNo      = d.getReceiptNo();
-                row.dailyWage1Month = dw1m;
-                row.wageStr        = fmt(wage);
-                row.commissionStr  = fmt(comm);
-                row.taxStr         = fmt(tax);
-                row.customerFeeStr = fmt(cFee);
+                row.detailId         = d.getId();
+                row.receiptDate      = dateStr;
+                row.customerName     = cName;
+                row.wage             = wage;
+                row.commission       = comm;
+                row.tax              = tax;
+                row.customerFee      = cFee;
+                row.receiptNo        = d.getReceiptNo();
+                row.dailyWage1Month  = dw1m;
+                row.temp3Month       = t3m;
+                row.wageStr          = fmt(wage);
+                row.commissionStr    = fmt(comm);
+                row.taxStr           = fmt(tax);
+                row.customerFeeStr   = fmt(cFee);
                 row.dailyWage1MonthStr = fmt(dw1m);
+                row.temp3MonthStr    = fmt(t3m);
                 list.add(row);
             }
         }
@@ -174,12 +325,203 @@ public class ReportMenuController {
         return list;
     }
 
-    // ─── PDF生成（A4縦・斜め線対応） ─────────────────────────
-    private void buildPdf(List<FeeLedgerRow> rows, YearMonth ym, ByteArrayOutputStream baos)
-            throws DocumentException, IOException {
+    /** 1-3-2: 求職受付手数料管理簿 行データ */
+    private List<ReceptionLedgerRow> buildReceptionRows(YearMonth ym) {
+        List<ReceptionLedgerRow> list = new ArrayList<>();
+        LocalDate monthEnd = ym.atEndOfMonth();
+        String dateStr = monthEnd.getYear() + "/" + monthEnd.getMonthValue() + "/" + monthEnd.getDayOfMonth();
 
-        // A4縦
-        Document doc = new Document(PageSize.A4, 18, 18, 18, 18);
+        for (Sales s : salesRepository.findAll()) {
+            if (s.getId() == null) continue;
+            for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {
+                try { if (d.getReceiptNo() == null || d.getReceiptNo().isEmpty()) continue; }
+                catch (Exception e2) { continue; }
+
+                // reception_fee がある行のみ対象
+                int recFee = d.getReceptionFee() != null ? d.getReceptionFee() : 0;
+                if (recFee == 0) continue;
+
+                LocalDate rd = null;
+                if      (d.getIntroductionDate() != null) rd = d.getIntroductionDate();
+                else if (d.getWorkEndDate()       != null) rd = d.getWorkEndDate();
+                else if (d.getWorkStartDate()     != null) rd = d.getWorkStartDate();
+                else if (d.getIssuedAt()          != null) rd = d.getIssuedAt().toLocalDate();
+                if (rd == null) continue;
+                if (rd.getYear() != ym.getYear() || rd.getMonthValue() != ym.getMonthValue()) continue;
+
+                Customer c = d.getCustomerId() != null
+                    ? customerRepository.findById(d.getCustomerId()).orElse(null) : null;
+                String cName = c != null ? c.getLastNameKanji() + "　" + c.getFirstNameKanji() : "";
+
+                // person名（求職者）
+                Long personId = s.getPersonId();
+                String personName = "";
+                if (personId != null) {
+                    try {
+                        String n = jdbcTemplate.queryForObject(
+                            "SELECT last_name_kanji || '　' || first_name_kanji FROM persons WHERE id = ?",
+                            String.class, personId);
+                        if (n != null) personName = n;
+                    } catch (Exception ignored) {}
+                }
+
+                ReceptionLedgerRow row = new ReceptionLedgerRow();
+                row.receiptDate     = dateStr;
+                row.customerName    = personName.isBlank() ? cName : personName;
+                row.receptionFee    = recFee;
+                row.receptionFeeStr = fmt(recFee);
+                row.receiptNo       = d.getReceiptNo();
+                list.add(row);
+            }
+        }
+        list.sort((a, b) -> {
+            try { return Integer.compare(Integer.parseInt(a.receiptNo), Integer.parseInt(b.receiptNo)); }
+            catch (NumberFormatException e) { return a.receiptNo.compareTo(b.receiptNo); }
+        });
+        return list;
+    }
+
+    /** 1-3-3: 決算表データ */
+    private SettlementData buildSettlementData(int baseYear, List<Integer> months, String type) {
+        SettlementData d = new SettlementData();
+
+        for (int m : months) {
+            // 年の判定: 会社決算は2月〜12月がbaseYear、1月はbaseYear+1
+            // 労働局は4月〜12月がbaseYear、1月〜3月はbaseYear+1
+            int actualYear = baseYear;
+            if ("comp".equals(type) && m == 1) actualYear = baseYear + 1;
+            if ("labor".equals(type) && (m == 1 || m == 2 || m == 3)) actualYear = baseYear + 1;
+
+            String ym = actualYear + "-" + String.format("%02d", m);
+            YearMonth yearMonth;
+            try { yearMonth = YearMonth.parse(ym); } catch (Exception e) { continue; }
+
+            // ②求職受付手数料管理簿の求人受付事務費(710円×件数) = reception_fee合計
+            int fee710 = calcReceptionFee710(yearMonth);
+            d.receptionFee710.put(m, fee710);
+
+            // ③紹介手数料管理簿の求人受付事務費(1000円×件数) = customer_fee合計
+            int fee1000 = calcCustomerFee1000(yearMonth);
+            d.receptionFee1000.put(m, fee1000);
+
+            // ④紹介手数料 = 手数料※1累計 + 手数料※2累計 - サンケアネット
+            int comm1 = calcCommission(yearMonth);   // 手数料※1
+            int comm2 = calcTax(yearMonth);           // 手数料※2
+            int sancare = getSancareNet(ym);
+            int introFee = comm1 + comm2 - sancare;
+            d.introFee.put(m, introFee);
+
+            // ①サンケアネット
+            d.sancareNet.put(m, sancare);
+
+            // 月別合計 = ① + ② + ③ + ④
+            int monthTotal = fee710 + fee1000 + introFee + sancare;
+            d.monthTotal.put(m, monthTotal);
+        }
+
+        d.receptionFee710Total  = d.receptionFee710.values().stream().mapToInt(Integer::intValue).sum();
+        d.receptionFee1000Total = d.receptionFee1000.values().stream().mapToInt(Integer::intValue).sum();
+        d.introFeeTotal         = d.introFee.values().stream().mapToInt(Integer::intValue).sum();
+        d.sancareNetTotal       = d.sancareNet.values().stream().mapToInt(Integer::intValue).sum();
+        d.grandTotal            = d.monthTotal.values().stream().mapToInt(Integer::intValue).sum();
+
+        return d;
+    }
+
+    private int calcReceptionFee710(YearMonth ym) {
+        int total = 0;
+        for (Sales s : salesRepository.findAll()) {
+            if (s.getId() == null) continue;
+            for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {
+                if (d.getReceiptNo() == null || d.getReceiptNo().isEmpty()) continue;
+                int fee = d.getReceptionFee() != null ? d.getReceptionFee() : 0;
+                if (fee == 0) continue;
+                LocalDate rd = getRefDate(d);
+                if (rd == null) continue;
+                if (rd.getYear() == ym.getYear() && rd.getMonthValue() == ym.getMonthValue())
+                    total += fee;
+            }
+        }
+        return total;
+    }
+
+    private int calcCustomerFee1000(YearMonth ym) {
+        int total = 0;
+        for (Sales s : salesRepository.findAll()) {
+            if (s.getId() == null) continue;
+            for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {
+                if (d.getReceiptNo() == null || d.getReceiptNo().isEmpty()) continue;
+                int fee = d.getCustomerFee() != null ? d.getCustomerFee() : 0;
+                if (fee == 0) continue;
+                LocalDate rd = getRefDate(d);
+                if (rd == null) continue;
+                if (rd.getYear() == ym.getYear() && rd.getMonthValue() == ym.getMonthValue())
+                    total += fee;
+            }
+        }
+        return total;
+    }
+
+    private int calcCommission(YearMonth ym) {
+        int total = 0;
+        for (Sales s : salesRepository.findAll()) {
+            if (s.getId() == null) continue;
+            for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {
+                if (d.getReceiptNo() == null || d.getReceiptNo().isEmpty()) continue;
+                int wage = d.getMonthlyTotal() != null ? d.getMonthlyTotal() : 0;
+                if (wage == 0) continue;
+                LocalDate rd = getRefDate(d);
+                if (rd == null) continue;
+                if (rd.getYear() == ym.getYear() && rd.getMonthValue() == ym.getMonthValue())
+                    total += (int)(wage * FEE_RATE);
+            }
+        }
+        return total;
+    }
+
+    private int calcTax(YearMonth ym) {
+        int total = 0;
+        for (Sales s : salesRepository.findAll()) {
+            if (s.getId() == null) continue;
+            for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {
+                if (d.getReceiptNo() == null || d.getReceiptNo().isEmpty()) continue;
+                int wage = d.getMonthlyTotal() != null ? d.getMonthlyTotal() : 0;
+                if (wage == 0) continue;
+                LocalDate rd = getRefDate(d);
+                if (rd == null) continue;
+                if (rd.getYear() == ym.getYear() && rd.getMonthValue() == ym.getMonthValue()) {
+                    int comm = (int)(wage * FEE_RATE);
+                    total += (int)(comm * 0.10);
+                }
+            }
+        }
+        return total;
+    }
+
+    private int getSancareNet(String ym) {
+        try {
+            Integer v = jdbcTemplate.queryForObject(
+                "SELECT amount FROM sancare_net_monthly WHERE year_month = ?", Integer.class, ym);
+            return v != null ? v : 0;
+        } catch (Exception e) { return 0; }
+    }
+
+    private LocalDate getRefDate(SalesDetail d) {
+        if (d.getIntroductionDate() != null) return d.getIntroductionDate();
+        if (d.getWorkEndDate()      != null) return d.getWorkEndDate();
+        if (d.getWorkStartDate()    != null) return d.getWorkStartDate();
+        if (d.getIssuedAt()         != null) return d.getIssuedAt().toLocalDate();
+        return null;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // PDF 生成
+    // ═══════════════════════════════════════════════════════════════
+
+    /** 1-3-1 PDF */
+    private void buildPdf131(List<FeeLedgerRow> rows, YearMonth ym, ByteArrayOutputStream baos)
+            throws DocumentException, IOException {
+        Document doc = new Document(PageSize.A4.rotate(), 18, 18, 18, 18);
         PdfWriter writer = PdfWriter.getInstance(doc, baos);
         doc.open();
 
@@ -189,91 +531,260 @@ public class ReportMenuController {
         Font normal = new Font(bf, 8);
         Font noteF  = new Font(bf, 6);
 
-        doc.add(new Paragraph("手数料管理簿〔届出制手数料用〕", titleF));
+        Paragraph title = new Paragraph("紹介手数料管理簿〔届出制手数料用〕　" + ym, titleF);
+        title.setAlignment(Element.ALIGN_CENTER); title.setSpacingAfter(6);
+        doc.add(title);
 
-        // A4縦なので列を少し絞る
-        float[] w = {2.0f, 2.4f, 1.6f, 1.6f, 1.4f, 1.6f, 1.2f, 1.2f, 1.6f, 1.4f};
+        float[] w = {2.2f, 2.6f, 1.8f, 1.8f, 1.4f, 1.8f, 1.2f, 1.4f, 1.6f, 1.6f};
         PdfPTable t = new PdfPTable(w);
-        t.setWidthPercentage(100);
-        t.setSpacingBefore(4);
+        t.setWidthPercentage(100); t.setSpacingBefore(4);
 
-        // ── ヘッダー行1 ──
-        t.addCell(hdr("領収",      bold, false));
-        t.addCell(hdrSpan("支払者名",  bold));
-        t.addCell(hdrSpan("賃金",      bold));
-        t.addCell(hdr("手数料※1",  bold, false));
-        t.addCell(hdrSpan("手数料※2", bold));
-        t.addCell(hdr("求人受付",   bold, false));
-        t.addCell(hdr("手数料",     bold, false));
-        t.addCell(hdrSpan("備考",      bold));
-        t.addCell(hdr("日雇",       bold, false));
-        t.addCell(hdr("臨時",       bold, false));
-        // ── ヘッダー行2 ──
-        t.addCell(hdr("年月日",     bold, true));
-        t.addCell(hdr("届出手数料", bold, true));
-        t.addCell(hdr("事務費",     bold, true));
-        t.addCell(hdr("割合",       bold, true));
-        t.addCell(hdr("1ヶ月",      bold, true));
-        t.addCell(hdr("3ヶ月",      bold, true));
+        t.addCell(hdr("領収\n年月日", bold)); t.addCell(hdr("支払者名", bold));
+        t.addCell(hdr("賃金", bold));         t.addCell(hdr("手数料※1\n届出手数料", bold));
+        t.addCell(hdr("手数料※2", bold));     t.addCell(hdr("求人受付\n事務費", bold));
+        t.addCell(hdr("手数料\n割合", bold));  t.addCell(hdr("備考\n領収番号", bold));
+        t.addCell(hdr("日雇\n1ヶ月", bold));  t.addCell(hdr("臨時\n3ヶ月", bold));
 
-        // ── データ行 ──
-        int sw=0, sc=0, st=0, sf=0, sd=0;
+        int sw=0, sc=0, st=0, sf=0, sd=0, s3=0;
         for (FeeLedgerRow r : rows) {
-            t.addCell(cen(r.receiptDate,          normal));
-            t.addCell(cen(r.customerName,          normal));
-            t.addCell(rit(r.wageStr,               normal));
-            t.addCell(rit(r.commissionStr,         normal));
-            t.addCell(rit(r.taxStr,                normal));
-            t.addCell(rit(r.customerFeeStr,        normal));
-            t.addCell(cen("15%",                   normal));
-            t.addCell(cen(r.receiptNo,             normal));
-            t.addCell(rit(r.dailyWage1MonthStr,    normal));
-            t.addCell(diag(normal));                           // 臨時3ヶ月：斜め線
-            sw+=r.wage; sc+=r.commission; st+=r.tax; sf+=r.customerFee; sd+=r.dailyWage1Month;
+            t.addCell(cen(r.receiptDate,       normal)); t.addCell(cen(r.customerName, normal));
+            t.addCell(rit(r.wageStr,           normal)); t.addCell(rit(r.commissionStr, normal));
+            t.addCell(rit(r.taxStr,            normal)); t.addCell(rit(r.customerFeeStr, normal));
+            t.addCell(cen("15%",               normal)); t.addCell(cen(r.receiptNo, normal));
+            t.addCell(rit(r.dailyWage1MonthStr,normal)); t.addCell(rit(r.temp3MonthStr, normal));
+            sw+=r.wage; sc+=r.commission; st+=r.tax; sf+=r.customerFee;
+            sd+=r.dailyWage1Month; s3+=r.temp3Month;
         }
 
-        // ── ページ計 ──
+        // ページ計
         t.addCell(spanCell("ページ計", bold, 2));
         t.addCell(rit(fmt(sw), bold)); t.addCell(rit(fmt(sc), bold));
         t.addCell(rit(fmt(st), bold)); t.addCell(rit(fmt(sf), bold));
-        t.addCell(diag(bold));   // 手数料割合：斜め線
-        t.addCell(diag(bold));   // 備考：斜め線
-        t.addCell(rit(fmt(sd), bold));
-        t.addCell(diag(bold));   // 臨時3ヶ月：斜め線
+        t.addCell(diag(bold)); t.addCell(diag(bold));
+        t.addCell(rit(fmt(sd), bold)); t.addCell(rit(fmt(s3), bold));
 
-        // ── 月分累計 ──
+        // 月分累計
         t.addCell(spanCell(ym.getMonthValue() + "月分累計", bold, 2));
         t.addCell(rit(fmt(sw), bold)); t.addCell(rit(fmt(sc), bold));
         t.addCell(rit(fmt(st), bold)); t.addCell(rit(fmt(sf), bold));
-        t.addCell(diag(bold));
-        t.addCell(diag(bold));
-        t.addCell(rit(fmt(sd), bold));
-        t.addCell(diag(bold));
+        t.addCell(diag(bold)); t.addCell(diag(bold));
+        t.addCell(rit(fmt(sd), bold)); t.addCell(rit(fmt(s3), bold));
 
         doc.add(t);
-
-        Paragraph n1 = new Paragraph(
-            "※1は、徴収した届け出手数料の総額から第二種特別加入料に充てるべき手数料額を除いた額を記載する。", noteF);
+        Paragraph n1 = new Paragraph("※1は、徴収した届け出手数料の総額から第二種特別加入料に充てるべき手数料額を除いた額を記載する。", noteF);
         n1.setSpacingBefore(4); doc.add(n1);
         doc.add(new Paragraph("※2は、第二種特別加入保険料に充てるべき手数料。", noteF));
         doc.close();
     }
 
-    // ─── セルヘルパー ─────────────────────────────────────────
+    /** 1-3-2 PDF */
+    private void buildPdf132(List<ReceptionLedgerRow> rows, YearMonth ym, ByteArrayOutputStream baos)
+            throws DocumentException, IOException {
+        Document doc = new Document(PageSize.A4, 18, 18, 18, 18);
+        PdfWriter.getInstance(doc, baos);
+        doc.open();
 
-    // 斜め線セル
+        BaseFont bf = BaseFont.createFont("HeiseiMin-W3", "UniJIS-UCS2-H", BaseFont.NOT_EMBEDDED);
+        Font titleF = new Font(bf, 11, Font.BOLD);
+        Font bold   = new Font(bf, 9,  Font.BOLD);
+        Font normal = new Font(bf, 9);
+
+        Paragraph title = new Paragraph("求職受付手数料管理簿　" + ym, titleF);
+        title.setAlignment(Element.ALIGN_CENTER); title.setSpacingAfter(8);
+        doc.add(title);
+
+        float[] w = {2.5f, 3.5f, 2.5f, 1.5f, 2.0f};
+        PdfPTable t = new PdfPTable(w);
+        t.setWidthPercentage(100); t.setSpacingBefore(4);
+
+        t.addCell(hdr("領収年月日", bold)); t.addCell(hdr("支払者名（求職者）", bold));
+        t.addCell(hdr("求人受付事務費\n（710円×件数）", bold));
+        t.addCell(hdr("手数料割合", bold)); t.addCell(hdr("備考（領収番号）", bold));
+
+        int total = 0;
+        for (ReceptionLedgerRow r : rows) {
+            t.addCell(cen(r.receiptDate,    normal));
+            t.addCell(cen(r.customerName,   normal));
+            t.addCell(rit(r.receptionFeeStr,normal));
+            t.addCell(cen("固定",           normal));
+            t.addCell(cen(r.receiptNo,      normal));
+            total += r.receptionFee;
+        }
+
+        PdfPCell lc = new PdfPCell(new Phrase(ym.getMonthValue() + "月分累計", bold));
+        lc.setColspan(2); lc.setBorder(Rectangle.BOX); lc.setPadding(3);
+        lc.setHorizontalAlignment(Element.ALIGN_CENTER);
+        t.addCell(lc);
+        t.addCell(rit(fmt(total), bold));
+        t.addCell(diag(bold)); t.addCell(diag(bold));
+
+        doc.add(t);
+        doc.close();
+    }
+
+    /** 1-3-3 PDF */
+    private void buildPdf133(Integer compYear, Integer laborYear, ByteArrayOutputStream baos)
+            throws DocumentException, IOException {
+        Document doc = new Document(PageSize.A4.rotate(), 14, 14, 14, 14);
+        PdfWriter.getInstance(doc, baos);
+        doc.open();
+
+        BaseFont bf = BaseFont.createFont("HeiseiMin-W3", "UniJIS-UCS2-H", BaseFont.NOT_EMBEDDED);
+        Font titleF  = new Font(bf, 11, Font.BOLD);
+        Font bold    = new Font(bf, 7,  Font.BOLD);
+        Font normal  = new Font(bf, 7);
+
+        List<Integer> compMonths  = List.of(2,3,4,5,6,7,8,9,10,11,12,1);
+        List<Integer> laborMonths = List.of(4,5,6,7,8,9,10,11,12,1,2,3);
+
+        // 会社決算表
+        if (compYear != null) {
+            Paragraph t = new Paragraph("手数料収入決算表（会社決算表）　"
+                + compYear + "年2月 ～ " + (compYear+1) + "年1月　（有）ワークオフィス谷", titleF);
+            t.setSpacingAfter(4); doc.add(t);
+
+            SettlementData sd = buildSettlementData(compYear, compMonths, "comp");
+            doc.add(buildSettlementTable(sd, compMonths, bold, normal, bf));
+            doc.add(new Paragraph(" ", normal));
+        }
+
+        // 労働局決算表
+        if (laborYear != null) {
+            Paragraph t = new Paragraph("手数料収入決算表（労働局用決算表）　"
+                + laborYear + "年4月 ～ " + (laborYear+1) + "年3月", titleF);
+            t.setSpacingAfter(4); doc.add(t);
+
+            SettlementData sd = buildSettlementData(laborYear, laborMonths, "labor");
+            doc.add(buildSettlementTable(sd, laborMonths, bold, normal, bf));
+            doc.add(new Paragraph(" ", normal));
+        }
+
+        // 事業報告書月別表（準備中）
+        Paragraph rpt = new Paragraph("事業報告書月別表（労働局用年度別）　※準備中", titleF);
+        rpt.setSpacingAfter(4); doc.add(rpt);
+        if (laborYear != null) {
+            doc.add(buildReportTable(laborYear, laborMonths, bold, normal));
+        }
+
+        doc.close();
+    }
+
+    private PdfPTable buildSettlementTable(SettlementData sd, List<Integer> months,
+                                            Font bold, Font normal, BaseFont bf)
+            throws DocumentException {
+        float[] w = new float[months.size() + 2];
+        w[0] = 2.5f;
+        for (int i = 1; i <= months.size(); i++) w[i] = 1.2f;
+        w[months.size() + 1] = 1.5f;
+
+        PdfPTable t = new PdfPTable(w);
+        t.setWidthPercentage(100); t.setSpacingBefore(3);
+
+        // ヘッダー
+        t.addCell(hdrN("月　別", bold));
+        for (int m : months) t.addCell(hdrN(m + "月", bold));
+        t.addCell(hdrN("決算額", bold));
+
+        String[] rowLabels = {"求職受付\n手数料", "", "紹介手数料", "サン・ケアネット", "月別合計"};
+        // 求職受付手数料 2行
+        PdfPCell lc1 = new PdfPCell(new Phrase("求職受付\n手数料", bold));
+        lc1.setRowspan(2); lc1.setBorder(Rectangle.BOX); lc1.setPadding(2);
+        lc1.setHorizontalAlignment(Element.ALIGN_CENTER); lc1.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        t.addCell(lc1);
+        for (int m : months) t.addCell(rit(fmtN(sd.receptionFee710.getOrDefault(m, 0)), normal));
+        t.addCell(rit(fmtN(sd.receptionFee710Total), bold));
+        for (int m : months) t.addCell(rit(fmtN(sd.receptionFee1000.getOrDefault(m, 0)), normal));
+        t.addCell(rit(fmtN(sd.receptionFee1000Total), bold));
+
+        t.addCell(hdrN("紹介手数料", bold));
+        for (int m : months) t.addCell(rit(fmtN(sd.introFee.getOrDefault(m, 0)), normal));
+        t.addCell(rit(fmtN(sd.introFeeTotal), bold));
+
+        t.addCell(hdrN("サン・ケアネット", bold));
+        for (int m : months) t.addCell(rit(fmtN(sd.sancareNet.getOrDefault(m, 0)), normal));
+        t.addCell(rit(fmtN(sd.sancareNetTotal), bold));
+
+        // 月別合計行（太枠）
+        PdfPCell totalLabel = new PdfPCell(new Phrase("月別合計", bold));
+        totalLabel.setBorder(Rectangle.BOX); totalLabel.setBorderWidth(1.5f); totalLabel.setPadding(3);
+        totalLabel.setHorizontalAlignment(Element.ALIGN_CENTER);
+        t.addCell(totalLabel);
+        for (int m : months) {
+            PdfPCell tc = rit(fmtN(sd.monthTotal.getOrDefault(m, 0)), bold);
+            tc.setBorderWidth(1.5f); t.addCell(tc);
+        }
+        PdfPCell gtc = rit(fmtN(sd.grandTotal), bold);
+        gtc.setBorderWidth(1.5f); t.addCell(gtc);
+
+        return t;
+    }
+
+    private PdfPTable buildReportTable(int laborYear, List<Integer> months, Font bold, Font normal) {
+        float[] w = new float[months.size() + 3];
+        w[0] = 1.0f; w[1] = 2.5f;
+        for (int i = 2; i <= months.size() + 1; i++) w[i] = 1.1f;
+        w[months.size() + 2] = 1.4f;
+
+        PdfPTable t = new PdfPTable(w);
+        t.setWidthPercentage(100); t.setSpacingBefore(3);
+
+        PdfPCell corner = new PdfPCell(new Phrase("項目 月別", bold));
+        corner.setColspan(2); corner.setBorder(Rectangle.BOX); corner.setPadding(2);
+        corner.setHorizontalAlignment(Element.ALIGN_CENTER);
+        t.addCell(corner);
+        for (int m : months) t.addCell(hdrN(m + "月", bold));
+        t.addCell(hdrN("決算額", bold));
+
+        String[][] rows = {
+            {"求\n人", "常用"}, {null, "臨時"}, {null, "日雇"},
+            {"求\n職", "有効"}, {null, "新規申込み"},
+            {"就\n職", "常用"}, {null, "臨時"}, {null, "日雇"},
+            {"手\n数\n料", "常用"}, {null, "臨時"}, {null, "日雇"}, {null, "求職受付料"}
+        };
+
+        int[] groupSpans = {3, 2, 3, 4};
+        int groupIdx = 0, inGroup = 0, spanLeft = groupSpans[0];
+
+        for (String[] row : rows) {
+            if (row[0] != null) {
+                PdfPCell gc = new PdfPCell(new Phrase(row[0], bold));
+                gc.setRowspan(spanLeft); gc.setBorder(Rectangle.BOX); gc.setPadding(2);
+                gc.setHorizontalAlignment(Element.ALIGN_CENTER); gc.setVerticalAlignment(Element.ALIGN_MIDDLE);
+                t.addCell(gc);
+            }
+            PdfPCell sc = new PdfPCell(new Phrase(row[1], normal));
+            sc.setBorder(Rectangle.BOX); sc.setPadding(2);
+            t.addCell(sc);
+            for (int m : months) {
+                PdfPCell dc = new PdfPCell(new Phrase("-", normal));
+                dc.setBorder(Rectangle.BOX); dc.setPadding(2);
+                dc.setHorizontalAlignment(Element.ALIGN_CENTER); t.addCell(dc);
+            }
+            PdfPCell tc = new PdfPCell(new Phrase("0", bold));
+            tc.setBorder(Rectangle.BOX); tc.setPadding(2);
+            tc.setHorizontalAlignment(Element.ALIGN_RIGHT); t.addCell(tc);
+
+            inGroup++;
+            if (inGroup >= spanLeft && groupIdx + 1 < groupSpans.length) {
+                groupIdx++; inGroup = 0; spanLeft = groupSpans[groupIdx];
+            }
+        }
+        return t;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // セルヘルパー
+    // ═══════════════════════════════════════════════════════════════
+
     private PdfPCell diag(Font f) {
         PdfPCell c = new PdfPCell(new Phrase("", f));
-        c.setBorder(Rectangle.BOX);
-        c.setFixedHeight(18f);
+        c.setBorder(Rectangle.BOX); c.setFixedHeight(18f);
         c.setCellEvent((cell, position, canvases) -> {
             PdfContentByte cb = canvases[PdfPTable.LINECANVAS];
-            cb.saveState();
-            cb.setLineWidth(0.5f);
+            cb.saveState(); cb.setLineWidth(0.5f);
             cb.moveTo(position.getLeft(), position.getBottom());
             cb.lineTo(position.getRight(), position.getTop());
-            cb.stroke();
-            cb.restoreState();
+            cb.stroke(); cb.restoreState();
         });
         return c;
     }
@@ -292,25 +803,17 @@ public class ReportMenuController {
         return c;
     }
 
-    private PdfPCell hdr(String text, Font f, boolean doubleBottom) {
+    private PdfPCell hdr(String text, Font f) {
         PdfPCell c = new PdfPCell(new Phrase(text, f));
-        c.setHorizontalAlignment(Element.ALIGN_CENTER);
-        c.setVerticalAlignment(Element.ALIGN_MIDDLE); c.setPadding(2); c.setFixedHeight(15f);
-        if (doubleBottom) {
-            c.setBorderWidthTop(0.5f); c.setBorderWidthLeft(0.5f);
-            c.setBorderWidthRight(0.5f); c.setBorderWidthBottom(2.5f);
-        } else {
-            c.setBorder(Rectangle.BOX); c.setBorderWidth(0.5f);
-        }
+        c.setBorder(Rectangle.BOX); c.setHorizontalAlignment(Element.ALIGN_CENTER);
+        c.setVerticalAlignment(Element.ALIGN_MIDDLE); c.setPadding(2); c.setFixedHeight(22f);
         return c;
     }
 
-    private PdfPCell hdrSpan(String text, Font f) {
+    private PdfPCell hdrN(String text, Font f) {
         PdfPCell c = new PdfPCell(new Phrase(text, f));
-        c.setRowspan(2); c.setHorizontalAlignment(Element.ALIGN_CENTER);
+        c.setBorder(Rectangle.BOX); c.setHorizontalAlignment(Element.ALIGN_CENTER);
         c.setVerticalAlignment(Element.ALIGN_MIDDLE); c.setPadding(2);
-        c.setBorderWidthTop(0.5f); c.setBorderWidthLeft(0.5f);
-        c.setBorderWidthRight(0.5f); c.setBorderWidthBottom(2.5f);
         return c;
     }
 
@@ -322,30 +825,66 @@ public class ReportMenuController {
         return c;
     }
 
-    private String fmt(int val) { return String.format("%,d", val); }
+    private String fmt(int val)  { return String.format("%,d", val); }
+    private String fmtN(int val) { return val == 0 ? "0" : String.format("%,d", val); }
 
-    // ─── DTO ──────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════
+    // DTO
+    // ═══════════════════════════════════════════════════════════════
+
     public static class FeeLedgerRow {
         public Long   detailId;
-        public String receiptDate;
-        public String customerName;
-        public int    wage, commission, tax, customerFee, dailyWage1Month;
-        public String receiptNo;
-        public String wageStr, commissionStr, taxStr, customerFeeStr, dailyWage1MonthStr;
+        public String receiptDate, customerName, receiptNo;
+        public int    wage, commission, tax, customerFee, dailyWage1Month, temp3Month;
+        public String wageStr, commissionStr, taxStr, customerFeeStr, dailyWage1MonthStr, temp3MonthStr;
 
-        public Long   getDetailId()            { return detailId; }
-        public String getReceiptDate()         { return receiptDate; }
-        public String getCustomerName()        { return customerName; }
-        public int    getWage()                { return wage; }
-        public int    getCommission()          { return commission; }
-        public int    getTax()                 { return tax; }
-        public int    getCustomerFee()         { return customerFee; }
-        public String getReceiptNo()           { return receiptNo; }
-        public int    getDailyWage1Month()     { return dailyWage1Month; }
-        public String getWageStr()             { return wageStr; }
-        public String getCommissionStr()       { return commissionStr; }
-        public String getTaxStr()              { return taxStr; }
-        public String getCustomerFeeStr()      { return customerFeeStr; }
-        public String getDailyWage1MonthStr()  { return dailyWage1MonthStr; }
+        public Long   getDetailId()             { return detailId; }
+        public String getReceiptDate()          { return receiptDate; }
+        public String getCustomerName()         { return customerName; }
+        public int    getWage()                 { return wage; }
+        public int    getCommission()           { return commission; }
+        public int    getTax()                  { return tax; }
+        public int    getCustomerFee()          { return customerFee; }
+        public String getReceiptNo()            { return receiptNo; }
+        public int    getDailyWage1Month()      { return dailyWage1Month; }
+        public int    getTemp3Month()           { return temp3Month; }
+        public String getWageStr()              { return wageStr; }
+        public String getCommissionStr()        { return commissionStr; }
+        public String getTaxStr()               { return taxStr; }
+        public String getCustomerFeeStr()       { return customerFeeStr; }
+        public String getDailyWage1MonthStr()   { return dailyWage1MonthStr; }
+        public String getTemp3MonthStr()        { return temp3MonthStr; }
+    }
+
+    public static class ReceptionLedgerRow {
+        public String receiptDate, customerName, receiptNo, receptionFeeStr;
+        public int    receptionFee;
+
+        public String getReceiptDate()      { return receiptDate; }
+        public String getCustomerName()     { return customerName; }
+        public String getReceiptNo()        { return receiptNo; }
+        public int    getReceptionFee()     { return receptionFee; }
+        public String getReceptionFeeStr()  { return receptionFeeStr; }
+    }
+
+    public static class SettlementData {
+        public Map<Integer,Integer> receptionFee710  = new LinkedHashMap<>();
+        public Map<Integer,Integer> receptionFee1000 = new LinkedHashMap<>();
+        public Map<Integer,Integer> introFee         = new LinkedHashMap<>();
+        public Map<Integer,Integer> sancareNet       = new LinkedHashMap<>();
+        public Map<Integer,Integer> monthTotal       = new LinkedHashMap<>();
+        public int receptionFee710Total, receptionFee1000Total;
+        public int introFeeTotal, sancareNetTotal, grandTotal;
+
+        public Map<Integer,Integer> getReceptionFee710()   { return receptionFee710; }
+        public Map<Integer,Integer> getReceptionFee1000()  { return receptionFee1000; }
+        public Map<Integer,Integer> getIntroFee()          { return introFee; }
+        public Map<Integer,Integer> getSancareNet()        { return sancareNet; }
+        public Map<Integer,Integer> getMonthTotal()        { return monthTotal; }
+        public int getReceptionFee710Total()  { return receptionFee710Total; }
+        public int getReceptionFee1000Total() { return receptionFee1000Total; }
+        public int getIntroFeeTotal()         { return introFeeTotal; }
+        public int getSancareNetTotal()       { return sancareNetTotal; }
+        public int getGrandTotal()            { return grandTotal; }
     }
 }

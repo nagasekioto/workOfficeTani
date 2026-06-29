@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>求職受付手数料管理簿（1-3-2） - 家政婦紹介事務所</title>
+    <style>
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; color: #333; }
+        .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .filter-row { display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap; }
+        .filter-row label { font-weight: bold; color: #555; font-size: 14px; display: block; margin-bottom: 4px; }
+        .filter-row input[type=month] { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .filter-btn { background: #0288D1; color: white; border: none; border-radius: 4px; padding: 9px 20px; cursor: pointer; font-size: 14px; }
+        .act-btn   { color: white; border: none; border-radius: 4px; padding: 9px 16px; cursor: pointer; font-size: 13px; text-decoration: none; display: inline-block; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #0288D1; color: white; padding: 8px; text-align: center; }
+        td { padding: 6px 8px; border-bottom: 1px solid #e0e0e0; vertical-align: middle; text-align: center; }
+        td.num { text-align: right; }
+        .empty { text-align: center; padding: 40px; color: #999; }
+        .month-label { font-size: 18px; font-weight: bold; color: #01579B; margin-bottom: 16px; }
+        .note { font-size: 11px; color: #666; margin-top: 10px; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>&#128203; 求職受付手数料管理簿（1-3-2）</h1>
+    <a href="/fee-menu" class="back-btn">&#8592; 手数料管理に戻る</a>
+</div>
+<div class="container">
+    <form method="get" action="/fee-reception-ledger">
+        <div class="filter-row">
+            <div>
+                <label for="month">表示月</label>
+                <input type="month" id="month" name="month" th:value="${selectedMonth}">
+            </div>
+            <button type="submit" class="filter-btn">&#128269; 表示</button>
+            <th:block th:if="${selectedMonth != null}">
+                <a th:href="@{/fee-reception-ledger/pdf(month=${selectedMonth})}" target="_blank"
+                   class="act-btn" style="background:#4CAF50;">&#128196; 印刷内容確認</a>
+                <button class="act-btn" style="background:#1976D2;" type="button" id="printBtn"
+                        th:data-month="${selectedMonth}">&#128424; 印刷</button>
+                <a th:href="@{/fee-reception-ledger/pdf(month=${selectedMonth},dl=1)}"
+                   class="act-btn" style="background:#FF6F00;">&#128190; 保存（PDF）</a>
+            </th:block>
+        </div>
+    </form>
+
+    <th:block th:if="${selectedMonth != null}">
+        <div class="month-label" th:text="${selectedMonth + ' の求職受付手数料管理簿'}">-</div>
+
+        <th:block th:if="${items != null and not #lists.isEmpty(items)}">
+            <table>
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>領収年月日</th>
+                        <th>支払者名（求職者）</th>
+                        <th>求人受付事務費<br><small>（710円×件数）</small></th>
+                        <th>手数料割合</th>
+                        <th>備考（領収番号）</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="item, stat : ${items}">
+                        <td th:text="${stat.count}">-</td>
+                        <td th:text="${item.receiptDate}">-</td>
+                        <td th:text="${item.customerName}">-</td>
+                        <td class="num" th:text="${item.receptionFeeStr}">-</td>
+                        <td>固定</td>
+                        <td th:text="${item.receiptNo}">-</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="note">※ 求人受付事務費は710円固定（求職者がその求人者に初めて行く場合）</p>
+        </th:block>
+
+        <div class="empty" th:if="${items == null or #lists.isEmpty(items)}">
+            <span th:text="${selectedMonth + ' の記録はありません。'}">-</span>
+        </div>
+    </th:block>
+</div>
+<script>
+var btn = document.getElementById('printBtn');
+if (btn) {
+    btn.addEventListener('click', function() {
+        var m = this.getAttribute('data-month');
+        var url = '/fee-reception-ledger/pdf?month=' + m;
+        var w = window.open(url, '_blank');
+        if (w) { w.onload = function() { w.print(); }; }
+    });
+}
+</script>
+</body>
+</html>
