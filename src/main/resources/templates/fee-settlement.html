@@ -106,9 +106,9 @@
            クリックイベントが常に <button> に届くようにする。
            showTab は data-tab 属性で対象を特定し、this は使わない。 -->
     <div class="tab-bar">
-        <button class="tab-btn active" data-tab="company" onclick="showTab(this)">会社決算表</button>
-        <button class="tab-btn"        data-tab="labor"   onclick="showTab(this)">労働局用決算表</button>
-        <button class="tab-btn"        data-tab="report"  onclick="showTab(this)">事業報告書月別表<span class="badge">準備中</span></button>
+        <button type="button" class="tab-btn active" data-tab="company" onclick="showTab(this)">会社決算表</button>
+        <button type="button" class="tab-btn"        data-tab="labor"   onclick="showTab(this)">労働局用決算表</button>
+        <button type="button" class="tab-btn"        data-tab="report"  onclick="showTab(this)">事業報告書月別表<span class="badge">準備中</span></button>
     </div>
 
     <!-- ══════════════════════════════════════════════════
@@ -139,21 +139,21 @@
                         <tr>
                             <td class="lbl-sub">求職受付手数料①<br><small style="color:#888;">（710円×件数）</small></td>
                             <td th:each="m : ${compMonths}"
-                                th:text="${compData.receptionFee710[m] != null ? #numbers.formatInteger(compData.receptionFee710[m],1,'COMMA') : '0'}"></td>
+                                th:text="${compData.receptionFee710[#strings.toString(m)] != null ? #numbers.formatInteger(compData.receptionFee710[#strings.toString(m)],1,'COMMA') : '0'}"></td>
                             <td class="tot" th:text="${#numbers.formatInteger(compData.receptionFee710Total,1,'COMMA')}"></td>
                         </tr>
                         <!-- 求職受付手数料 2行目（1000円×件数）-->
                         <tr>
                             <td class="lbl-sub">求職受付手数料②<br><small style="color:#888;">（1,000円×件数）</small></td>
                             <td th:each="m : ${compMonths}"
-                                th:text="${compData.receptionFee1000[m] != null ? #numbers.formatInteger(compData.receptionFee1000[m],1,'COMMA') : '0'}"></td>
+                                th:text="${compData.receptionFee1000[#strings.toString(m)] != null ? #numbers.formatInteger(compData.receptionFee1000[#strings.toString(m)],1,'COMMA') : '0'}"></td>
                             <td class="tot" th:text="${#numbers.formatInteger(compData.receptionFee1000Total,1,'COMMA')}"></td>
                         </tr>
                         <!-- 紹介手数料 -->
                         <tr>
                             <td class="lbl">紹介手数料</td>
                             <td th:each="m : ${compMonths}"
-                                th:text="${compData.introFee[m] != null ? #numbers.formatInteger(compData.introFee[m],1,'COMMA') : '0'}"></td>
+                                th:text="${compData.introFee[#strings.toString(m)] != null ? #numbers.formatInteger(compData.introFee[#strings.toString(m)],1,'COMMA') : '0'}"></td>
                             <td class="tot" th:text="${#numbers.formatInteger(compData.introFeeTotal,1,'COMMA')}"></td>
                         </tr>
                         <!-- サン・ケアネット（手入力） -->
@@ -162,7 +162,7 @@
                             <td th:each="m : ${compMonths}" style="padding:3px 4px;">
                                 <input type="number" class="sc-input" min="0"
                                        th:name="|sc_${selectedCompYear}_${m}|"
-                                       th:value="${compData.sancareNet[m] != null ? compData.sancareNet[m] : 0}">
+                                       th:value="${compData.sancareNet[#strings.toString(m)] != null ? compData.sancareNet[#strings.toString(m)] : 0}">
                             </td>
                             <td class="tot" th:text="${#numbers.formatInteger(compData.sancareNetTotal,1,'COMMA')}"></td>
                         </tr>
@@ -170,7 +170,7 @@
                         <tr class="total-row">
                             <td class="lbl">月別合計</td>
                             <td th:each="m : ${compMonths}"
-                                th:text="${compData.monthTotal[m] != null ? #numbers.formatInteger(compData.monthTotal[m],1,'COMMA') : '0'}"></td>
+                                th:text="${compData.monthTotal[#strings.toString(m)] != null ? #numbers.formatInteger(compData.monthTotal[#strings.toString(m)],1,'COMMA') : '0'}"></td>
                             <td class="tot" th:text="${#numbers.formatInteger(compData.grandTotal,1,'COMMA')}"></td>
                         </tr>
                     </tbody>
@@ -205,19 +205,19 @@
                         <tr>
                             <td class="lbl-sub">求職受付手数料①<br><small style="color:#888;">（710円×件数）</small></td>
                             <td th:each="m : ${laborMonths}"
-                                th:text="${laborData.receptionFee710[m] != null ? #numbers.formatInteger(laborData.receptionFee710[m],1,'COMMA') : '0'}"></td>
+                                th:text="${laborData.receptionFee710[#strings.toString(m)] != null ? #numbers.formatInteger(laborData.receptionFee710[#strings.toString(m)],1,'COMMA') : '0'}"></td>
                             <td class="tot" th:text="${#numbers.formatInteger(laborData.receptionFee710Total,1,'COMMA')}"></td>
                         </tr>
                         <tr>
                             <td class="lbl-sub">求職受付手数料②<br><small style="color:#888;">（1,000円×件数）</small></td>
                             <td th:each="m : ${laborMonths}"
-                                th:text="${laborData.receptionFee1000[m] != null ? #numbers.formatInteger(laborData.receptionFee1000[m],1,'COMMA') : '0'}"></td>
+                                th:text="${laborData.receptionFee1000[#strings.toString(m)] != null ? #numbers.formatInteger(laborData.receptionFee1000[#strings.toString(m)],1,'COMMA') : '0'}"></td>
                             <td class="tot" th:text="${#numbers.formatInteger(laborData.receptionFee1000Total,1,'COMMA')}"></td>
                         </tr>
                         <tr>
                             <td class="lbl">紹介手数料</td>
                             <td th:each="m : ${laborMonths}"
-                                th:text="${laborData.introFee[m] != null ? #numbers.formatInteger(laborData.introFee[m],1,'COMMA') : '0'}"></td>
+                                th:text="${laborData.introFee[#strings.toString(m)] != null ? #numbers.formatInteger(laborData.introFee[#strings.toString(m)],1,'COMMA') : '0'}"></td>
                             <td class="tot" th:text="${#numbers.formatInteger(laborData.introFeeTotal,1,'COMMA')}"></td>
                         </tr>
                         <tr>
@@ -225,14 +225,14 @@
                             <td th:each="m : ${laborMonths}" style="padding:3px 4px;">
                                 <input type="number" class="sc-input" min="0"
                                        th:name="|scl_${selectedLaborYear}_${m}|"
-                                       th:value="${laborData.sancareNet[m] != null ? laborData.sancareNet[m] : 0}">
+                                       th:value="${laborData.sancareNet[#strings.toString(m)] != null ? laborData.sancareNet[#strings.toString(m)] : 0}">
                             </td>
                             <td class="tot" th:text="${#numbers.formatInteger(laborData.sancareNetTotal,1,'COMMA')}"></td>
                         </tr>
                         <tr class="total-row">
                             <td class="lbl">月別合計</td>
                             <td th:each="m : ${laborMonths}"
-                                th:text="${laborData.monthTotal[m] != null ? #numbers.formatInteger(laborData.monthTotal[m],1,'COMMA') : '0'}"></td>
+                                th:text="${laborData.monthTotal[#strings.toString(m)] != null ? #numbers.formatInteger(laborData.monthTotal[#strings.toString(m)],1,'COMMA') : '0'}"></td>
                             <td class="tot" th:text="${#numbers.formatInteger(laborData.grandTotal,1,'COMMA')}"></td>
                         </tr>
                     </tbody>

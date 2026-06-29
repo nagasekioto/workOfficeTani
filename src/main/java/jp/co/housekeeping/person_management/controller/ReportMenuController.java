@@ -398,27 +398,30 @@ public class ReportMenuController {
             YearMonth yearMonth;
             try { yearMonth = YearMonth.parse(ym); } catch (Exception e) { continue; }
 
+            // Thymeleaf の Map アクセスは String キーが確実なため文字列化
+            String key = String.valueOf(m);
+
             // ②求職受付手数料管理簿の求人受付事務費(710円×件数) = reception_fee合計
             int fee710 = calcReceptionFee710(yearMonth);
-            d.receptionFee710.put(m, fee710);
+            d.receptionFee710.put(key, fee710);
 
             // ③紹介手数料管理簿の求人受付事務費(1000円×件数) = customer_fee合計
             int fee1000 = calcCustomerFee1000(yearMonth);
-            d.receptionFee1000.put(m, fee1000);
+            d.receptionFee1000.put(key, fee1000);
 
             // ④紹介手数料 = 手数料※1累計 + 手数料※2累計 - サンケアネット
             int comm1 = calcCommission(yearMonth);   // 手数料※1
             int comm2 = calcTax(yearMonth);           // 手数料※2
             int sancare = getSancareNet(ym);
             int introFee = comm1 + comm2 - sancare;
-            d.introFee.put(m, introFee);
+            d.introFee.put(key, introFee);
 
             // ①サンケアネット
-            d.sancareNet.put(m, sancare);
+            d.sancareNet.put(key, sancare);
 
             // 月別合計 = ① + ② + ③ + ④
             int monthTotal = fee710 + fee1000 + introFee + sancare;
-            d.monthTotal.put(m, monthTotal);
+            d.monthTotal.put(key, monthTotal);
         }
 
         d.receptionFee710Total  = d.receptionFee710.values().stream().mapToInt(Integer::intValue).sum();
@@ -694,17 +697,17 @@ public class ReportMenuController {
         lc1.setRowspan(2); lc1.setBorder(Rectangle.BOX); lc1.setPadding(2);
         lc1.setHorizontalAlignment(Element.ALIGN_CENTER); lc1.setVerticalAlignment(Element.ALIGN_MIDDLE);
         t.addCell(lc1);
-        for (int m : months) t.addCell(rit(fmtN(sd.receptionFee710.getOrDefault(m, 0)), normal));
+        for (int m : months) t.addCell(rit(fmtN(sd.receptionFee710.getOrDefault(String.valueOf(m), 0)), normal));
         t.addCell(rit(fmtN(sd.receptionFee710Total), bold));
-        for (int m : months) t.addCell(rit(fmtN(sd.receptionFee1000.getOrDefault(m, 0)), normal));
+        for (int m : months) t.addCell(rit(fmtN(sd.receptionFee1000.getOrDefault(String.valueOf(m), 0)), normal));
         t.addCell(rit(fmtN(sd.receptionFee1000Total), bold));
 
         t.addCell(hdrN("紹介手数料", bold));
-        for (int m : months) t.addCell(rit(fmtN(sd.introFee.getOrDefault(m, 0)), normal));
+        for (int m : months) t.addCell(rit(fmtN(sd.introFee.getOrDefault(String.valueOf(m), 0)), normal));
         t.addCell(rit(fmtN(sd.introFeeTotal), bold));
 
         t.addCell(hdrN("サン・ケアネット", bold));
-        for (int m : months) t.addCell(rit(fmtN(sd.sancareNet.getOrDefault(m, 0)), normal));
+        for (int m : months) t.addCell(rit(fmtN(sd.sancareNet.getOrDefault(String.valueOf(m), 0)), normal));
         t.addCell(rit(fmtN(sd.sancareNetTotal), bold));
 
         // 月別合計行（太枠）
@@ -713,7 +716,7 @@ public class ReportMenuController {
         totalLabel.setHorizontalAlignment(Element.ALIGN_CENTER);
         t.addCell(totalLabel);
         for (int m : months) {
-            PdfPCell tc = rit(fmtN(sd.monthTotal.getOrDefault(m, 0)), bold);
+            PdfPCell tc = rit(fmtN(sd.monthTotal.getOrDefault(String.valueOf(m), 0)), bold);
             tc.setBorderWidth(1.5f); t.addCell(tc);
         }
         PdfPCell gtc = rit(fmtN(sd.grandTotal), bold);
@@ -871,19 +874,19 @@ public class ReportMenuController {
     }
 
     public static class SettlementData {
-        public Map<Integer,Integer> receptionFee710  = new LinkedHashMap<>();
-        public Map<Integer,Integer> receptionFee1000 = new LinkedHashMap<>();
-        public Map<Integer,Integer> introFee         = new LinkedHashMap<>();
-        public Map<Integer,Integer> sancareNet       = new LinkedHashMap<>();
-        public Map<Integer,Integer> monthTotal       = new LinkedHashMap<>();
+        public Map<String,Integer> receptionFee710  = new LinkedHashMap<>();
+        public Map<String,Integer> receptionFee1000 = new LinkedHashMap<>();
+        public Map<String,Integer> introFee         = new LinkedHashMap<>();
+        public Map<String,Integer> sancareNet       = new LinkedHashMap<>();
+        public Map<String,Integer> monthTotal       = new LinkedHashMap<>();
         public int receptionFee710Total, receptionFee1000Total;
         public int introFeeTotal, sancareNetTotal, grandTotal;
 
-        public Map<Integer,Integer> getReceptionFee710()   { return receptionFee710; }
-        public Map<Integer,Integer> getReceptionFee1000()  { return receptionFee1000; }
-        public Map<Integer,Integer> getIntroFee()          { return introFee; }
-        public Map<Integer,Integer> getSancareNet()        { return sancareNet; }
-        public Map<Integer,Integer> getMonthTotal()        { return monthTotal; }
+        public Map<String,Integer> getReceptionFee710()   { return receptionFee710; }
+        public Map<String,Integer> getReceptionFee1000()  { return receptionFee1000; }
+        public Map<String,Integer> getIntroFee()          { return introFee; }
+        public Map<String,Integer> getSancareNet()        { return sancareNet; }
+        public Map<String,Integer> getMonthTotal()        { return monthTotal; }
         public int getReceptionFee710Total()  { return receptionFee710Total; }
         public int getReceptionFee1000Total() { return receptionFee1000Total; }
         public int getIntroFeeTotal()         { return introFeeTotal; }
