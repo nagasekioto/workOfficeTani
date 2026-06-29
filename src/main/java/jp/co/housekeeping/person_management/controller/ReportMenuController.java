@@ -270,10 +270,11 @@ public class ReportMenuController {
                 catch (Exception e2) { continue; }
 
                 LocalDate rd = null;
-                if      (d.getIntroductionDate() != null) rd = d.getIntroductionDate();
-                else if (d.getWorkEndDate()       != null) rd = d.getWorkEndDate();
-                else if (d.getWorkStartDate()     != null) rd = d.getWorkStartDate();
-                else if (d.getIssuedAt()          != null) rd = d.getIssuedAt().toLocalDate();
+                // 領収書発行日を最優先
+                if      (d.getIssuedAt()          != null) rd = d.getIssuedAt().toLocalDate();
+                else if (d.getWorkEndDate()        != null) rd = d.getWorkEndDate();
+                else if (d.getWorkStartDate()      != null) rd = d.getWorkStartDate();
+                else if (d.getIntroductionDate()   != null) rd = d.getIntroductionDate();
                 if (rd == null) continue;
                 if (rd.getYear() != ym.getYear() || rd.getMonthValue() != ym.getMonthValue()) continue;
 
@@ -342,10 +343,11 @@ public class ReportMenuController {
                 if (recFee == 0) continue;
 
                 LocalDate rd = null;
-                if      (d.getIntroductionDate() != null) rd = d.getIntroductionDate();
-                else if (d.getWorkEndDate()       != null) rd = d.getWorkEndDate();
-                else if (d.getWorkStartDate()     != null) rd = d.getWorkStartDate();
-                else if (d.getIssuedAt()          != null) rd = d.getIssuedAt().toLocalDate();
+                // 領収書発行日を最優先
+                if      (d.getIssuedAt()          != null) rd = d.getIssuedAt().toLocalDate();
+                else if (d.getWorkEndDate()        != null) rd = d.getWorkEndDate();
+                else if (d.getWorkStartDate()      != null) rd = d.getWorkStartDate();
+                else if (d.getIntroductionDate()   != null) rd = d.getIntroductionDate();
                 if (rd == null) continue;
                 if (rd.getYear() != ym.getYear() || rd.getMonthValue() != ym.getMonthValue()) continue;
 
@@ -507,10 +509,11 @@ public class ReportMenuController {
     }
 
     private LocalDate getRefDate(SalesDetail d) {
-        if (d.getIntroductionDate() != null) return d.getIntroductionDate();
+        // 領収書発行日を最優先（手数料管理簿は領収書発行月で管理）
+        if (d.getIssuedAt()         != null) return d.getIssuedAt().toLocalDate();
         if (d.getWorkEndDate()      != null) return d.getWorkEndDate();
         if (d.getWorkStartDate()    != null) return d.getWorkStartDate();
-        if (d.getIssuedAt()         != null) return d.getIssuedAt().toLocalDate();
+        if (d.getIntroductionDate() != null) return d.getIntroductionDate();
         return null;
     }
 
