@@ -416,6 +416,7 @@ public class PersonController {
         Font norm6   = new Font(bf, 6);
         Font bold6   = new Font(bf, 6,  Font.BOLD);
         Font bold5   = new Font(bf, 5,  Font.BOLD);
+        Font infoVal = new Font(bf, 11, Font.BOLD);
 
         // ── タイトル ──
         PdfPTable titleTbl = new PdfPTable(1);
@@ -444,21 +445,21 @@ public class PersonController {
         hdr.setWidthPercentage(100);
         hdr.setSpacingAfter(2);
 
-        // 求職者情報（氏名・〒・住所・電話番号・生年月日・希望職種の6行、各14f＝合計84f）
+        // 求職者情報（氏名・〒・住所・電話番号・生年月日・希望職種の6行、各18f＝合計108f）
         PdfPTable leftInfo = new PdfPTable(new float[]{1.0f, 1.2f, 4f});
         leftInfo.setWidthPercentage(100);
         addPHdrRow(leftInfo, "求職者", "氏名",
-                p != null ? (p.getLastNameKanji() + "　" + p.getFirstNameKanji()) : "", bold6, norm7, 6, 14f);
+                p != null ? (p.getLastNameKanji() + "　" + p.getFirstNameKanji()) : "", bold6, infoVal, 6, 18f);
         addPHdrRow2(leftInfo, "〒",
-                p != null && p.getPostalCode() != null ? p.getPostalCode() : "", bold6, norm7, 14f);
+                p != null && p.getPostalCode() != null ? p.getPostalCode() : "", bold6, infoVal, 18f);
         addPHdrRow2(leftInfo, "住所",
-                p != null ? pnvl(p.getAddress1()) + pnvl(p.getAddress2()) + pnvl(p.getAddress3()) : "", bold6, norm7, 14f);
-        addPHdrRow2(leftInfo, "電話番号", personPhone, bold6, norm7, 14f);
+                p != null ? pnvl(p.getAddress1()) + pnvl(p.getAddress2()) + pnvl(p.getAddress3()) : "", bold6, infoVal, 18f);
+        addPHdrRow2(leftInfo, "電話番号", personPhone, bold6, infoVal, 18f);
         addPHdrRow2(leftInfo, "生年月日",
-                p != null && p.getBirthDate() != null ? p.getBirthDate().toString() : "", bold6, norm7, 14f);
+                p != null && p.getBirthDate() != null ? p.getBirthDate().toString() : "", bold6, infoVal, 18f);
         addPHdrRow2(leftInfo, "希望職種",
                 p != null ? pnvl(p.getDesiredJob()) + (p.getDesiredType() != null && !p.getDesiredType().isBlank() ? "　/　" + p.getDesiredType() : "") : "",
-                bold6, norm7, 14f);
+                bold6, infoVal, 18f);
         PdfPCell leftCell = new PdfPCell(leftInfo);
         leftCell.setBorder(Rectangle.BOX); leftCell.setPadding(0);
         hdr.addCell(leftCell);
