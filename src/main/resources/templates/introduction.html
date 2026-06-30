@@ -211,18 +211,18 @@
         <div class="fg"><label>賃金形態・基本給</label>
             <div style="display:flex;flex-direction:column;gap:6px;">
                 <div style="display:flex;align-items:center;gap:8px;">
-                    <label style="white-space:nowrap;margin:0;"><input type="radio" name="wageType" value="時給" checked onchange="update()"> 時給</label>
+                    <label style="white-space:nowrap;margin:0;"><input type="radio" name="wageType" value="時給" checked onchange="applyWageDefault()"> 時給</label>
                     <input type="text" id="hourlyLine1" placeholder="例：～8時間　/　1200円" oninput="updateBaseWage()">
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;margin-left:60px;">
                     <input type="text" id="hourlyLine2" placeholder="例：8時間～　/　1500円" oninput="updateBaseWage()">
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;">
-                    <label style="white-space:nowrap;margin:0;"><input type="radio" name="wageType" value="日給" onchange="update()"> 日給</label>
+                    <label style="white-space:nowrap;margin:0;"><input type="radio" name="wageType" value="日給" onchange="applyWageDefault()"> 日給</label>
                     <input type="text" id="dailyLine1" placeholder="例：8,000円" oninput="updateBaseWage()">
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;">
-                    <label style="white-space:nowrap;margin:0;"><input type="radio" name="wageType" value="月給" onchange="update()"> 月給</label>
+                    <label style="white-space:nowrap;margin:0;"><input type="radio" name="wageType" value="月給" onchange="applyWageDefault()"> 月給</label>
                     <input type="text" id="monthlyLine1" placeholder="例：200,000円" oninput="updateBaseWage()">
                 </div>
             </div>
@@ -513,6 +513,18 @@ function updateRemarks(){
     document.querySelectorAll('.d-remarks').forEach(function(el){
         el.innerHTML = htmlLines;
     });
+}
+function applyWageDefault(){
+    var wt = gc('wageType');
+    if(wt==='時給'){
+        if(!g('hourlyLine1').value.trim()) g('hourlyLine1').value='～時間　/　円';
+        if(!g('hourlyLine2').value.trim()) g('hourlyLine2').value='時間～　/　円';
+    } else if(wt==='日給'){
+        if(!g('dailyLine1').value.trim()) g('dailyLine1').value='円';
+    } else if(wt==='月給'){
+        if(!g('monthlyLine1').value.trim()) g('monthlyLine1').value='円';
+    }
+    update();
 }
 function updateBaseWage(){
     var wt = gc('wageType');
