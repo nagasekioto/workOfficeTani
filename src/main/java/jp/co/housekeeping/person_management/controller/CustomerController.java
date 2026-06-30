@@ -64,6 +64,35 @@ public class CustomerController {
         return session.getAttribute("authenticated") != null;
     }
 
+    // 紹介履歴行を「紹介状一覧（1-6-2）」のデータから構築する
+    private List<KaijinRow> buildRowsFromIntroductions(Long customerId) {
+        List<KaijinRow> rows = new ArrayList<>();
+        if (customerId == null) return rows;
+
+        for (Introduction intro : introductionRepository.findAll()) {
+            if (!customerId.equals(intro.getCustomerId())) continue;
+            KaijinRow row = new KaijinRow();
+            row.introDate = intro.getIntroDate();
+            row.introductionDate = intro.getIntroDate() != null ? intro.getIntroDate().toString() : "";
+            row.personId = intro.getPersonId();
+            row.customerId = intro.getCustomerId();
+            row.formData = intro.getFormData() != null ? intro.getFormData() : "";
+            if (intro.getPersonId() != null) {
+                personRepository.findById(intro.getPersonId())
+                    .ifPresent(p -> row.personName = p.getLastNameKanji() + " " + p.getFirstNameKanji());
+            }
+            rows.add(row);
+        }
+
+        rows.sort((a, b) -> {
+            if (a.introDate == null && b.introDate == null) return 0;
+            if (a.introDate == null) return 1;
+            if (b.introDate == null) return -1;
+            return a.introDate.compareTo(b.introDate);
+        });
+        return rows;
+    }
+
     // ─── 1-2 求人者新規登録フォーム ───────────────────
     @GetMapping("/register")
     public String registerForm(HttpSession session, Model model) {
@@ -293,23 +322,9 @@ public class CustomerController {
             List<CustomerRequest> reqs = customerRequestRepository.findByCustomerId(customerId);
             if (!reqs.isEmpty()) model.addAttribute("request", reqs.get(0));
 
-            List<KaijinRow> rows = new ArrayList<>();
-            salesRepository.findAll().forEach(s ->
-                salesDetailRepository.findBySalesId(s.getId()).forEach(d -> {
-                    if (customerId.equals(d.getCustomerId())) {
-                        KaijinRow row = new KaijinRow();
-                        row.introductionDate = d.getIntroductionDate() != null ? d.getIntroductionDate().toString() : "";
-                        row.personId = s.getPersonId();
-                        row.customerId = d.getCustomerId();
-                        personRepository.findById(s.getPersonId() != null ? s.getPersonId() : 0L)
-                            .ifPresent(p -> row.personName = p.getLastNameKanji() + " " + p.getFirstNameKanji());
-                        row.detail = d;
-                        rows.add(row);
-                    }
-                }));
+            List<KaijinRow> rows = buildRowsFromIntroductions(customerId);
             model.addAttribute("rows", rows);
             model.addAttribute("emptyRows", Math.max(5, 10 - rows.size()));
-            if (!rows.isEmpty()) model.addAttribute("latestDetail", rows.get(0).detail);
         }
         return "customer-report";
     }
@@ -328,24 +343,8 @@ public class CustomerController {
         Customer customer = customerId != null
                 ? customerRepository.findById(customerId).orElse(null) : null;
 
-        // 紹介履歴行を収集
-        List<KaijinRow> rows = new ArrayList<>();
-        if (customerId != null) {
-            salesRepository.findAll().forEach(s ->
-                salesDetailRepository.findBySalesId(s.getId()).forEach(d -> {
-                    if (customerId.equals(d.getCustomerId())) {
-                        KaijinRow row = new KaijinRow();
-                        row.introductionDate = d.getIntroductionDate() != null
-                                ? d.getIntroductionDate().toString() : "";
-                        row.personId = s.getPersonId();
-                        row.customerId = d.getCustomerId();
-                        personRepository.findById(s.getPersonId() != null ? s.getPersonId() : 0L)
-                                .ifPresent(p -> row.personName = p.getLastNameKanji() + " " + p.getFirstNameKanji());
-                        row.detail = d;
-                        rows.add(row);
-                    }
-                }));
-        }
+        // 紹介履歴行を収集（紹介状一覧[1-6-2]のデータから構築）
+        List<KaijinRow> rows = buildRowsFromIntroductions(customerId);
         // 画面側で入力された雇用期間ステータス・採否・備考を行に反映
         for (int i = 0; i < rows.size(); i++) {
             KaijinRow row = rows.get(i);
@@ -494,14 +493,14 @@ public class CustomerController {
         for (KaijinRow row : rows) {
             if (filled >= DATA_ROWS) break;
 
-            LocalDate introDate = row.detail != null ? row.detail.getIntroductionDate() : null;
+            LocalDate introDate = row.introDate;
             String introDateStr = introDate != null ? formatDot(introDate) : "";
             String validPeriod  = formatValidPeriod(introDate);
             String workPeriod   = (introDate != null ? formatDot(introDate) : "")
                     + "　〜　" + nvl(row.empStatus);
 
-            // 紹介状一覧（1-6-2）の賃金形態・基本給を参照
-            List<String[]> wageRows = lookupWageRows(mapper, row.personId, row.customerId);
+            // 紹介状一覧（1-6-2）の賃金形態・基本給を参照（その行自身の紹介状データから直接取得）
+            List<String[]> wageRows = extractWageRows(mapper, row.formData);
             if (wageRows.isEmpty()) wageRows.add(new String[]{"", ""});
 
             for (String[] wage : wageRows) {
@@ -534,27 +533,13 @@ public class CustomerController {
         doc.close();
     }
 
-    /** 紹介状一覧（1-6-2）の賃金形態・基本給を参照し、[給,円]のペア一覧を返す（時給・日給両方あれば2行）*/
-    private List<String[]> lookupWageRows(ObjectMapper mapper, Long personId, Long customerId) {
+    /** 紹介状（formData）から[給,円]のペア一覧を抽出する（時給・日給両方あれば2行）*/
+    private List<String[]> extractWageRows(ObjectMapper mapper, String formData) {
         List<String[]> result = new ArrayList<>();
-        if (personId == null || customerId == null) return result;
-
-        Introduction matched = null;
-        for (Introduction intro : introductionRepository.findAll()) {
-            if (personId.equals(intro.getPersonId()) && customerId.equals(intro.getCustomerId())) {
-                if (matched == null
-                        || (intro.getCreatedAt() != null && matched.getCreatedAt() != null
-                            && intro.getCreatedAt().isAfter(matched.getCreatedAt()))) {
-                    matched = intro;
-                }
-            }
-        }
-        if (matched == null || matched.getFormData() == null || matched.getFormData().isBlank()) {
-            return result;
-        }
+        if (formData == null || formData.isBlank()) return result;
 
         try {
-            JsonNode node = mapper.readTree(matched.getFormData());
+            JsonNode node = mapper.readTree(formData);
             String wageTypeRaw = node.path("wageType").asText("");
             List<String> types = new ArrayList<>();
             for (String p : wageTypeRaw.split("・")) {
@@ -655,12 +640,13 @@ public class CustomerController {
 
     public static class KaijinRow {
         public String introductionDate = "";
+        public LocalDate introDate;
         public String personName = "";
         public Long personId;
         public Long customerId;
+        public String formData = "";
         public String empStatus = "就労中";
         public String hireResult = "";
         public String remarks = "";
-        public SalesDetail detail;
     }
 }
