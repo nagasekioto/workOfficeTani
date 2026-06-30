@@ -421,12 +421,12 @@ public class PersonController {
             }
         }
 
-        // ── ヘッダー部（求職者情報｜取扱状況） ──
-        PdfPTable hdr = new PdfPTable(new float[]{3.5f, 2.5f});
+        // ── ヘッダー部（求職者情報） ──
+        PdfPTable hdr = new PdfPTable(new float[]{1f});
         hdr.setWidthPercentage(100);
         hdr.setSpacingAfter(2);
 
-        // 左列: 求職者情報（氏名・〒・住所・電話番号・生年月日・希望職種の6行、各14f＝合計84f）
+        // 求職者情報（氏名・〒・住所・電話番号・生年月日・希望職種の6行、各14f＝合計84f）
         PdfPTable leftInfo = new PdfPTable(new float[]{1.0f, 1.2f, 4f});
         leftInfo.setWidthPercentage(100);
         addPHdrRow(leftInfo, "求職者", "氏名",
@@ -444,55 +444,6 @@ public class PersonController {
         PdfPCell leftCell = new PdfPCell(leftInfo);
         leftCell.setBorder(Rectangle.BOX); leftCell.setPadding(0);
         hdr.addCell(leftCell);
-
-        // 右列: 取扱状況
-        // 1行目：取扱状況（労働契約・無期雇用就職者の上）
-        // 2行目：労働契約（縦に3行分貫通）｜無期雇用就職者（転職勧奨禁止期間・離職状況の上）
-        // 3行目：[労働契約つづき]｜転職勧奨禁止期間（縦に2行分貫通）｜離職状況
-        // 4行目：[労働契約つづき]｜[転職勧奨禁止期間つづき]｜6カ月以内または不明｜返戻金
-        PdfPTable rightInfo = new PdfPTable(new float[]{1f, 1f, 1f, 1f});
-        rightInfo.setWidthPercentage(100);
-
-        PdfPCell rLabel = new PdfPCell(new Phrase("取扱状況", bold6));
-        rLabel.setColspan(4); rLabel.setBorder(Rectangle.BOX); rLabel.setPadding(2);
-        rLabel.setHorizontalAlignment(Element.ALIGN_CENTER); rLabel.setMinimumHeight(21f);
-        rightInfo.addCell(rLabel);
-
-        PdfPCell rouCell = new PdfPCell(new Phrase("労働\n契約", bold6));
-        rouCell.setRowspan(3); rouCell.setBorder(Rectangle.BOX); rouCell.setPadding(2);
-        rouCell.setHorizontalAlignment(Element.ALIGN_CENTER); rouCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        rouCell.setMinimumHeight(63f);
-        rightInfo.addCell(rouCell);
-
-        PdfPCell mukiLabel = new PdfPCell(new Phrase("無期雇用就職者", bold6));
-        mukiLabel.setColspan(3); mukiLabel.setBorder(Rectangle.BOX); mukiLabel.setPadding(2);
-        mukiLabel.setHorizontalAlignment(Element.ALIGN_CENTER); mukiLabel.setMinimumHeight(21f);
-        rightInfo.addCell(mukiLabel);
-
-        PdfPCell tenshokuCell = new PdfPCell(new Phrase("転職勧奨禁止期間\n（2018.1以降）", bold5));
-        tenshokuCell.setRowspan(2); tenshokuCell.setBorder(Rectangle.BOX); tenshokuCell.setPadding(2);
-        tenshokuCell.setHorizontalAlignment(Element.ALIGN_CENTER); tenshokuCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        tenshokuCell.setMinimumHeight(42f);
-        rightInfo.addCell(tenshokuCell);
-
-        PdfPCell rishokuLabel = new PdfPCell(new Phrase("離職状況", bold6));
-        rishokuLabel.setColspan(2); rishokuLabel.setBorder(Rectangle.BOX); rishokuLabel.setPadding(2);
-        rishokuLabel.setHorizontalAlignment(Element.ALIGN_CENTER); rishokuLabel.setMinimumHeight(21f);
-        rightInfo.addCell(rishokuLabel);
-
-        PdfPCell rokkagetsuCell = new PdfPCell(new Phrase("6カ月以内\nまたは不明", bold5));
-        rokkagetsuCell.setBorder(Rectangle.BOX); rokkagetsuCell.setPadding(2);
-        rokkagetsuCell.setHorizontalAlignment(Element.ALIGN_CENTER); rokkagetsuCell.setMinimumHeight(21f);
-        rightInfo.addCell(rokkagetsuCell);
-
-        PdfPCell henreiCell = new PdfPCell(new Phrase("返戻\n金", bold6));
-        henreiCell.setBorder(Rectangle.BOX); henreiCell.setPadding(2);
-        henreiCell.setHorizontalAlignment(Element.ALIGN_CENTER); henreiCell.setMinimumHeight(21f);
-        rightInfo.addCell(henreiCell);
-
-        PdfPCell rCell = new PdfPCell(rightInfo);
-        rCell.setBorder(Rectangle.BOX); rCell.setPadding(0);
-        hdr.addCell(rCell);
 
         doc.add(hdr);
 
