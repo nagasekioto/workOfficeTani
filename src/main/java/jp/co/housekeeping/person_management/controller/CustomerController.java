@@ -401,8 +401,8 @@ public class CustomerController {
         doc.add(titleTbl);
 
         // ── ヘッダー部（求人者情報） ──
-        // [求人者氏名・住所エリア] | [連絡担当者エリア] | [取扱状況エリア]
-        PdfPTable hdr = new PdfPTable(new float[]{3.5f, 2.5f, 2.0f});
+        // [求人者氏名・住所エリア] | [連絡担当者エリア]
+        PdfPTable hdr = new PdfPTable(new float[]{3.5f, 2.5f});
         hdr.setWidthPercentage(100);
         hdr.setSpacingAfter(2);
 
@@ -431,44 +431,36 @@ public class CustomerController {
         leftCell.setBorder(Rectangle.BOX); leftCell.setPadding(0);
         hdr.addCell(leftCell);
 
-        // 中列: 連絡担当者（3列構成：グループ｜ラベル｜値）
+        // 中列: 連絡担当者（3列構成：グループ｜ラベル｜値）。
+        // 氏名＝担当者名、電話番号＝担当者電話番号を表示。
+        // 左列(求人者情報・4行分)との高さの差で生じる余白を、電話番号欄を高くして埋める。
+        String staffName  = c != null ? nvl(c.getStaffName())  : "";
+        String staffPhone = c != null ? nvl(c.getStaffPhone()) : "";
         PdfPTable midInfo = new PdfPTable(new float[]{1.0f, 1.2f, 3f});
         midInfo.setWidthPercentage(100);
-        addHdrRow(midInfo, "連絡\n担当者", "氏名", "", bold6, norm7, 2);
-        addHdrRow2(midInfo, "電話番号", "", bold6, norm7);
+        PdfPCell midGroup = new PdfPCell(new Phrase("連絡\n担当者", bold6));
+        midGroup.setRowspan(2); midGroup.setBorder(Rectangle.BOX); midGroup.setPadding(2);
+        midGroup.setHorizontalAlignment(Element.ALIGN_CENTER); midGroup.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        midInfo.addCell(midGroup);
+        PdfPCell midNameLabel = new PdfPCell(new Phrase("氏名", bold6));
+        midNameLabel.setBorder(Rectangle.BOX); midNameLabel.setPadding(2);
+        midNameLabel.setMinimumHeight(14f);
+        midInfo.addCell(midNameLabel);
+        PdfPCell midNameVal = new PdfPCell(new Phrase(staffName, norm7));
+        midNameVal.setBorder(Rectangle.NO_BORDER); midNameVal.setPadding(2);
+        midNameVal.setMinimumHeight(14f);
+        midInfo.addCell(midNameVal);
+        PdfPCell midPhoneLabel = new PdfPCell(new Phrase("電話番号", bold6));
+        midPhoneLabel.setBorder(Rectangle.BOX); midPhoneLabel.setPadding(2);
+        midPhoneLabel.setMinimumHeight(42f);
+        midInfo.addCell(midPhoneLabel);
+        PdfPCell midPhoneVal = new PdfPCell(new Phrase(staffPhone, norm7));
+        midPhoneVal.setBorder(Rectangle.NO_BORDER); midPhoneVal.setPadding(2);
+        midPhoneVal.setMinimumHeight(42f);
+        midInfo.addCell(midPhoneVal);
         PdfPCell midCell = new PdfPCell(midInfo);
         midCell.setBorder(Rectangle.BOX); midCell.setPadding(0);
         hdr.addCell(midCell);
-
-        // 右列: 取扱状況ヘッダー（労働契約｜無期雇用就職者(転職勧奨禁止期間/6カ月以内または不明)｜返戻金）
-        PdfPTable rightInfo = new PdfPTable(new float[]{1f, 1f, 1f, 1f});
-        rightInfo.setWidthPercentage(100);
-        PdfPCell rLabel = new PdfPCell(new Phrase("取扱状況", bold6));
-        rLabel.setColspan(4); rLabel.setBorder(Rectangle.BOX); rLabel.setPadding(2);
-        rLabel.setHorizontalAlignment(Element.ALIGN_CENTER);
-        rightInfo.addCell(rLabel);
-
-        PdfPCell rouCell = new PdfPCell(new Phrase("労働\n契約", bold6));
-        rouCell.setRowspan(2); rouCell.setBorder(Rectangle.BOX); rouCell.setPadding(2);
-        rouCell.setHorizontalAlignment(Element.ALIGN_CENTER); rouCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        rightInfo.addCell(rouCell);
-
-        PdfPCell mukiLabel = new PdfPCell(new Phrase("無期雇用就職者", bold6));
-        mukiLabel.setColspan(2); mukiLabel.setBorder(Rectangle.BOX); mukiLabel.setPadding(2);
-        mukiLabel.setHorizontalAlignment(Element.ALIGN_CENTER);
-        rightInfo.addCell(mukiLabel);
-
-        PdfPCell henreiCell = new PdfPCell(new Phrase("返戻\n金", bold6));
-        henreiCell.setRowspan(2); henreiCell.setBorder(Rectangle.BOX); henreiCell.setPadding(2);
-        henreiCell.setHorizontalAlignment(Element.ALIGN_CENTER); henreiCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        rightInfo.addCell(henreiCell);
-
-        addRightCell(rightInfo, "転職勧奨\n禁止期間", bold6);
-        addRightCell(rightInfo, "6カ月以内\nまたは不明", bold6);
-
-        PdfPCell rCell = new PdfPCell(rightInfo);
-        rCell.setBorder(Rectangle.BOX); rCell.setPadding(0);
-        hdr.addCell(rCell);
 
         doc.add(hdr);
 
@@ -480,32 +472,37 @@ public class CustomerController {
         doc.add(jobRow);
 
         // ── メイン表 ──
-        // 列: 受付年月日|有効期間|求人数|就業場所|雇用期間|賃金(給・円)|紹介年月日|求職者氏名|採否|採用年月日|備考|労働契約|転職勧奨禁止期間|6カ月以内または不明|返戻金
+        // 列: 受付年月日|有効期間|求人数|就業場所|雇用期間|賃金(給・円)|紹介年月日|求職者氏名|採否|採用年月日|備考|
+        //     取扱情報(労働契約｜無期雇用就職者(転職勧奨禁止期間/6カ月以内または不明/返戻金))
         float[] colW = {1.6f, 1.8f, 0.6f, 1.3f, 1.8f, 0.6f, 0.7f, 1.7f, 2.0f, 0.7f, 1.7f, 1.6f, 0.9f, 1.0f, 1.0f, 0.7f};
         PdfPTable tbl = new PdfPTable(colW);
         tbl.setWidthPercentage(100);
         tbl.setSpacingBefore(2);
 
-        // ヘッダー行1（16列）
-        addTh(tbl, "受付年月日",        bold6, 1, 2, 30f);
-        addTh(tbl, "有効期間",          bold6, 1, 2, 30f);
-        addTh(tbl, "求人数\n人",       bold6, 1, 2, 30f);
-        addTh(tbl, "就業場所",          bold6, 1, 2, 30f);
-        addTh(tbl, "雇用期間",          bold6, 1, 2, 30f);
+        // ヘッダー行1（16列ぶん。賃金と取扱情報以外はrowspan3で3段分を貫通）
+        addTh(tbl, "受付年月日",        bold6, 1, 3, 20f);
+        addTh(tbl, "有効期間",          bold6, 1, 3, 20f);
+        addTh(tbl, "求人数\n人",       bold6, 1, 3, 20f);
+        addTh(tbl, "就業場所",          bold6, 1, 3, 20f);
+        addTh(tbl, "雇用期間",          bold6, 1, 3, 20f);
         addTh(tbl, "賃金",              bold6, 2, 1, 15f);
-        addTh(tbl, "紹介年月日",        bold6, 1, 2, 30f);
-        addTh(tbl, "求職者氏名",        bold6, 1, 2, 30f);
-        addTh(tbl, "採否",              bold6, 1, 2, 30f);
-        addTh(tbl, "採用年月日",        bold6, 1, 2, 30f);
-        addTh(tbl, "備考",              bold6, 1, 2, 30f);
-        addTh(tbl, "労働\n契約",       bold6, 1, 2, 30f);
-        addTh(tbl, "転職勧奨\n禁止期間", bold6, 1, 2, 30f);
-        addTh(tbl, "6カ月以内\nまたは不明", bold6, 1, 2, 30f);
-        addTh(tbl, "返戻金",            bold6, 1, 2, 30f);
+        addTh(tbl, "紹介年月日",        bold6, 1, 3, 20f);
+        addTh(tbl, "求職者氏名",        bold6, 1, 3, 20f);
+        addTh(tbl, "採否",              bold6, 1, 3, 20f);
+        addTh(tbl, "採用年月日",        bold6, 1, 3, 20f);
+        addTh(tbl, "備考",              bold6, 1, 3, 20f);
+        addTh(tbl, "取扱情報",          bold6, 4, 1, 15f);
 
-        // ヘッダー行2（賃金サブ）
-        addThSub(tbl, "給",  bold6);
-        addThSub(tbl, "円",  bold6);
+        // ヘッダー行2（賃金サブ：給・円／取扱情報サブ：労働契約・無期雇用就職者）
+        addTh(tbl, "給",                bold6, 1, 2, 15f);
+        addTh(tbl, "円",                bold6, 1, 2, 15f);
+        addTh(tbl, "労働\n契約",       bold6, 1, 2, 15f);
+        addTh(tbl, "無期雇用就職者",    bold6, 3, 1, 15f);
+
+        // ヘッダー行3（無期雇用就職者サブ：転職勧奨禁止期間・6カ月以内または不明・返戻金）
+        addThSub(tbl, "転職勧奨\n禁止期間", bold6);
+        addThSub(tbl, "6カ月以内\nまたは不明", bold6);
+        addThSub(tbl, "返戻\n金", bold6);
 
         // データ行（実データ + 空行で計38行）
         int DATA_ROWS = 38;
@@ -634,14 +631,6 @@ public class CustomerController {
         lc.setBorder(Rectangle.BOX); lc.setPadding(2); t.addCell(lc);
         PdfPCell vc = new PdfPCell(new Phrase(val, vf));
         vc.setBorder(Rectangle.NO_BORDER); vc.setPadding(2); t.addCell(vc);
-    }
-
-    private void addRightCell(PdfPTable t, String label, Font f) {
-        PdfPCell c = new PdfPCell(new Phrase(label, f));
-        c.setBorder(Rectangle.BOX); c.setPadding(2);
-        c.setHorizontalAlignment(Element.ALIGN_CENTER);
-        c.setMinimumHeight(18f);
-        t.addCell(c);
     }
 
     private void addLblVal(PdfPTable t, String label, String val, Font lf, Font vf) {
