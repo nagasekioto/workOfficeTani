@@ -417,36 +417,28 @@ public class CustomerController {
             }
         }
 
-        // 左列: 求人者情報（3列構成：グループ｜ラベル｜値）
+        // 左列: 求人者情報（3列構成：グループ｜ラベル｜値）。各行14fで4行＝合計56f。
         PdfPTable leftInfo = new PdfPTable(new float[]{1.0f, 1.2f, 4f});
         leftInfo.setWidthPercentage(100);
         addHdrRow(leftInfo, "求人者", "氏名",
-                c != null ? (c.getLastNameKanji() + "　" + c.getFirstNameKanji()) : "", bold6, norm7, 4);
+                c != null ? (c.getLastNameKanji() + "　" + c.getFirstNameKanji()) : "", bold6, norm7, 4, 14f);
         addHdrRow2(leftInfo, "〒",
-                c != null && c.getPostalCode() != null ? c.getPostalCode() : "", bold6, norm7);
+                c != null && c.getPostalCode() != null ? c.getPostalCode() : "", bold6, norm7, 14f);
         addHdrRow2(leftInfo, "住所",
-                c != null ? nvl(c.getAddress1()) + nvl(c.getAddress2()) : "", bold6, norm7);
-        addHdrRow2(leftInfo, "電話番号", customerPhone, bold6, norm7);
+                c != null ? nvl(c.getAddress1()) + nvl(c.getAddress2()) : "", bold6, norm7, 14f);
+        addHdrRow2(leftInfo, "電話番号", customerPhone, bold6, norm7, 14f);
         PdfPCell leftCell = new PdfPCell(leftInfo);
         leftCell.setBorder(Rectangle.BOX); leftCell.setPadding(0);
         hdr.addCell(leftCell);
 
-        // 中列: 連絡担当者（求人者欄と同じ4行グリッドで構成し、高さのバランスを合わせる）。
+        // 中列: 連絡担当者（氏名・電話番号を同じ高さ28fにし、合計56fで求人者欄と揃える）。
         // 氏名＝担当者名、電話番号＝担当者電話番号を表示。
-        // 電話番号セルをrowspan=3でセル結合し、余分な空白行が出ないようにする。
         String staffName  = c != null ? nvl(c.getStaffName())  : "";
         String staffPhone = c != null ? nvl(c.getStaffPhone()) : "";
         PdfPTable midInfo = new PdfPTable(new float[]{1.0f, 1.2f, 3f});
         midInfo.setWidthPercentage(100);
-        addHdrRow(midInfo, "連絡\n担当者", "氏名", staffName, bold6, norm7, 4);
-        PdfPCell midPhoneLabel = new PdfPCell(new Phrase("電話番号", bold6));
-        midPhoneLabel.setRowspan(3); midPhoneLabel.setBorder(Rectangle.BOX); midPhoneLabel.setPadding(2);
-        midPhoneLabel.setVerticalAlignment(Element.ALIGN_MIDDLE); midPhoneLabel.setMinimumHeight(42f);
-        midInfo.addCell(midPhoneLabel);
-        PdfPCell midPhoneVal = new PdfPCell(new Phrase(staffPhone, norm7));
-        midPhoneVal.setRowspan(3); midPhoneVal.setBorder(Rectangle.NO_BORDER); midPhoneVal.setPadding(2);
-        midPhoneVal.setVerticalAlignment(Element.ALIGN_MIDDLE); midPhoneVal.setMinimumHeight(42f);
-        midInfo.addCell(midPhoneVal);
+        addHdrRow(midInfo, "連絡\n担当者", "氏名", staffName, bold6, norm7, 2, 28f);
+        addHdrRow2(midInfo, "電話番号", staffPhone, bold6, norm7, 28f);
         PdfPCell midCell = new PdfPCell(midInfo);
         midCell.setBorder(Rectangle.BOX); midCell.setPadding(0);
         hdr.addCell(midCell);
@@ -606,22 +598,22 @@ public class CustomerController {
 
     // ─── PDF ヘルパー ────────────────────────────────────────────
 
-    private void addHdrRow(PdfPTable t, String group, String label, String val, Font lf, Font vf, int rowspan) {
+    private void addHdrRow(PdfPTable t, String group, String label, String val, Font lf, Font vf, int rowspan, float rowHeight) {
         PdfPCell g = new PdfPCell(new Phrase(group, lf));
         g.setBorder(Rectangle.BOX); g.setPadding(2); g.setRowspan(rowspan);
         g.setHorizontalAlignment(Element.ALIGN_CENTER); g.setVerticalAlignment(Element.ALIGN_MIDDLE);
         t.addCell(g);
         PdfPCell lc = new PdfPCell(new Phrase(label, lf));
-        lc.setBorder(Rectangle.BOX); lc.setPadding(2); t.addCell(lc);
+        lc.setBorder(Rectangle.BOX); lc.setPadding(2); lc.setMinimumHeight(rowHeight); t.addCell(lc);
         PdfPCell vc = new PdfPCell(new Phrase(val, vf));
-        vc.setBorder(Rectangle.NO_BORDER); vc.setPadding(2); t.addCell(vc);
+        vc.setBorder(Rectangle.NO_BORDER); vc.setPadding(2); vc.setMinimumHeight(rowHeight); t.addCell(vc);
     }
 
-    private void addHdrRow2(PdfPTable t, String label, String val, Font lf, Font vf) {
+    private void addHdrRow2(PdfPTable t, String label, String val, Font lf, Font vf, float rowHeight) {
         PdfPCell lc = new PdfPCell(new Phrase(label, lf));
-        lc.setBorder(Rectangle.BOX); lc.setPadding(2); t.addCell(lc);
+        lc.setBorder(Rectangle.BOX); lc.setPadding(2); lc.setMinimumHeight(rowHeight); t.addCell(lc);
         PdfPCell vc = new PdfPCell(new Phrase(val, vf));
-        vc.setBorder(Rectangle.NO_BORDER); vc.setPadding(2); t.addCell(vc);
+        vc.setBorder(Rectangle.NO_BORDER); vc.setPadding(2); vc.setMinimumHeight(rowHeight); t.addCell(vc);
     }
 
     private void addLblVal(PdfPTable t, String label, String val, Font lf, Font vf) {
