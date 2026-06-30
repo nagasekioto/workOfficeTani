@@ -98,28 +98,30 @@
                     <th>紹介年月日</th>
                     <th>求職者氏名</th>
                     <th>採否</th>
-                    <th>採用年月日</th>
-                    <th>契約</th>
-                    <th>６カ月以内<br>または不明</th>
-                    <th>返戻金</th>
-                    <th>離職状況</th>
-                    <th>転職勧奨<br>禁止期間</th>
+                    <th>雇用期間（状況）</th>
+                    <th>備考</th>
                 </tr>
             </thead>
             <tbody>
-                <tr th:each="row : ${rows}" th:if="${rows != null and not #lists.isEmpty(rows)}">
+                <tr th:each="row, iter : ${rows}" th:if="${rows != null and not #lists.isEmpty(rows)}">
                     <td th:text="${row.introductionDate}">-</td>
                     <td th:text="${row.personName}">-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
+                    <td>
+                        <select class="row-hire-result" th:attr="data-idx=${iter.index}">
+                            <option value="">-</option>
+                            <option value="〇">〇</option>
+                            <option value="×">×</option>
+                        </select>
+                    </td>
+                    <td>
+                        <input type="text" class="row-emp-status" th:attr="data-idx=${iter.index}" value="就労中" style="width:90px;">
+                    </td>
+                    <td>
+                        <input type="text" class="row-remarks" th:attr="data-idx=${iter.index}" style="width:110px;">
+                    </td>
                 </tr>
-                <tr th:each="i : ${emptyRows != null ? #numbers.sequence(1, emptyRows) : #numbers.sequence(1, 10)}" class="empty-row">
-                    <td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td>
+                <tr th:if="${rows == null or #lists.isEmpty(rows)}" class="empty-row">
+                    <td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td>
                 </tr>
             </tbody>
         </table>
@@ -156,11 +158,9 @@
         </div>
 
         <div style="display:flex;gap:10px;margin-top:15px;">
-            <a th:href="@{/customer/report/pdf(customerId=${selectedCustomer.id})}"
-               target="_blank" style="background:#4CAF50;color:white;border:none;border-radius:5px;padding:10px 20px;cursor:pointer;font-size:15px;text-decoration:none;display:inline-block;">&#128196; 印刷内容確認</a>
+            <button onclick="viewPdf()" style="background:#4CAF50;color:white;border:none;border-radius:5px;padding:10px 20px;cursor:pointer;font-size:15px;">&#128196; 印刷内容確認</button>
             <button class="btn-print" onclick="printPdf()">&#128424; 印刷</button>
-            <a th:href="@{/customer/report/pdf(customerId=${selectedCustomer.id},mode='download')}"
-               style="background:#FF6F00;color:white;border:none;border-radius:5px;padding:10px 20px;cursor:pointer;font-size:15px;text-decoration:none;display:inline-block;">&#128190; 保存（PDF）</a>
+            <button onclick="downloadPdf()" style="background:#FF6F00;color:white;border:none;border-radius:5px;padding:10px 20px;cursor:pointer;font-size:15px;">&#128190; 保存（PDF）</button>
         </div>
     </div>
 
@@ -177,10 +177,30 @@
 }
 </style>
 <script>
-function printPdf() {
+function buildPdfParams() {
     var id = new URLSearchParams(window.location.search).get('customerId');
-    if (!id) return;
-    var w = window.open('/customer/report/pdf?customerId=' + id, '_blank');
+    var params = new URLSearchParams();
+    if (id) params.append('customerId', id);
+    document.querySelectorAll('.row-emp-status').forEach(function(el){ params.append('empStatusList', el.value); });
+    document.querySelectorAll('.row-hire-result').forEach(function(el){ params.append('hireResultList', el.value); });
+    document.querySelectorAll('.row-remarks').forEach(function(el){ params.append('remarksList', el.value); });
+    return params;
+}
+function viewPdf() {
+    var params = buildPdfParams();
+    if (!params.get('customerId')) return;
+    window.open('/customer/report/pdf?' + params.toString(), '_blank');
+}
+function downloadPdf() {
+    var params = buildPdfParams();
+    if (!params.get('customerId')) return;
+    params.append('mode', 'download');
+    window.location.href = '/customer/report/pdf?' + params.toString();
+}
+function printPdf() {
+    var params = buildPdfParams();
+    if (!params.get('customerId')) return;
+    var w = window.open('/customer/report/pdf?' + params.toString(), '_blank');
     if (w) { w.onload = function() { w.print(); }; }
 }
 </script>

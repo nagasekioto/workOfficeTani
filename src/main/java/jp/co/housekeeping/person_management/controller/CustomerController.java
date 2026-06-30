@@ -25,6 +25,9 @@ import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -37,9 +40,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import jp.co.housekeeping.person_management.model.Customer;
 import jp.co.housekeeping.person_management.model.CustomerRequest;
+import jp.co.housekeeping.person_management.model.Introduction;
 import jp.co.housekeeping.person_management.model.SalesDetail;
 import jp.co.housekeeping.person_management.repository.CustomerRepository;
 import jp.co.housekeeping.person_management.repository.CustomerRequestRepository;
+import jp.co.housekeeping.person_management.repository.IntroductionRepository;
 import jp.co.housekeeping.person_management.repository.PersonRepository;
 import jp.co.housekeeping.person_management.repository.SalesDetailRepository;
 import jp.co.housekeeping.person_management.repository.SalesRepository;
@@ -53,6 +58,7 @@ public class CustomerController {
     @Autowired private PersonRepository personRepository;
     @Autowired private SalesRepository salesRepository;
     @Autowired private SalesDetailRepository salesDetailRepository;
+    @Autowired private IntroductionRepository introductionRepository;
 
     private boolean checkAuth(HttpSession session) {
         return session.getAttribute("authenticated") != null;
@@ -293,6 +299,8 @@ public class CustomerController {
                     if (customerId.equals(d.getCustomerId())) {
                         KaijinRow row = new KaijinRow();
                         row.introductionDate = d.getIntroductionDate() != null ? d.getIntroductionDate().toString() : "";
+                        row.personId = s.getPersonId();
+                        row.customerId = d.getCustomerId();
                         personRepository.findById(s.getPersonId() != null ? s.getPersonId() : 0L)
                             .ifPresent(p -> row.personName = p.getLastNameKanji() + " " + p.getFirstNameKanji());
                         row.detail = d;
@@ -310,6 +318,9 @@ public class CustomerController {
     @GetMapping("/report/pdf")
     public void reportPdf(@RequestParam(required = false) Long customerId,
                           @RequestParam(required = false, defaultValue = "inline") String mode,
+                          @RequestParam(required = false) String[] empStatusList,
+                          @RequestParam(required = false) String[] hireResultList,
+                          @RequestParam(required = false) String[] remarksList,
                           HttpSession session, HttpServletResponse response)
             throws IOException, DocumentException {
         if (!checkAuth(session)) { response.sendError(401); return; }
@@ -326,12 +337,28 @@ public class CustomerController {
                         KaijinRow row = new KaijinRow();
                         row.introductionDate = d.getIntroductionDate() != null
                                 ? d.getIntroductionDate().toString() : "";
+                        row.personId = s.getPersonId();
+                        row.customerId = d.getCustomerId();
                         personRepository.findById(s.getPersonId() != null ? s.getPersonId() : 0L)
                                 .ifPresent(p -> row.personName = p.getLastNameKanji() + " " + p.getFirstNameKanji());
                         row.detail = d;
                         rows.add(row);
                     }
                 }));
+        }
+        // 画面側で入力された雇用期間ステータス・採否・備考を行に反映
+        for (int i = 0; i < rows.size(); i++) {
+            KaijinRow row = rows.get(i);
+            if (empStatusList != null && i < empStatusList.length
+                    && empStatusList[i] != null && !empStatusList[i].isBlank()) {
+                row.empStatus = empStatusList[i];
+            }
+            if (hireResultList != null && i < hireResultList.length && hireResultList[i] != null) {
+                row.hireResult = hireResultList[i];
+            }
+            if (remarksList != null && i < remarksList.length && remarksList[i] != null) {
+                row.remarks = remarksList[i];
+            }
         }
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -379,39 +406,66 @@ public class CustomerController {
         hdr.setWidthPercentage(100);
         hdr.setSpacingAfter(2);
 
-        // 左列: 求人者情報
-        PdfPTable leftInfo = new PdfPTable(new float[]{1.2f, 4f});
+        // 電話番号：自宅電話番号を優先、無ければ携帯電話番号を使用
+        String customerPhone = "";
+        if (c != null) {
+            String home = c.getHomePhone();
+            if (home != null && !home.isBlank() && !home.equals("-")) {
+                customerPhone = home;
+            } else {
+                customerPhone = nvl(c.getMobilePhone());
+            }
+        }
+
+        // 左列: 求人者情報（3列構成：グループ｜ラベル｜値）
+        PdfPTable leftInfo = new PdfPTable(new float[]{1.0f, 1.2f, 4f});
         leftInfo.setWidthPercentage(100);
         addHdrRow(leftInfo, "求人者", "氏名",
-                c != null ? (c.getLastNameKanji() + "　" + c.getFirstNameKanji()) : "", bold6, norm7);
-        addHdrRow2(leftInfo, "", "〒",
+                c != null ? (c.getLastNameKanji() + "　" + c.getFirstNameKanji()) : "", bold6, norm7, 4);
+        addHdrRow2(leftInfo, "〒",
                 c != null && c.getPostalCode() != null ? c.getPostalCode() : "", bold6, norm7);
-        addHdrRow2(leftInfo, "", "住所",
+        addHdrRow2(leftInfo, "住所",
                 c != null ? nvl(c.getAddress1()) + nvl(c.getAddress2()) : "", bold6, norm7);
-        addHdrRow2(leftInfo, "", "電話番号",
-                c != null ? nvl(c.getHomePhone()) : "", bold6, norm7);
+        addHdrRow2(leftInfo, "電話番号", customerPhone, bold6, norm7);
         PdfPCell leftCell = new PdfPCell(leftInfo);
         leftCell.setBorder(Rectangle.BOX); leftCell.setPadding(0);
         hdr.addCell(leftCell);
 
-        // 中列: 連絡担当者
-        PdfPTable midInfo = new PdfPTable(new float[]{1.5f, 3f});
+        // 中列: 連絡担当者（3列構成：グループ｜ラベル｜値）
+        PdfPTable midInfo = new PdfPTable(new float[]{1.0f, 1.2f, 3f});
         midInfo.setWidthPercentage(100);
-        addHdrRow(midInfo, "連絡担当者", "氏名", "", bold6, norm7);
-        addHdrRow2(midInfo, "", "電話番号", "", bold6, norm7);
+        addHdrRow(midInfo, "連絡\n担当者", "氏名", "", bold6, norm7, 2);
+        addHdrRow2(midInfo, "電話番号", "", bold6, norm7);
         PdfPCell midCell = new PdfPCell(midInfo);
         midCell.setBorder(Rectangle.BOX); midCell.setPadding(0);
         hdr.addCell(midCell);
 
-        // 右列: 取扱状況ヘッダー
-        PdfPTable rightInfo = new PdfPTable(new float[]{1f, 1f});
+        // 右列: 取扱状況ヘッダー（労働契約｜無期雇用就職者(転職勧奨禁止期間/6カ月以内または不明)｜返戻金）
+        PdfPTable rightInfo = new PdfPTable(new float[]{1f, 1f, 1f, 1f});
         rightInfo.setWidthPercentage(100);
         PdfPCell rLabel = new PdfPCell(new Phrase("取扱状況", bold6));
-        rLabel.setColspan(2); rLabel.setBorder(Rectangle.BOX); rLabel.setPadding(2);
+        rLabel.setColspan(4); rLabel.setBorder(Rectangle.BOX); rLabel.setPadding(2);
         rLabel.setHorizontalAlignment(Element.ALIGN_CENTER);
         rightInfo.addCell(rLabel);
-        addRightCell(rightInfo, "無期雇用就職者", bold6);
-        addRightCell(rightInfo, "取扱状況", bold6);
+
+        PdfPCell rouCell = new PdfPCell(new Phrase("労働\n契約", bold6));
+        rouCell.setRowspan(2); rouCell.setBorder(Rectangle.BOX); rouCell.setPadding(2);
+        rouCell.setHorizontalAlignment(Element.ALIGN_CENTER); rouCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        rightInfo.addCell(rouCell);
+
+        PdfPCell mukiLabel = new PdfPCell(new Phrase("無期雇用就職者", bold6));
+        mukiLabel.setColspan(2); mukiLabel.setBorder(Rectangle.BOX); mukiLabel.setPadding(2);
+        mukiLabel.setHorizontalAlignment(Element.ALIGN_CENTER);
+        rightInfo.addCell(mukiLabel);
+
+        PdfPCell henreiCell = new PdfPCell(new Phrase("返戻\n金", bold6));
+        henreiCell.setRowspan(2); henreiCell.setBorder(Rectangle.BOX); henreiCell.setPadding(2);
+        henreiCell.setHorizontalAlignment(Element.ALIGN_CENTER); henreiCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        rightInfo.addCell(henreiCell);
+
+        addRightCell(rightInfo, "転職勧奨\n禁止期間", bold6);
+        addRightCell(rightInfo, "6カ月以内\nまたは不明", bold6);
+
         PdfPCell rCell = new PdfPCell(rightInfo);
         rCell.setBorder(Rectangle.BOX); rCell.setPadding(0);
         hdr.addCell(rCell);
@@ -419,82 +473,80 @@ public class CustomerController {
         doc.add(hdr);
 
         // ── 求人希望職種行 ──
-        PdfPTable jobRow = new PdfPTable(new float[]{2f, 4f, 1.5f, 1.5f, 1.5f});
+        PdfPTable jobRow = new PdfPTable(new float[]{1.2f, 9f});
         jobRow.setWidthPercentage(100);
         jobRow.setSpacingAfter(2);
         addLblVal(jobRow, "求人希望職種", "", bold6, norm7);
-        addLblVal(jobRow, "求人数", "　　　人", bold6, norm7);
-        addLblVal(jobRow, "就業場所", "", bold6, norm7);
-        addLblVal(jobRow, "雇用期間", "", bold6, norm7);
-        PdfPCell salaryHdr = new PdfPCell(new Phrase("賃金", bold6));
-        salaryHdr.setBorder(Rectangle.BOX); salaryHdr.setPadding(2);
-        salaryHdr.setHorizontalAlignment(Element.ALIGN_CENTER);
-        jobRow.addCell(salaryHdr);
         doc.add(jobRow);
 
         // ── メイン表 ──
-        // 列: 受付年月日 | 有効期間 | 求人数/人 | 就業場所 | 雇用期間 | 賃金(給・円) | 紹介年月日 | 求職者氏名 | 採否 | 採用年月日 | 備考 | 労働契約 | 無期/転職/返戻 | 取扱(日雇/有期)
-        float[] colW = {1.8f, 1.8f, 0.7f, 1.5f, 1.8f, 0.6f, 0.6f, 1.8f, 2.0f, 0.7f, 1.8f, 1.5f, 0.7f, 0.7f, 0.8f, 0.6f, 0.5f, 0.5f};
+        // 列: 受付年月日|有効期間|求人数|就業場所|雇用期間|賃金(給・円)|紹介年月日|求職者氏名|採否|採用年月日|備考|労働契約|転職勧奨禁止期間|6カ月以内または不明|返戻金
+        float[] colW = {1.6f, 1.8f, 0.6f, 1.3f, 1.8f, 0.6f, 0.7f, 1.7f, 2.0f, 0.7f, 1.7f, 1.6f, 0.9f, 1.0f, 1.0f, 0.7f};
         PdfPTable tbl = new PdfPTable(colW);
         tbl.setWidthPercentage(100);
         tbl.setSpacingBefore(2);
 
-        // ヘッダー行1
-        // ヘッダー行: 18列
-        // 受付|有効|求人|就業|雇用|給|円|紹介|求職者|採否|採用|備考|契約|無期|転職禁|返戻|日雇|有期
+        // ヘッダー行1（16列）
         addTh(tbl, "受付年月日",        bold6, 1, 2, 30f);
         addTh(tbl, "有効期間",          bold6, 1, 2, 30f);
         addTh(tbl, "求人数\n人",       bold6, 1, 2, 30f);
         addTh(tbl, "就業場所",          bold6, 1, 2, 30f);
         addTh(tbl, "雇用期間",          bold6, 1, 2, 30f);
-        // 賃金（給・円の2列、行1でまとめラベル）
         addTh(tbl, "賃金",              bold6, 2, 1, 15f);
-        // 取扱状況（紹介～採用）
         addTh(tbl, "紹介年月日",        bold6, 1, 2, 30f);
         addTh(tbl, "求職者氏名",        bold6, 1, 2, 30f);
         addTh(tbl, "採否",              bold6, 1, 2, 30f);
         addTh(tbl, "採用年月日",        bold6, 1, 2, 30f);
         addTh(tbl, "備考",              bold6, 1, 2, 30f);
         addTh(tbl, "労働\n契約",       bold6, 1, 2, 30f);
-        addTh(tbl, "無期雇用\n就職者", bold6, 1, 2, 30f);
         addTh(tbl, "転職勧奨\n禁止期間", bold6, 1, 2, 30f);
+        addTh(tbl, "6カ月以内\nまたは不明", bold6, 1, 2, 30f);
         addTh(tbl, "返戻金",            bold6, 1, 2, 30f);
-        // 取扱状況（日雇/有期）
-        addTh(tbl, "取扱\n状況",       bold6, 2, 1, 15f);
 
-        // ヘッダー行2（賃金サブ・取扱状況サブ）
+        // ヘッダー行2（賃金サブ）
         addThSub(tbl, "給",  bold6);
         addThSub(tbl, "円",  bold6);
-        addThSub(tbl, "日雇", bold6);
-        addThSub(tbl, "有期", bold6);
 
-        // データ行（実データ + 空行で計40行）
+        // データ行（実データ + 空行で計38行）
         int DATA_ROWS = 38;
         int filled = 0;
+        ObjectMapper mapper = new ObjectMapper();
         for (KaijinRow row : rows) {
             if (filled >= DATA_ROWS) break;
-            addTdC(tbl, "",                   norm6);  // 受付年月日
-            addTdC(tbl, "〜",                 norm6);  // 有効期間
-            addTdC(tbl, "",                   norm6);  // 求人数
-            addTdC(tbl, "",                   norm6);  // 就業場所
-            addTdC(tbl, "〜",                 norm6);  // 雇用期間
-            addTdC(tbl, "",                   norm6);  // 給
-            addTdC(tbl, "",                   norm6);  // 円
-            addTdC(tbl, row.introductionDate,   norm6);  // 紹介年月日
-            addTdC(tbl, row.personName,         norm6);  // 求職者氏名
-            addTdC(tbl, "",                   norm6);  // 採否
-            addTdC(tbl, "",                   norm6);  // 採用年月日
-            addTdC(tbl, "",                   norm6);  // 備考
-            addTdC(tbl, "",                   norm6);  // 労働契約
-            addTdC(tbl, "",                   norm6);  // 無期雇用
-            addTdC(tbl, "",                   norm6);  // 転職勧奨禁止
-            addTdC(tbl, "",                   norm6);  // 返戻金
-            addTdC(tbl, "",                   norm6);  // 日雇
-            addTdC(tbl, "",                   norm6);  // 有期
-            filled++;
+
+            LocalDate introDate = row.detail != null ? row.detail.getIntroductionDate() : null;
+            String introDateStr = introDate != null ? formatDot(introDate) : "";
+            String validPeriod  = formatValidPeriod(introDate);
+            String workPeriod   = (introDate != null ? formatDot(introDate) : "")
+                    + "　〜　" + nvl(row.empStatus);
+
+            // 紹介状一覧（1-6-2）の賃金形態・基本給を参照
+            List<String[]> wageRows = lookupWageRows(mapper, row.personId, row.customerId);
+            if (wageRows.isEmpty()) wageRows.add(new String[]{"", ""});
+
+            for (String[] wage : wageRows) {
+                if (filled >= DATA_ROWS) break;
+                addTdC(tbl, introDateStr,    norm6);  // 受付年月日（紹介年月日と同じ）
+                addTdC(tbl, validPeriod,     norm6);  // 有効期間
+                addTdC(tbl, "1",             norm6);  // 求人数
+                addTdC(tbl, "同上",          norm6);  // 就業場所
+                addTdC(tbl, workPeriod,      norm6);  // 雇用期間
+                addTdC(tbl, wage[0],         norm6);  // 給（時給／日給）
+                addTdC(tbl, wage[1],         norm6);  // 円（基本給）
+                addTdC(tbl, row.introductionDate, norm6);  // 紹介年月日
+                addTdC(tbl, row.personName,  norm6);  // 求職者氏名
+                addTdC(tbl, nvl(row.hireResult), norm6);  // 採否
+                addTdC(tbl, introDateStr,    norm6);  // 採用年月日（紹介年月日と同じ）
+                addTdC(tbl, nvl(row.remarks),norm6);  // 備考
+                addTdC(tbl, "有期",          norm6);  // 労働契約
+                addTdC(tbl, "",              norm6);  // 転職勧奨禁止期間
+                addTdC(tbl, "",              norm6);  // 6カ月以内または不明
+                addTdC(tbl, "",              norm6);  // 返戻金
+                filled++;
+            }
         }
         for (int i = filled; i < DATA_ROWS; i++) {
-            for (int col = 0; col < 18; col++) {
+            for (int col = 0; col < 16; col++) {
                 addTdC(tbl, (col == 1 || col == 4) ? "〜" : "", norm6);
             }
         }
@@ -502,11 +554,73 @@ public class CustomerController {
         doc.close();
     }
 
+    /** 紹介状一覧（1-6-2）の賃金形態・基本給を参照し、[給,円]のペア一覧を返す（時給・日給両方あれば2行）*/
+    private List<String[]> lookupWageRows(ObjectMapper mapper, Long personId, Long customerId) {
+        List<String[]> result = new ArrayList<>();
+        if (personId == null || customerId == null) return result;
+
+        Introduction matched = null;
+        for (Introduction intro : introductionRepository.findAll()) {
+            if (personId.equals(intro.getPersonId()) && customerId.equals(intro.getCustomerId())) {
+                if (matched == null
+                        || (intro.getCreatedAt() != null && matched.getCreatedAt() != null
+                            && intro.getCreatedAt().isAfter(matched.getCreatedAt()))) {
+                    matched = intro;
+                }
+            }
+        }
+        if (matched == null || matched.getFormData() == null || matched.getFormData().isBlank()) {
+            return result;
+        }
+
+        try {
+            JsonNode node = mapper.readTree(matched.getFormData());
+            String wageTypeRaw = node.path("wageType").asText("");
+            List<String> types = new ArrayList<>();
+            for (String p : wageTypeRaw.split("・")) {
+                if (p.equals("時給") || p.equals("日給")) types.add(p);
+            }
+            if (types.isEmpty()) types.add("時給");
+
+            if (types.contains("時給")) {
+                StringBuilder h = new StringBuilder();
+                String h1 = node.path("hourlyLine1").asText("");
+                String h2 = node.path("hourlyLine2").asText("");
+                if (!h1.isBlank()) h.append(h1);
+                if (!h2.isBlank()) { if (h.length() > 0) h.append("\n"); h.append(h2); }
+                if (h.length() == 0) {
+                    // 旧データ（基本給が単一の数値だった時期）との後方互換
+                    String oldBaseWage = node.path("baseWage").asText("");
+                    if (!oldBaseWage.isBlank()) h.append(oldBaseWage).append("　円");
+                }
+                result.add(new String[]{"時給", h.toString()});
+            }
+            if (types.contains("日給")) {
+                String d1 = node.path("dailyLine1").asText("");
+                result.add(new String[]{"日給", d1});
+            }
+        } catch (Exception ignored) {}
+
+        return result;
+    }
+
+    /** 紹介年月日が属する月の月初〜月末を「yyyy.M.d〜yyyy.M.d」形式で返す */
+    private String formatValidPeriod(LocalDate introDate) {
+        if (introDate == null) return "";
+        java.time.YearMonth ym = java.time.YearMonth.from(introDate);
+        return formatDot(ym.atDay(1)) + "〜" + formatDot(ym.atEndOfMonth());
+    }
+
+    private String formatDot(LocalDate d) {
+        if (d == null) return "";
+        return d.getYear() + "." + d.getMonthValue() + "." + d.getDayOfMonth();
+    }
+
     // ─── PDF ヘルパー ────────────────────────────────────────────
 
-    private void addHdrRow(PdfPTable t, String group, String label, String val, Font lf, Font vf) {
+    private void addHdrRow(PdfPTable t, String group, String label, String val, Font lf, Font vf, int rowspan) {
         PdfPCell g = new PdfPCell(new Phrase(group, lf));
-        g.setBorder(Rectangle.BOX); g.setPadding(2); g.setRowspan(4);
+        g.setBorder(Rectangle.BOX); g.setPadding(2); g.setRowspan(rowspan);
         g.setHorizontalAlignment(Element.ALIGN_CENTER); g.setVerticalAlignment(Element.ALIGN_MIDDLE);
         t.addCell(g);
         PdfPCell lc = new PdfPCell(new Phrase(label, lf));
@@ -515,7 +629,7 @@ public class CustomerController {
         vc.setBorder(Rectangle.NO_BORDER); vc.setPadding(2); t.addCell(vc);
     }
 
-    private void addHdrRow2(PdfPTable t, String group, String label, String val, Font lf, Font vf) {
+    private void addHdrRow2(PdfPTable t, String label, String val, Font lf, Font vf) {
         PdfPCell lc = new PdfPCell(new Phrase(label, lf));
         lc.setBorder(Rectangle.BOX); lc.setPadding(2); t.addCell(lc);
         PdfPCell vc = new PdfPCell(new Phrase(val, vf));
@@ -570,6 +684,11 @@ public class CustomerController {
     public static class KaijinRow {
         public String introductionDate = "";
         public String personName = "";
+        public Long personId;
+        public Long customerId;
+        public String empStatus = "就労中";
+        public String hireResult = "";
+        public String remarks = "";
         public SalesDetail detail;
     }
 }
