@@ -77,6 +77,7 @@ public class DatabaseMigrationRunner implements ApplicationRunner {
             stmt.execute("ALTER TABLE introductions ADD COLUMN IF NOT EXISTS emp_status TEXT");
             stmt.execute("ALTER TABLE introductions ADD COLUMN IF NOT EXISTS hire_result TEXT");
             stmt.execute("ALTER TABLE introductions ADD COLUMN IF NOT EXISTS ledger_remarks TEXT");
+            stmt.execute("ALTER TABLE introductions ADD COLUMN IF NOT EXISTS labor_contract TEXT");
 
             System.out.println("[Migration] persons テーブルのカラム追加完了（IF NOT EXISTS）");
 

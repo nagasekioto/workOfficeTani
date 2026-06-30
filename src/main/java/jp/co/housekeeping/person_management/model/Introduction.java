@@ -20,6 +20,7 @@ public class Introduction {
     private String empStatus;     // 雇用期間（状況）
     private String hireResult;    // 採否
     private String ledgerRemarks; // 備考
+    private String laborContract; // 労働契約（有期／無期）
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -43,4 +44,6 @@ public class Introduction {
     public void setHireResult(String hireResult) { this.hireResult = hireResult; }
     public String getLedgerRemarks() { return ledgerRemarks; }
     public void setLedgerRemarks(String ledgerRemarks) { this.ledgerRemarks = ledgerRemarks; }
+    public String getLaborContract() { return laborContract; }
+    public void setLaborContract(String laborContract) { this.laborContract = laborContract; }
 }

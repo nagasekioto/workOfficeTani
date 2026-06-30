@@ -86,6 +86,7 @@
                     <th>紹介年月日</th>
                     <th>求人者氏名</th>
                     <th>採否</th>
+                    <th>労働契約</th>
                     <th>備考</th>
                 </tr>
             </thead>
@@ -102,12 +103,18 @@
                         </select>
                     </td>
                     <td>
+                        <select class="row-labor-contract" th:attr="data-idx=${iter.index}">
+                            <option value="有期" th:selected="${row.laborContract == '有期'}">有期</option>
+                            <option value="無期" th:selected="${row.laborContract == '無期'}">無期</option>
+                        </select>
+                    </td>
+                    <td>
                         <input type="text" class="row-remarks" th:attr="data-idx=${iter.index}" th:value="${row.remarks}" style="width:140px;">
                     </td>
                 </tr>
                 <!-- 空行（最低5行） -->
                 <tr th:each="i : ${emptyRows != null ? #numbers.sequence(1, emptyRows) : #numbers.sequence(1, 10)}" class="empty-row">
-                    <td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td>
+                    <td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td>
                 </tr>
             </tbody>
         </table>
@@ -176,12 +183,14 @@ function saveRowStatus() {
     var params = new URLSearchParams();
     params.append('personId', id);
     document.querySelectorAll('tr[data-intro-id]').forEach(function(tr){
-        var introId    = tr.getAttribute('data-intro-id');
-        var hireResult = tr.querySelector('.row-hire-result');
-        var remarks    = tr.querySelector('.row-remarks');
+        var introId      = tr.getAttribute('data-intro-id');
+        var hireResult   = tr.querySelector('.row-hire-result');
+        var remarks      = tr.querySelector('.row-remarks');
+        var laborContract = tr.querySelector('.row-labor-contract');
         params.append('introIds', introId || '');
         params.append('hireResultList', hireResult ? hireResult.value : '');
         params.append('remarksList', remarks ? remarks.value : '');
+        params.append('laborContractList', laborContract ? laborContract.value : '有期');
     });
     fetch('/person/shokuji-ledger/save-row-status', { method: 'POST', body: params })
         .then(function(r){ return r.text(); })
@@ -200,6 +209,7 @@ function buildPdfParams() {
     if (id) params.append('personId', id);
     document.querySelectorAll('.row-hire-result').forEach(function(el){ params.append('hireResultList', el.value); });
     document.querySelectorAll('.row-remarks').forEach(function(el){ params.append('remarksList', el.value); });
+    document.querySelectorAll('.row-labor-contract').forEach(function(el){ params.append('laborContractList', el.value); });
     return params;
 }
 function viewPdf() {

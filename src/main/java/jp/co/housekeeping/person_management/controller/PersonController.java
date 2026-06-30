@@ -306,6 +306,9 @@ public class PersonController {
             }
             row.hireResult = pnvl(intro.getHireResult());
             row.remarks = pnvl(intro.getLedgerRemarks());
+            if (intro.getLaborContract() != null && !intro.getLaborContract().isBlank()) {
+                row.laborContract = intro.getLaborContract();
+            }
             rows.add(row);
         }
 
@@ -318,13 +321,14 @@ public class PersonController {
         return rows;
     }
 
-    // ─── 1-1-4 求職管理簿 採否・備考の保存 ──────────────
+    // ─── 1-1-4 求職管理簿 採否・備考・労働契約の保存 ──────
     @PostMapping("/shokuji-ledger/save-row-status")
     @ResponseBody
     public String saveShokujiRowStatus(@RequestParam Long personId,
                                        @RequestParam(required = false) Long[] introIds,
                                        @RequestParam(required = false) String[] hireResultList,
                                        @RequestParam(required = false) String[] remarksList,
+                                       @RequestParam(required = false) String[] laborContractList,
                                        HttpSession session) {
         if (!checkAuth(session)) return "UNAUTHORIZED";
         if (introIds == null) return "OK";
@@ -340,6 +344,9 @@ public class PersonController {
                 if (remarksList != null && idx < remarksList.length) {
                     intro.setLedgerRemarks(remarksList[idx]);
                 }
+                if (laborContractList != null && idx < laborContractList.length) {
+                    intro.setLaborContract(laborContractList[idx]);
+                }
                 introductionRepository.save(intro);
             });
         }
@@ -352,6 +359,7 @@ public class PersonController {
                                  @RequestParam(required = false, defaultValue = "inline") String mode,
                                  @RequestParam(required = false) String[] hireResultList,
                                  @RequestParam(required = false) String[] remarksList,
+                                 @RequestParam(required = false) String[] laborContractList,
                                  HttpSession session, HttpServletResponse response)
             throws IOException, DocumentException {
         if (!checkAuth(session)) { response.sendError(401); return; }
@@ -367,6 +375,9 @@ public class PersonController {
             }
             if (remarksList != null && i < remarksList.length && remarksList[i] != null) {
                 row.remarks = remarksList[i];
+            }
+            if (laborContractList != null && i < laborContractList.length && laborContractList[i] != null) {
+                row.laborContract = laborContractList[i];
             }
         }
 
@@ -446,36 +457,40 @@ public class PersonController {
         // 取扱状況 ── 労働契約｜無期雇用就職者（転職勧奨禁止期間[2018.1以降]／離職状況[6カ月以内または不明]）｜返戻金
         PdfPTable rightInfo = new PdfPTable(new float[]{1f, 1f, 1f, 1f});
         rightInfo.setWidthPercentage(100);
-        PdfPCell rLabel = new PdfPCell(new Phrase("取扱状況", bold6));
-        rLabel.setColspan(4); rLabel.setBorder(Rectangle.BOX); rLabel.setPadding(2);
-        rLabel.setHorizontalAlignment(Element.ALIGN_CENTER); rLabel.setMinimumHeight(28f);
-        rightInfo.addCell(rLabel);
 
+        // 1行目：労働契約（左端・縦に3行分貫通）｜取扱状況｜返戻金（右端・縦に3行分貫通）
         PdfPCell rouCell = new PdfPCell(new Phrase("労働\n契約", bold6));
-        rouCell.setRowspan(2); rouCell.setBorder(Rectangle.BOX); rouCell.setPadding(2);
+        rouCell.setRowspan(3); rouCell.setBorder(Rectangle.BOX); rouCell.setPadding(2);
         rouCell.setHorizontalAlignment(Element.ALIGN_CENTER); rouCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        rouCell.setMinimumHeight(56f);
+        rouCell.setMinimumHeight(84f);
         rightInfo.addCell(rouCell);
 
-        PdfPCell mukiLabel = new PdfPCell(new Phrase("無期雇用就職者", bold6));
-        mukiLabel.setColspan(2); mukiLabel.setBorder(Rectangle.BOX); mukiLabel.setPadding(2);
-        mukiLabel.setHorizontalAlignment(Element.ALIGN_CENTER); mukiLabel.setMinimumHeight(28f);
-        rightInfo.addCell(mukiLabel);
+        PdfPCell rLabel = new PdfPCell(new Phrase("取扱状況", bold6));
+        rLabel.setColspan(2); rLabel.setBorder(Rectangle.BOX); rLabel.setPadding(2);
+        rLabel.setHorizontalAlignment(Element.ALIGN_CENTER); rLabel.setMinimumHeight(24f);
+        rightInfo.addCell(rLabel);
 
         PdfPCell henreiCell = new PdfPCell(new Phrase("返戻\n金", bold6));
-        henreiCell.setRowspan(2); henreiCell.setBorder(Rectangle.BOX); henreiCell.setPadding(2);
+        henreiCell.setRowspan(3); henreiCell.setBorder(Rectangle.BOX); henreiCell.setPadding(2);
         henreiCell.setHorizontalAlignment(Element.ALIGN_CENTER); henreiCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        henreiCell.setMinimumHeight(56f);
+        henreiCell.setMinimumHeight(84f);
         rightInfo.addCell(henreiCell);
 
+        // 2行目：無期雇用就職者
+        PdfPCell mukiLabel = new PdfPCell(new Phrase("無期雇用就職者", bold6));
+        mukiLabel.setColspan(2); mukiLabel.setBorder(Rectangle.BOX); mukiLabel.setPadding(2);
+        mukiLabel.setHorizontalAlignment(Element.ALIGN_CENTER); mukiLabel.setMinimumHeight(24f);
+        rightInfo.addCell(mukiLabel);
+
+        // 3行目：転職勧奨禁止期間（2018.1以降）｜離職状況（6カ月以内または不明）
         PdfPCell tenshokuCell = new PdfPCell(new Phrase("転職勧奨禁止期間\n（2018.1以降）", bold5));
         tenshokuCell.setBorder(Rectangle.BOX); tenshokuCell.setPadding(2);
-        tenshokuCell.setHorizontalAlignment(Element.ALIGN_CENTER); tenshokuCell.setMinimumHeight(28f);
+        tenshokuCell.setHorizontalAlignment(Element.ALIGN_CENTER); tenshokuCell.setMinimumHeight(36f);
         rightInfo.addCell(tenshokuCell);
 
         PdfPCell rishokuCell = new PdfPCell(new Phrase("離職状況\n（6カ月以内\nまたは不明）", bold5));
         rishokuCell.setBorder(Rectangle.BOX); rishokuCell.setPadding(2);
-        rishokuCell.setHorizontalAlignment(Element.ALIGN_CENTER); rishokuCell.setMinimumHeight(28f);
+        rishokuCell.setHorizontalAlignment(Element.ALIGN_CENTER); rishokuCell.setMinimumHeight(36f);
         rightInfo.addCell(rishokuCell);
 
         PdfPCell rCell = new PdfPCell(rightInfo);
@@ -483,20 +498,6 @@ public class PersonController {
         hdr.addCell(rCell);
 
         doc.add(hdr);
-
-        // ── 希望職種行 ──
-        PdfPTable jobRow = new PdfPTable(new float[]{1.2f, 9f});
-        jobRow.setWidthPercentage(100);
-        jobRow.setSpacingAfter(2);
-        PdfPCell jLabel = new PdfPCell(new Phrase("希望職種", bold6));
-        jLabel.setBorder(Rectangle.BOX); jLabel.setPadding(2);
-        jLabel.setHorizontalAlignment(Element.ALIGN_CENTER); jLabel.setMinimumHeight(16f);
-        jobRow.addCell(jLabel);
-        String jobStr = p != null ? pnvl(p.getDesiredJob()) : "";
-        PdfPCell jVal = new PdfPCell(new Phrase(jobStr, norm7));
-        jVal.setBorder(Rectangle.BOX); jVal.setPadding(2); jVal.setMinimumHeight(16f);
-        jobRow.addCell(jVal);
-        doc.add(jobRow);
 
         // ── メイン表 ──
         // 列: 受付年月日|有効期間|取扱状況(紹介年月日・求人者氏名・採否・採用年月日)|備考|労働契約|転職勧奨禁止期間|離職状況|返戻金
@@ -530,6 +531,14 @@ public class PersonController {
             LocalDate introDate = row.introDate;
             String introDateStr = introDate != null ? pformatDot(introDate) : "";
             String validPeriod  = pformatValidPeriod(introDate);
+            String laborContract = pnvl(row.laborContract).isBlank() ? "有期" : row.laborContract;
+
+            // 労働契約が「無期」の場合、転職勧奨禁止期間＝採用年月日から2年間
+            String tenshokuPeriod = "";
+            if ("無期".equals(laborContract) && introDate != null) {
+                LocalDate end = introDate.plusYears(2).minusDays(1);
+                tenshokuPeriod = pformatDot(introDate) + "　〜　" + pformatDot(end);
+            }
 
             addPTdC(tbl, introDateStr,        norm6);  // 受付年月日（紹介年月日と同じ）
             addPTdC(tbl, validPeriod,         norm6);  // 有効期間
@@ -538,8 +547,8 @@ public class PersonController {
             addPTdC(tbl, pnvl(row.hireResult),norm6);  // 採否
             addPTdC(tbl, introDateStr,        norm6);  // 採用年月日（紹介年月日と同じ）
             addPTdC(tbl, pnvl(row.remarks),   norm6);  // 備考
-            addPTdC(tbl, "有期",               norm6);  // 労働契約
-            addPTdC(tbl, "",                  norm6);  // 転職勧奨禁止期間
+            addPTdC(tbl, laborContract,       norm6);  // 労働契約
+            addPTdC(tbl, tenshokuPeriod,      norm6);  // 転職勧奨禁止期間
             addPTdC(tbl, "",                  norm6);  // 離職状況
             addPTdC(tbl, "",                  norm6);  // 返戻金
             filled++;
@@ -618,6 +627,7 @@ public class PersonController {
         public String customerName = "";
         public String hireResult = "";
         public String remarks = "";
+        public String laborContract = "有期";
     }
 
     // ─── 1-1-6 紹介状 ──────────────────────────────────
