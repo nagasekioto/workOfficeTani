@@ -330,8 +330,8 @@
         <tr><th>時間外労働</th><td><span class="d-overtime-type"></span></td></tr>
         <tr><th>休憩時間</th><td><span class="d-break"></span></td></tr>
         <tr><th>休　日</th><td><span class="d-holiday"></span></td></tr>
-        <tr><th>賃金形態</th><td><span class="d-wage-type"></span></td></tr>
-        <tr><th>基本給</th><td><span class="d-base-wage"></span></td></tr>
+        <tr class="wage-row-hourly"><th>賃金形態（時給）</th><td><span class="d-base-wage-hourly"></span></td></tr>
+        <tr class="wage-row-daily"><th>賃金形態（日給）</th><td><span class="d-base-wage-daily"></span></td></tr>
         <tr><th>諸手当</th><td>時間外手当　<span class="d-overtime-wage"></span>　円</td></tr>
         <tr><th>交通費</th><td><span class="d-transport"></span></td></tr>
         <tr><th>昇給</th><td><span class="d-raise"></span></td></tr>
@@ -367,8 +367,8 @@
         <tr><th>時間外労働</th><td><span class="d-overtime-type"></span></td></tr>
         <tr><th>休憩時間</th><td><span class="d-break"></span></td></tr>
         <tr><th>休　日</th><td><span class="d-holiday"></span></td></tr>
-        <tr><th>賃金形態</th><td><span class="d-wage-type"></span></td></tr>
-        <tr><th>基本給</th><td><span class="d-base-wage"></span></td></tr>
+        <tr class="wage-row-hourly"><th>賃金形態（時給）</th><td><span class="d-base-wage-hourly"></span></td></tr>
+        <tr class="wage-row-daily"><th>賃金形態（日給）</th><td><span class="d-base-wage-daily"></span></td></tr>
         <tr><th>諸手当</th><td>時間外手当　<span class="d-overtime-wage"></span>　円</td></tr>
         <tr><th>交通費</th><td><span class="d-transport"></span></td></tr>
         <tr><th>昇給</th><td><span class="d-raise"></span></td></tr>
@@ -404,8 +404,8 @@
         <tr><th>時間外労働</th><td><span class="d-overtime-type"></span></td></tr>
         <tr><th>休憩時間</th><td><span class="d-break"></span></td></tr>
         <tr><th>休　日</th><td><span class="d-holiday"></span></td></tr>
-        <tr><th>賃金形態</th><td><span class="d-wage-type"></span></td></tr>
-        <tr><th>基本給</th><td><span class="d-base-wage"></span></td></tr>
+        <tr class="wage-row-hourly"><th>賃金形態（時給）</th><td><span class="d-base-wage-hourly"></span></td></tr>
+        <tr class="wage-row-daily"><th>賃金形態（日給）</th><td><span class="d-base-wage-daily"></span></td></tr>
         <tr><th>諸手当</th><td>時間外手当　<span class="d-overtime-wage"></span>　円</td></tr>
         <tr><th>交通費</th><td><span class="d-transport"></span></td></tr>
         <tr><th>昇給</th><td><span class="d-raise"></span></td></tr>
@@ -528,25 +528,34 @@ function applyWageDefault(){
     update();
 }
 function updateBaseWage(){
-    var lines = [];
-    if(g('wageTypeHourly').checked){
-        lines.push(g('hourlyLine1').value);
-        lines.push(g('hourlyLine2').value);
-    }
-    if(g('wageTypeDaily').checked){
-        lines.push(g('dailyLine1').value);
-    }
-    lines = lines.filter(function(v){ return v.trim() !== ''; });
-    var combined = lines.join('\n');
-    g('baseWageField').value = combined;
+    var hourlyChecked = g('wageTypeHourly').checked;
+    var dailyChecked  = g('wageTypeDaily').checked;
+
+    var hourlyLines = [g('hourlyLine1').value, g('hourlyLine2').value]
+        .filter(function(v){ return v.trim() !== ''; });
+    var dailyLines = [g('dailyLine1').value]
+        .filter(function(v){ return v.trim() !== ''; });
+
+    // 保存用：時給・日給ともにチェックされている行をまとめて保持
+    var allLines = [];
+    if(hourlyChecked) allLines = allLines.concat(hourlyLines);
+    if(dailyChecked)  allLines = allLines.concat(dailyLines);
+    g('baseWageField').value = allLines.join('\n');
     g('wageTypeField').value = getWageTypeList().join('・');
-    // PDF表示用：改行を<br>に変換してsetAll
-    var htmlLines = lines.join('<br>');
-    document.querySelectorAll('.d-base-wage').forEach(function(el){
-        el.innerHTML = htmlLines;
+
+    // 表示用：時給行・日給行をそれぞれ独立した行として表示し、
+    // チェックが入っていない形態の行は非表示にする
+    document.querySelectorAll('.wage-row-hourly').forEach(function(el){
+        el.style.display = hourlyChecked ? '' : 'none';
     });
-    document.querySelectorAll('.d-wage-type').forEach(function(el){
-        el.textContent = getWageTypeList().join('・');
+    document.querySelectorAll('.wage-row-daily').forEach(function(el){
+        el.style.display = dailyChecked ? '' : 'none';
+    });
+    document.querySelectorAll('.d-base-wage-hourly').forEach(function(el){
+        el.innerHTML = hourlyLines.join('<br>');
+    });
+    document.querySelectorAll('.d-base-wage-daily').forEach(function(el){
+        el.innerHTML = dailyLines.join('<br>');
     });
 }
 function getDow(cls){return Array.from(document.querySelectorAll('.'+cls+':checked')).map(function(c){return c.value;}).join('・');}
