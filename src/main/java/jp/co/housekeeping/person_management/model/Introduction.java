@@ -22,6 +22,10 @@ public class Introduction {
     private String ledgerRemarks; // 備考
     private String laborContract; // 労働契約（有期／無期）
 
+    // 求職管理簿（1-1-4）用の入力項目
+    private String rishokuStatus; // 離職状況（6カ月以内または不明）
+    private String henreikin;     // 返戻金
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getRefNo() { return refNo; }
@@ -46,4 +50,8 @@ public class Introduction {
     public void setLedgerRemarks(String ledgerRemarks) { this.ledgerRemarks = ledgerRemarks; }
     public String getLaborContract() { return laborContract; }
     public void setLaborContract(String laborContract) { this.laborContract = laborContract; }
+    public String getRishokuStatus() { return rishokuStatus; }
+    public void setRishokuStatus(String rishokuStatus) { this.rishokuStatus = rishokuStatus; }
+    public String getHenreikin() { return henreikin; }
+    public void setHenreikin(String henreikin) { this.henreikin = henreikin; }
 }

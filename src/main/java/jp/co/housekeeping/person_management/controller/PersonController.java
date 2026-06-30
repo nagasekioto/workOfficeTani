@@ -309,6 +309,8 @@ public class PersonController {
             row.hireResult = pnvl(intro.getHireResult());
             row.remarks = pnvl(intro.getLedgerRemarks());
             row.formData = intro.getFormData() != null ? intro.getFormData() : "";
+            row.rishokuStatus = pnvl(intro.getRishokuStatus());
+            row.henreikin = pnvl(intro.getHenreikin());
             rows.add(row);
         }
 
@@ -321,13 +323,15 @@ public class PersonController {
         return rows;
     }
 
-    // ─── 1-1-4 求職管理簿 採否・備考・労働契約の保存 ──────
+    // ─── 1-1-4 求職管理簿 採否・備考・離職状況・返戻金の保存 ──
     @PostMapping("/shokuji-ledger/save-row-status")
     @ResponseBody
     public String saveShokujiRowStatus(@RequestParam Long personId,
                                        @RequestParam(required = false) Long[] introIds,
                                        @RequestParam(required = false) String[] hireResultList,
                                        @RequestParam(required = false) String[] remarksList,
+                                       @RequestParam(required = false) String[] rishokuStatusList,
+                                       @RequestParam(required = false) String[] henreikinList,
                                        HttpSession session) {
         if (!checkAuth(session)) return "UNAUTHORIZED";
         if (introIds == null) return "OK";
@@ -343,6 +347,12 @@ public class PersonController {
                 if (remarksList != null && idx < remarksList.length) {
                     intro.setLedgerRemarks(remarksList[idx]);
                 }
+                if (rishokuStatusList != null && idx < rishokuStatusList.length) {
+                    intro.setRishokuStatus(rishokuStatusList[idx]);
+                }
+                if (henreikinList != null && idx < henreikinList.length) {
+                    intro.setHenreikin(henreikinList[idx]);
+                }
                 introductionRepository.save(intro);
             });
         }
@@ -355,6 +365,8 @@ public class PersonController {
                                  @RequestParam(required = false, defaultValue = "inline") String mode,
                                  @RequestParam(required = false) String[] hireResultList,
                                  @RequestParam(required = false) String[] remarksList,
+                                 @RequestParam(required = false) String[] rishokuStatusList,
+                                 @RequestParam(required = false) String[] henreikinList,
                                  HttpSession session, HttpServletResponse response)
             throws IOException, DocumentException {
         if (!checkAuth(session)) { response.sendError(401); return; }
@@ -370,6 +382,12 @@ public class PersonController {
             }
             if (remarksList != null && i < remarksList.length && remarksList[i] != null) {
                 row.remarks = remarksList[i];
+            }
+            if (rishokuStatusList != null && i < rishokuStatusList.length && rishokuStatusList[i] != null) {
+                row.rishokuStatus = rishokuStatusList[i];
+            }
+            if (henreikinList != null && i < henreikinList.length && henreikinList[i] != null) {
+                row.henreikin = henreikinList[i];
             }
         }
 
@@ -506,8 +524,8 @@ public class PersonController {
             addPTdC(tbl, pnvl(row.remarks),   norm6);  // 備考
             addPTdC(tbl, laborContract,       norm6);  // 労働契約
             addPTdC(tbl, tenshokuPeriod,      norm6);  // 転職勧奨禁止期間
-            addPTdC(tbl, "",                  norm6);  // 離職状況（6カ月以内または不明）
-            addPTdC(tbl, "",                  norm6);  // 返戻金
+            addPTdC(tbl, pnvl(row.rishokuStatus), norm6);  // 離職状況（6カ月以内または不明）
+            addPTdC(tbl, pnvl(row.henreikin),     norm6);  // 返戻金
             filled++;
         }
         for (int i = filled; i < DATA_ROWS; i++) {
@@ -596,6 +614,8 @@ public class PersonController {
         public String hireResult = "";
         public String remarks = "";
         public String formData = "";
+        public String rishokuStatus = "";
+        public String henreikin = "";
     }
 
     // ─── 1-1-6 紹介状 ──────────────────────────────────
