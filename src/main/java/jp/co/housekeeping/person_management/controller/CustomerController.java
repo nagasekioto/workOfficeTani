@@ -351,15 +351,16 @@ public class CustomerController {
         for (int i = 0; i < introIds.length; i++) {
             Long introId = introIds[i];
             if (introId == null) continue;
+            final int idx = i;
             introductionRepository.findById(introId).ifPresent(intro -> {
-                if (empStatusList != null && i < empStatusList.length) {
-                    intro.setEmpStatus(empStatusList[i]);
+                if (empStatusList != null && idx < empStatusList.length) {
+                    intro.setEmpStatus(empStatusList[idx]);
                 }
-                if (hireResultList != null && i < hireResultList.length) {
-                    intro.setHireResult(hireResultList[i]);
+                if (hireResultList != null && idx < hireResultList.length) {
+                    intro.setHireResult(hireResultList[idx]);
                 }
-                if (remarksList != null && i < remarksList.length) {
-                    intro.setLedgerRemarks(remarksList[i]);
+                if (remarksList != null && idx < remarksList.length) {
+                    intro.setLedgerRemarks(remarksList[idx]);
                 }
                 introductionRepository.save(intro);
             });
