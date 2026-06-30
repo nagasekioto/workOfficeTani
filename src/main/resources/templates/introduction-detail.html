@@ -73,7 +73,8 @@
     <div class="sec">
         <h3>&#9315; 賃金</h3>
         <div class="grid">
-            <div class="field" style="grid-column:1 / -1;"><div class="field-label">賃金形態</div><div class="field-value" style="white-space:pre-wrap;" th:text="${fd.wageDetail}"></div></div>
+            <div class="field"><div class="field-label">賃金形態</div><div class="field-value" th:text="${fd.wageType}"></div></div>
+            <div class="field" style="grid-column:1 / -1;"><div class="field-label">基本給</div><div class="field-value" style="white-space:pre-wrap;" th:text="${fd.wageDetail}"></div></div>
             <div class="field"><div class="field-label">時間外手当（円）</div><div class="field-value" th:text="${fd.overtimeWage}"></div></div>
             <div class="field"><div class="field-label">交通費</div><div class="field-value" th:text="${fd.transport}"></div></div>
             <div class="field"><div class="field-label">昇給</div><div class="field-value" th:text="${fd.raise}"></div></div>

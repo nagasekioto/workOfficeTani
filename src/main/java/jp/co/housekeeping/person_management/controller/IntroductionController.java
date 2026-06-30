@@ -201,17 +201,21 @@ public class IntroductionController {
             if (node.path("holHoliday").asBoolean()) holList.add("祝日");
             if (node.path("holOther").asBoolean()) holList.add("その他");
             fd.put("holiday", String.join("　", holList));
-            fd.put("wageType", node.path("wageType").asText(""));
-            fd.put("baseWage", node.path("baseWage").asText(""));
-            // 賃金形態（備考と同じ複数行構造／旧データ互換）
+            // 賃金形態（時給/日給/月給）
+            String wageTypeVal = node.path("wageType").asText("");
+            if (!wageTypeVal.equals("時給") && !wageTypeVal.equals("日給") && !wageTypeVal.equals("月給")) {
+                wageTypeVal = "";
+            }
+            fd.put("wageType", wageTypeVal);
+            // 基本給（備考と同じ複数行構造／旧データ互換）
             String wageDetail;
-            if (node.has("wageLine1")) {
+            if (node.has("baseWageLine1")) {
+                wageDetail = node.path("baseWage").asText("");
+            } else if (node.has("wageLine1")) {
                 wageDetail = node.path("wageType").asText("");
             } else {
-                String oldWageType = node.path("wageType").asText("");
                 String oldBaseWage = node.path("baseWage").asText("");
-                wageDetail = oldBaseWage.isBlank() && oldWageType.isBlank()
-                    ? "" : oldWageType + "　　基本給　" + oldBaseWage + "　円";
+                wageDetail = oldBaseWage.isBlank() ? "" : oldBaseWage + "　円";
             }
             fd.put("wageDetail", wageDetail);
             fd.put("overtimeWage", node.path("overtimeWage").asText(""));
@@ -482,20 +486,29 @@ public class IntroductionController {
             if (fd.path("holOther").asBoolean())     holSb.append("その他");
             addPdfRow(tbl, "休　日", holSb.toString().trim(), boldFont, normalFont);
 
-            // 賃金
-            String wageDetail;
-            if (fd.has("wageLine1")) {
-                // 新データ（備考と同じ3行構造）
-                wageDetail = fd.path("wageType").asText("");
+            // 賃金形態（時給/日給/月給）
+            String wageTypeVal = fd.path("wageType").asText("時給");
+            if (!wageTypeVal.equals("時給") && !wageTypeVal.equals("日給") && !wageTypeVal.equals("月給")) {
+                // 旧データ（賃金形態が3行自由入力だった時期のデータ）はラジオ値とみなさない
+                wageTypeVal = "時給";
+            }
+            addPdfRow(tbl, "賃金形態", wageTypeVal, boldFont, normalFont);
+
+            // 基本給（備考と同じ複数行構造／旧データ互換）
+            String baseWageDetail;
+            if (fd.has("baseWageLine1")) {
+                baseWageDetail = fd.path("baseWage").asText("");
+            } else if (fd.has("wageLine1")) {
+                // 旧データ（賃金形態が3行自由入力だった時期のデータ）
+                baseWageDetail = fd.path("wageType").asText("");
             } else {
-                // 旧データ（時給/日給/月給ラジオ＋基本給）との後方互換
-                String oldWageType = fd.path("wageType").asText("時給");
+                // 最古データ（基本給が単一の数値だった時期のデータ）
                 String oldBaseWage = fd.path("baseWage").asText("");
                 try { if (!oldBaseWage.isBlank()) oldBaseWage = String.format("%,d", Long.parseLong(oldBaseWage)); }
                 catch (NumberFormatException ignored) {}
-                wageDetail = oldWageType + "　　基本給　" + oldBaseWage + "　円";
+                baseWageDetail = oldBaseWage.isBlank() ? "" : oldBaseWage + "　円";
             }
-            addPdfRow(tbl, "賃金形態", wageDetail, boldFont, normalFont);
+            addPdfRow(tbl, "基本給", baseWageDetail, boldFont, normalFont);
 
             String owage = fd.path("overtimeWage").asText("");
             try { if (!owage.isBlank()) owage = String.format("%,d", Long.parseLong(owage)); }
