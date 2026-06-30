@@ -431,32 +431,21 @@ public class CustomerController {
         leftCell.setBorder(Rectangle.BOX); leftCell.setPadding(0);
         hdr.addCell(leftCell);
 
-        // 中列: 連絡担当者（3列構成：グループ｜ラベル｜値）。
+        // 中列: 連絡担当者（求人者欄と同じ4行グリッドで構成し、高さのバランスを合わせる）。
         // 氏名＝担当者名、電話番号＝担当者電話番号を表示。
-        // 左列(求人者情報・4行分)との高さの差で生じる余白を、電話番号欄を高くして埋める。
+        // 電話番号セルをrowspan=3でセル結合し、余分な空白行が出ないようにする。
         String staffName  = c != null ? nvl(c.getStaffName())  : "";
         String staffPhone = c != null ? nvl(c.getStaffPhone()) : "";
         PdfPTable midInfo = new PdfPTable(new float[]{1.0f, 1.2f, 3f});
         midInfo.setWidthPercentage(100);
-        PdfPCell midGroup = new PdfPCell(new Phrase("連絡\n担当者", bold6));
-        midGroup.setRowspan(2); midGroup.setBorder(Rectangle.BOX); midGroup.setPadding(2);
-        midGroup.setHorizontalAlignment(Element.ALIGN_CENTER); midGroup.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        midInfo.addCell(midGroup);
-        PdfPCell midNameLabel = new PdfPCell(new Phrase("氏名", bold6));
-        midNameLabel.setBorder(Rectangle.BOX); midNameLabel.setPadding(2);
-        midNameLabel.setMinimumHeight(14f);
-        midInfo.addCell(midNameLabel);
-        PdfPCell midNameVal = new PdfPCell(new Phrase(staffName, norm7));
-        midNameVal.setBorder(Rectangle.NO_BORDER); midNameVal.setPadding(2);
-        midNameVal.setMinimumHeight(14f);
-        midInfo.addCell(midNameVal);
+        addHdrRow(midInfo, "連絡\n担当者", "氏名", staffName, bold6, norm7, 4);
         PdfPCell midPhoneLabel = new PdfPCell(new Phrase("電話番号", bold6));
-        midPhoneLabel.setBorder(Rectangle.BOX); midPhoneLabel.setPadding(2);
-        midPhoneLabel.setMinimumHeight(42f);
+        midPhoneLabel.setRowspan(3); midPhoneLabel.setBorder(Rectangle.BOX); midPhoneLabel.setPadding(2);
+        midPhoneLabel.setVerticalAlignment(Element.ALIGN_MIDDLE); midPhoneLabel.setMinimumHeight(42f);
         midInfo.addCell(midPhoneLabel);
         PdfPCell midPhoneVal = new PdfPCell(new Phrase(staffPhone, norm7));
-        midPhoneVal.setBorder(Rectangle.NO_BORDER); midPhoneVal.setPadding(2);
-        midPhoneVal.setMinimumHeight(42f);
+        midPhoneVal.setRowspan(3); midPhoneVal.setBorder(Rectangle.NO_BORDER); midPhoneVal.setPadding(2);
+        midPhoneVal.setVerticalAlignment(Element.ALIGN_MIDDLE); midPhoneVal.setMinimumHeight(42f);
         midInfo.addCell(midPhoneVal);
         PdfPCell midCell = new PdfPCell(midInfo);
         midCell.setBorder(Rectangle.BOX); midCell.setPadding(0);
@@ -464,11 +453,13 @@ public class CustomerController {
 
         doc.add(hdr);
 
-        // ── 求人希望職種行 ──
+        // ── 求人希望職種行 ──（求人者新規登録の仕事内容（複数選択可）を反映）
+        String jobContentsStr = c != null && c.getJobContents() != null
+                ? c.getJobContents().replace(",", "　") : "";
         PdfPTable jobRow = new PdfPTable(new float[]{1.2f, 9f});
         jobRow.setWidthPercentage(100);
         jobRow.setSpacingAfter(2);
-        addLblVal(jobRow, "求人希望職種", "", bold6, norm7);
+        addLblVal(jobRow, "求人希望職種", jobContentsStr, bold6, norm7);
         doc.add(jobRow);
 
         // ── メイン表 ──
