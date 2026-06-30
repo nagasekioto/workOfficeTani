@@ -10,6 +10,8 @@ import java.util.List;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.BaseColor;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
@@ -306,9 +308,7 @@ public class PersonController {
             }
             row.hireResult = pnvl(intro.getHireResult());
             row.remarks = pnvl(intro.getLedgerRemarks());
-            if (intro.getLaborContract() != null && !intro.getLaborContract().isBlank()) {
-                row.laborContract = intro.getLaborContract();
-            }
+            row.formData = intro.getFormData() != null ? intro.getFormData() : "";
             rows.add(row);
         }
 
@@ -328,7 +328,6 @@ public class PersonController {
                                        @RequestParam(required = false) Long[] introIds,
                                        @RequestParam(required = false) String[] hireResultList,
                                        @RequestParam(required = false) String[] remarksList,
-                                       @RequestParam(required = false) String[] laborContractList,
                                        HttpSession session) {
         if (!checkAuth(session)) return "UNAUTHORIZED";
         if (introIds == null) return "OK";
@@ -344,9 +343,6 @@ public class PersonController {
                 if (remarksList != null && idx < remarksList.length) {
                     intro.setLedgerRemarks(remarksList[idx]);
                 }
-                if (laborContractList != null && idx < laborContractList.length) {
-                    intro.setLaborContract(laborContractList[idx]);
-                }
                 introductionRepository.save(intro);
             });
         }
@@ -359,7 +355,6 @@ public class PersonController {
                                  @RequestParam(required = false, defaultValue = "inline") String mode,
                                  @RequestParam(required = false) String[] hireResultList,
                                  @RequestParam(required = false) String[] remarksList,
-                                 @RequestParam(required = false) String[] laborContractList,
                                  HttpSession session, HttpServletResponse response)
             throws IOException, DocumentException {
         if (!checkAuth(session)) { response.sendError(401); return; }
@@ -375,9 +370,6 @@ public class PersonController {
             }
             if (remarksList != null && i < remarksList.length && remarksList[i] != null) {
                 row.remarks = remarksList[i];
-            }
-            if (laborContractList != null && i < laborContractList.length && laborContractList[i] != null) {
-                row.laborContract = laborContractList[i];
             }
         }
 
@@ -525,13 +517,14 @@ public class PersonController {
         // データ行（実データ + 空行で計38行）
         int DATA_ROWS = 38;
         int filled = 0;
+        ObjectMapper mapper = new ObjectMapper();
         for (PersonLedgerRow row : rows) {
             if (filled >= DATA_ROWS) break;
 
             LocalDate introDate = row.introDate;
             String introDateStr = introDate != null ? pformatDot(introDate) : "";
             String validPeriod  = pformatValidPeriod(introDate);
-            String laborContract = pnvl(row.laborContract).isBlank() ? "有期" : row.laborContract;
+            String laborContract = extractLaborContract(mapper, row.formData);
 
             // 労働契約が「無期」の場合、転職勧奨禁止期間＝採用年月日から2年間
             String tenshokuPeriod = "";
@@ -608,6 +601,17 @@ public class PersonController {
 
     private String pnvl(String s) { return s != null ? s : ""; }
 
+    /** 紹介状（formData）の③雇用条件・雇用期間（無期／有期）を労働契約として抽出する */
+    private String extractLaborContract(ObjectMapper mapper, String formData) {
+        if (formData == null || formData.isBlank()) return "有期";
+        try {
+            JsonNode node = mapper.readTree(formData);
+            String empPeriod = node.path("empPeriod").asText("");
+            if ("無期".equals(empPeriod) || "有期".equals(empPeriod)) return empPeriod;
+        } catch (Exception ignored) {}
+        return "有期";
+    }
+
     private String pformatDot(LocalDate d) {
         if (d == null) return "";
         return d.getYear() + "." + d.getMonthValue() + "." + d.getDayOfMonth();
@@ -627,7 +631,7 @@ public class PersonController {
         public String customerName = "";
         public String hireResult = "";
         public String remarks = "";
-        public String laborContract = "有期";
+        public String formData = "";
     }
 
     // ─── 1-1-6 紹介状 ──────────────────────────────────

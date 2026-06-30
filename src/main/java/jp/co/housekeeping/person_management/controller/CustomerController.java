@@ -557,7 +557,7 @@ public class CustomerController {
                 addTdC(tbl, nvl(row.hireResult), norm6);  // 採否
                 addTdC(tbl, introDateStr,    norm6);  // 採用年月日（紹介年月日と同じ）
                 addTdC(tbl, nvl(row.remarks),norm6);  // 備考
-                addTdC(tbl, "有期",          norm6);  // 労働契約
+                addTdC(tbl, extractLaborContract(mapper, row.formData), norm6);  // 労働契約（紹介状作成[1-6-1]③雇用条件の雇用期間を参照）
                 addTdC(tbl, "",              norm6);  // 転職勧奨禁止期間
                 addTdC(tbl, "",              norm6);  // 6カ月以内または不明
                 addTdC(tbl, "",              norm6);  // 返戻金
@@ -571,6 +571,17 @@ public class CustomerController {
         }
         doc.add(tbl);
         doc.close();
+    }
+
+    /** 紹介状（formData）の③雇用条件・雇用期間（無期／有期）を労働契約として抽出する */
+    private String extractLaborContract(ObjectMapper mapper, String formData) {
+        if (formData == null || formData.isBlank()) return "有期";
+        try {
+            JsonNode node = mapper.readTree(formData);
+            String empPeriod = node.path("empPeriod").asText("");
+            if ("無期".equals(empPeriod) || "有期".equals(empPeriod)) return empPeriod;
+        } catch (Exception ignored) {}
+        return "有期";
     }
 
     /** 紹介状（formData）から[給,円]のペア一覧を抽出する（時給・日給両方あれば2行）*/
