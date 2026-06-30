@@ -513,7 +513,7 @@ public class CustomerController {
                 addTdC(tbl, workPeriod,      norm6);  // 雇用期間
                 addTdC(tbl, wage[0],         norm6);  // 給（時給／日給）
                 addTdC(tbl, wage[1],         norm6);  // 円（基本給）
-                addTdC(tbl, row.introductionDate, norm6);  // 紹介年月日
+                addTdC(tbl, introDateStr,    norm6);  // 紹介年月日
                 addTdC(tbl, row.personName,  norm6);  // 求職者氏名
                 addTdC(tbl, nvl(row.hireResult), norm6);  // 採否
                 addTdC(tbl, introDateStr,    norm6);  // 採用年月日（紹介年月日と同じ）
