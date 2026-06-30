@@ -417,6 +417,7 @@ public class PersonController {
         Font bold6   = new Font(bf, 6,  Font.BOLD);
         Font bold5   = new Font(bf, 5,  Font.BOLD);
         Font infoVal = new Font(bf, 11, Font.BOLD);
+        Font groupFont = new Font(bf, 18, Font.BOLD);
 
         // ── タイトル ──
         PdfPTable titleTbl = new PdfPTable(1);
@@ -449,7 +450,7 @@ public class PersonController {
         PdfPTable leftInfo = new PdfPTable(new float[]{1.0f, 1.2f, 4f});
         leftInfo.setWidthPercentage(100);
         addPHdrRow(leftInfo, "求職者", "氏名",
-                p != null ? (p.getLastNameKanji() + "　" + p.getFirstNameKanji()) : "", bold6, infoVal, 6, 18f);
+                p != null ? (p.getLastNameKanji() + "　" + p.getFirstNameKanji()) : "", groupFont, bold6, infoVal, 6, 18f);
         addPHdrRow2(leftInfo, "〒",
                 p != null && p.getPostalCode() != null ? p.getPostalCode() : "", bold6, infoVal, 18f);
         addPHdrRow2(leftInfo, "住所",
@@ -539,8 +540,8 @@ public class PersonController {
     }
 
     // ─── 求職管理簿PDF用ヘルパー ──────────────────────────
-    private void addPHdrRow(PdfPTable t, String group, String label, String val, Font lf, Font vf, int rowspan, float rowHeight) {
-        PdfPCell g = new PdfPCell(new Phrase(group, lf));
+    private void addPHdrRow(PdfPTable t, String group, String label, String val, Font gf, Font lf, Font vf, int rowspan, float rowHeight) {
+        PdfPCell g = new PdfPCell(new Phrase(group, gf));
         g.setBorder(Rectangle.BOX); g.setPadding(2); g.setRowspan(rowspan);
         g.setHorizontalAlignment(Element.ALIGN_CENTER); g.setVerticalAlignment(Element.ALIGN_MIDDLE);
         t.addCell(g);
