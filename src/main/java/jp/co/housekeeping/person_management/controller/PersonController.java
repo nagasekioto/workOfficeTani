@@ -445,45 +445,50 @@ public class PersonController {
         leftCell.setBorder(Rectangle.BOX); leftCell.setPadding(0);
         hdr.addCell(leftCell);
 
-        // 右列: 取扱状況（求人管理簿[1-2-2]の右上ブロックを参照して構成）
-        // 取扱状況 ── 労働契約｜無期雇用就職者（転職勧奨禁止期間[2018.1以降]／離職状況[6カ月以内または不明]）｜返戻金
+        // 右列: 取扱状況
+        // 1行目：取扱状況（労働契約・無期雇用就職者の上）
+        // 2行目：労働契約（縦に3行分貫通）｜無期雇用就職者（転職勧奨禁止期間・離職状況の上）
+        // 3行目：[労働契約つづき]｜転職勧奨禁止期間（縦に2行分貫通）｜離職状況
+        // 4行目：[労働契約つづき]｜[転職勧奨禁止期間つづき]｜6カ月以内または不明｜返戻金
         PdfPTable rightInfo = new PdfPTable(new float[]{1f, 1f, 1f, 1f});
         rightInfo.setWidthPercentage(100);
 
-        // 1行目：労働契約（左端・縦に3行分貫通）｜取扱状況｜返戻金（右端・縦に3行分貫通）
+        PdfPCell rLabel = new PdfPCell(new Phrase("取扱状況", bold6));
+        rLabel.setColspan(4); rLabel.setBorder(Rectangle.BOX); rLabel.setPadding(2);
+        rLabel.setHorizontalAlignment(Element.ALIGN_CENTER); rLabel.setMinimumHeight(21f);
+        rightInfo.addCell(rLabel);
+
         PdfPCell rouCell = new PdfPCell(new Phrase("労働\n契約", bold6));
         rouCell.setRowspan(3); rouCell.setBorder(Rectangle.BOX); rouCell.setPadding(2);
         rouCell.setHorizontalAlignment(Element.ALIGN_CENTER); rouCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        rouCell.setMinimumHeight(84f);
+        rouCell.setMinimumHeight(63f);
         rightInfo.addCell(rouCell);
 
-        PdfPCell rLabel = new PdfPCell(new Phrase("取扱状況", bold6));
-        rLabel.setColspan(2); rLabel.setBorder(Rectangle.BOX); rLabel.setPadding(2);
-        rLabel.setHorizontalAlignment(Element.ALIGN_CENTER); rLabel.setMinimumHeight(24f);
-        rightInfo.addCell(rLabel);
-
-        PdfPCell henreiCell = new PdfPCell(new Phrase("返戻\n金", bold6));
-        henreiCell.setRowspan(3); henreiCell.setBorder(Rectangle.BOX); henreiCell.setPadding(2);
-        henreiCell.setHorizontalAlignment(Element.ALIGN_CENTER); henreiCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        henreiCell.setMinimumHeight(84f);
-        rightInfo.addCell(henreiCell);
-
-        // 2行目：無期雇用就職者
         PdfPCell mukiLabel = new PdfPCell(new Phrase("無期雇用就職者", bold6));
-        mukiLabel.setColspan(2); mukiLabel.setBorder(Rectangle.BOX); mukiLabel.setPadding(2);
-        mukiLabel.setHorizontalAlignment(Element.ALIGN_CENTER); mukiLabel.setMinimumHeight(24f);
+        mukiLabel.setColspan(3); mukiLabel.setBorder(Rectangle.BOX); mukiLabel.setPadding(2);
+        mukiLabel.setHorizontalAlignment(Element.ALIGN_CENTER); mukiLabel.setMinimumHeight(21f);
         rightInfo.addCell(mukiLabel);
 
-        // 3行目：転職勧奨禁止期間（2018.1以降）｜離職状況（6カ月以内または不明）
         PdfPCell tenshokuCell = new PdfPCell(new Phrase("転職勧奨禁止期間\n（2018.1以降）", bold5));
-        tenshokuCell.setBorder(Rectangle.BOX); tenshokuCell.setPadding(2);
-        tenshokuCell.setHorizontalAlignment(Element.ALIGN_CENTER); tenshokuCell.setMinimumHeight(36f);
+        tenshokuCell.setRowspan(2); tenshokuCell.setBorder(Rectangle.BOX); tenshokuCell.setPadding(2);
+        tenshokuCell.setHorizontalAlignment(Element.ALIGN_CENTER); tenshokuCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        tenshokuCell.setMinimumHeight(42f);
         rightInfo.addCell(tenshokuCell);
 
-        PdfPCell rishokuCell = new PdfPCell(new Phrase("離職状況\n（6カ月以内\nまたは不明）", bold5));
-        rishokuCell.setBorder(Rectangle.BOX); rishokuCell.setPadding(2);
-        rishokuCell.setHorizontalAlignment(Element.ALIGN_CENTER); rishokuCell.setMinimumHeight(36f);
-        rightInfo.addCell(rishokuCell);
+        PdfPCell rishokuLabel = new PdfPCell(new Phrase("離職状況", bold6));
+        rishokuLabel.setColspan(2); rishokuLabel.setBorder(Rectangle.BOX); rishokuLabel.setPadding(2);
+        rishokuLabel.setHorizontalAlignment(Element.ALIGN_CENTER); rishokuLabel.setMinimumHeight(21f);
+        rightInfo.addCell(rishokuLabel);
+
+        PdfPCell rokkagetsuCell = new PdfPCell(new Phrase("6カ月以内\nまたは不明", bold5));
+        rokkagetsuCell.setBorder(Rectangle.BOX); rokkagetsuCell.setPadding(2);
+        rokkagetsuCell.setHorizontalAlignment(Element.ALIGN_CENTER); rokkagetsuCell.setMinimumHeight(21f);
+        rightInfo.addCell(rokkagetsuCell);
+
+        PdfPCell henreiCell = new PdfPCell(new Phrase("返戻\n金", bold6));
+        henreiCell.setBorder(Rectangle.BOX); henreiCell.setPadding(2);
+        henreiCell.setHorizontalAlignment(Element.ALIGN_CENTER); henreiCell.setMinimumHeight(21f);
+        rightInfo.addCell(henreiCell);
 
         PdfPCell rCell = new PdfPCell(rightInfo);
         rCell.setBorder(Rectangle.BOX); rCell.setPadding(0);
