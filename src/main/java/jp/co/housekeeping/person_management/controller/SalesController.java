@@ -82,6 +82,7 @@ public class SalesController {
     public String saveSales(
             @RequestParam Long personId,
             @RequestParam(required = false) String[] customerIds,
+            @RequestParam(required = false) String[] detailIds,
             @RequestParam(required = false) String[] introductionDates,
             @RequestParam(required = false) String[] receptionFees,
             @RequestParam(required = false) String[] customerFees,
@@ -135,9 +136,26 @@ public class SalesController {
             Long customerId;
             try { customerId = Long.parseLong(customerIds[i]); } catch (NumberFormatException e) { continue; }
 
-            // 同じcustomerId×detailOrderの既存レコードがあれば再利用（receiptNo保持）
-            String key = customerId + "_" + (i + 1);
-            SalesDetail detail = oldMap.containsKey(key) ? oldMap.get(key) : new SalesDetail();
+            // 同じ画面ブロックに対応する既存レコードを取得
+            // 1) detailIds（画面の各ブロックが保持する実IDのhidden値）を最優先で使う
+            //    customerId×表示順だけに頼ると、過去の並び替えやdetailOrder未設定の
+            //    旧データで一致せず、同じ稼働履歴が重複作成される事象が起きていたため。
+            SalesDetail detail = null;
+            if (detailIds != null && i < detailIds.length
+                    && detailIds[i] != null && !detailIds[i].isBlank()) {
+                try {
+                    Long did = Long.parseLong(detailIds[i]);
+                    for (SalesDetail od : oldDetails) {
+                        if (did.equals(od.getId())) { detail = od; break; }
+                    }
+                } catch (NumberFormatException ignored) {}
+            }
+            // 2) IDで見つからない場合は customerId×表示順 で再利用を試みる（後方互換）
+            if (detail == null) {
+                String key = customerId + "_" + (i + 1);
+                detail = oldMap.get(key);
+            }
+            if (detail == null) detail = new SalesDetail();
             detail.setSalesId(sales.getId());
             detail.setCustomerId(customerId);
             detail.setDetailOrder(i + 1);

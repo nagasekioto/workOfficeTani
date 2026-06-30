@@ -174,6 +174,16 @@ public class WorkingLedgerController {
         return "redirect:/person/working-ledger/" + personId;
     }
 
+    // 稼働履歴（売上明細）の削除
+    @PostMapping("/delete-detail")
+    public String deleteDetail(@RequestParam Long detailId,
+                               @RequestParam Long personId,
+                               HttpSession session) {
+        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+        salesDetailRepository.deleteById(detailId);
+        return "redirect:/person/working-ledger/" + personId;
+    }
+
     private boolean containsIgnoreCase(String src, String q) {
         if (src == null) return false;
         return src.toLowerCase().contains(q.toLowerCase());

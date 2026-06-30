@@ -74,6 +74,7 @@
             <div class="detail-block">
                 <h3>勤務先 1</h3>
                 <div th:with="d=${existingDetails != null and existingDetails.size() >= 1 ? existingDetails.get(0) : null}">
+                    <input type="hidden" name="detailIds" th:value="${d?.id}">
                     <div class="form-group">
                         <label>求人者</label>
                         <select name="customerIds" id="customerId1" onchange="onCustomerChange(1)">
@@ -85,6 +86,8 @@
                     </div>
                     <div class="form-group"><label>紹介年月日</label>
                         <input type="date" name="introductionDates" id="introDate1" th:value="${d?.introductionDate}"></div>
+                    <div class="form-group"><label>就労開始日</label>
+                        <input type="date" name="workStartDates" id="workStart1" th:value="${d?.workStartDate}" oninput="syncDaysToHidden(1)"></div>
                     <div class="form-group"><label>就労日数</label>
                         <div style="display:flex;align-items:center;gap:8px;">
                             <input type="number" id="workDays1" name="workDaysList" min="0" placeholder="日数" style="width:100px;"
@@ -92,7 +95,6 @@
                                 oninput="syncDaysToHidden(1)">
                             <span>日</span>
                         </div>
-                        <input type="hidden" name="workStartDates" id="workStart1" th:value="${d?.workStartDate}">
                         <input type="hidden" name="workEndDates" id="workEnd1" th:value="${d?.workEndDate}">
                     </div>
                     <div class="form-group"><label>受付料</label>
@@ -138,6 +140,7 @@
             <div class="detail-block">
                 <h3>勤務先 2</h3>
                 <div th:with="d=${existingDetails != null and existingDetails.size() >= 2 ? existingDetails.get(1) : null}">
+                    <input type="hidden" name="detailIds" th:value="${d?.id}">
                     <div class="form-group"><label>求人者</label>
                         <select name="customerIds" id="customerId2" onchange="onCustomerChange(2)">
                             <option value="">-- 選択してください --</option>
@@ -148,6 +151,8 @@
                     </div>
                     <div class="form-group"><label>紹介年月日</label>
                         <input type="date" name="introductionDates" id="introDate2" th:value="${d?.introductionDate}"></div>
+                    <div class="form-group"><label>就労開始日</label>
+                        <input type="date" name="workStartDates" id="workStart2" th:value="${d?.workStartDate}" oninput="syncDaysToHidden(2)"></div>
                     <div class="form-group"><label>就労日数</label>
                         <div style="display:flex;align-items:center;gap:8px;">
                             <input type="number" id="workDays2" name="workDaysList" min="0" placeholder="日数" style="width:100px;"
@@ -155,7 +160,6 @@
                                 oninput="syncDaysToHidden(2)">
                             <span>日</span>
                         </div>
-                        <input type="hidden" name="workStartDates" id="workStart2" th:value="${d?.workStartDate}">
                         <input type="hidden" name="workEndDates" id="workEnd2" th:value="${d?.workEndDate}">
                     </div>
                     <div class="form-group"><label>受付料</label>
@@ -201,6 +205,7 @@
             <div class="detail-block">
                 <h3>勤務先 3</h3>
                 <div th:with="d=${existingDetails != null and existingDetails.size() >= 3 ? existingDetails.get(2) : null}">
+                    <input type="hidden" name="detailIds" th:value="${d?.id}">
                     <div class="form-group"><label>求人者</label>
                         <select name="customerIds" id="customerId3" onchange="onCustomerChange(3)">
                             <option value="">-- 選択してください --</option>
@@ -211,6 +216,8 @@
                     </div>
                     <div class="form-group"><label>紹介年月日</label>
                         <input type="date" name="introductionDates" id="introDate3" th:value="${d?.introductionDate}"></div>
+                    <div class="form-group"><label>就労開始日</label>
+                        <input type="date" name="workStartDates" id="workStart3" th:value="${d?.workStartDate}" oninput="syncDaysToHidden(3)"></div>
                     <div class="form-group"><label>就労日数</label>
                         <div style="display:flex;align-items:center;gap:8px;">
                             <input type="number" id="workDays3" name="workDaysList" min="0" placeholder="日数" style="width:100px;"
@@ -218,7 +225,6 @@
                                 oninput="syncDaysToHidden(3)">
                             <span>日</span>
                         </div>
-                        <input type="hidden" name="workStartDates" id="workStart3" th:value="${d?.workStartDate}">
                         <input type="hidden" name="workEndDates" id="workEnd3" th:value="${d?.workEndDate}">
                     </div>
                     <div class="form-group"><label>受付料</label>
@@ -264,6 +270,7 @@
             <div class="detail-block">
                 <h3>勤務先 4</h3>
                 <div th:with="d=${existingDetails != null and existingDetails.size() >= 4 ? existingDetails.get(3) : null}">
+                    <input type="hidden" name="detailIds" th:value="${d?.id}">
                     <div class="form-group"><label>求人者</label>
                         <select name="customerIds" id="customerId4" onchange="onCustomerChange(4)">
                             <option value="">-- 選択してください --</option>
@@ -274,6 +281,8 @@
                     </div>
                     <div class="form-group"><label>紹介年月日</label>
                         <input type="date" name="introductionDates" id="introDate4" th:value="${d?.introductionDate}"></div>
+                    <div class="form-group"><label>就労開始日</label>
+                        <input type="date" name="workStartDates" id="workStart4" th:value="${d?.workStartDate}" oninput="syncDaysToHidden(4)"></div>
                     <div class="form-group"><label>就労日数</label>
                         <div style="display:flex;align-items:center;gap:8px;">
                             <input type="number" id="workDays4" name="workDaysList" min="0" placeholder="日数" style="width:100px;"
@@ -281,7 +290,6 @@
                                 oninput="syncDaysToHidden(4)">
                             <span>日</span>
                         </div>
-                        <input type="hidden" name="workStartDates" id="workStart4" th:value="${d?.workStartDate}">
                         <input type="hidden" name="workEndDates" id="workEnd4" th:value="${d?.workEndDate}">
                     </div>
                     <div class="form-group"><label>受付料</label>
@@ -327,6 +335,7 @@
             <div class="detail-block">
                 <h3>勤務先 5</h3>
                 <div th:with="d=${existingDetails != null and existingDetails.size() >= 5 ? existingDetails.get(4) : null}">
+                    <input type="hidden" name="detailIds" th:value="${d?.id}">
                     <div class="form-group"><label>求人者</label>
                         <select name="customerIds" id="customerId5" onchange="onCustomerChange(5)">
                             <option value="">-- 選択してください --</option>
@@ -337,6 +346,8 @@
                     </div>
                     <div class="form-group"><label>紹介年月日</label>
                         <input type="date" name="introductionDates" id="introDate5" th:value="${d?.introductionDate}"></div>
+                    <div class="form-group"><label>就労開始日</label>
+                        <input type="date" name="workStartDates" id="workStart5" th:value="${d?.workStartDate}" oninput="syncDaysToHidden(5)"></div>
                     <div class="form-group"><label>就労日数</label>
                         <div style="display:flex;align-items:center;gap:8px;">
                             <input type="number" id="workDays5" name="workDaysList" min="0" placeholder="日数" style="width:100px;"
@@ -344,7 +355,6 @@
                                 oninput="syncDaysToHidden(5)">
                             <span>日</span>
                         </div>
-                        <input type="hidden" name="workStartDates" id="workStart5" th:value="${d?.workStartDate}">
                         <input type="hidden" name="workEndDates" id="workEnd5" th:value="${d?.workEndDate}">
                     </div>
                     <div class="form-group"><label>受付料</label>

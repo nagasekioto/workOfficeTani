@@ -21,9 +21,11 @@
         th { background: #4CAF50; color: white; padding: 10px 8px; text-align: center; white-space: nowrap; }
         td { padding: 8px; border-bottom: 1px solid #e0e0e0; text-align: center; vertical-align: top; }
         tr:hover { background: #f9fbe7; }
-        .remarks-input { width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 12px; min-width: 80px; }
-        .save-btn { background: #FF9800; color: white; border: none; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 11px; }
+        .remarks-input { width: 90px; padding: 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 12px; }
+        .save-btn { background: #FF9800; color: white; border: none; border-radius: 3px; padding: 3px 8px; cursor: pointer; font-size: 11px; white-space: nowrap; }
         .edit-btn { background: #FF9800; color: white; border: none; border-radius: 3px; padding: 4px 10px; cursor: pointer; font-size: 12px; text-decoration: none; display: inline-block; white-space: nowrap; }
+        .delete-btn { background: #f44336; color: white; border: none; border-radius: 3px; padding: 4px 10px; cursor: pointer; font-size: 12px; white-space: nowrap; }
+        .action-cell { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; white-space: nowrap; }
         .daily-cell { font-size: 12px; }
     </style>
 </head>
@@ -90,7 +92,7 @@
                     <th>領収月日</th>
                     <th>領収書No</th>
                     <th>備考</th>
-                    <th>修正</th>
+                    <th>操作</th>
                 </tr>
             </thead>
             <tbody>
@@ -124,7 +126,7 @@
                     <!-- 備考（編集可能） -->
                     <td>
                         <form th:action="@{/person/working-ledger/update-remarks}" method="post"
-                              style="display:flex;gap:4px;align-items:center;">
+                              style="display:flex;gap:4px;align-items:center;flex-wrap:nowrap;white-space:nowrap;">
                             <input type="hidden" name="detailId" th:value="${row.detail.id}">
                             <input type="hidden" name="personId" th:value="${person.id}">
                             <input type="text" class="remarks-input" name="remarks"
@@ -132,9 +134,18 @@
                             <button type="submit" class="save-btn">保存</button>
                         </form>
                     </td>
-                    <!-- 修正ボタン -->
+                    <!-- 操作（修正・削除） -->
                     <td>
-                        <a th:href="@{/person/sales(personId=${row.personId})}" class="edit-btn">✏ 修正</a>
+                        <div class="action-cell">
+                            <a th:href="@{/person/sales(personId=${row.personId})}" class="edit-btn">✏ 修正</a>
+                            <form th:action="@{/person/working-ledger/delete-detail}" method="post"
+                                  style="display:inline;"
+                                  onsubmit="return confirm('この稼働履歴を削除します。よろしいですか？\nこの操作は元に戻せません。');">
+                                <input type="hidden" name="detailId" th:value="${row.detail.id}">
+                                <input type="hidden" name="personId" th:value="${person.id}">
+                                <button type="submit" class="delete-btn">🗑 削除</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
             </tbody>

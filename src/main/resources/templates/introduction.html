@@ -211,9 +211,9 @@
         <div class="row3">
             <div class="fg"><label>賃金形態</label>
                 <div class="cbg">
-                    <label><input type="radio" name="wageType" value="時給" checked onchange="update()"> 時給</label>
-                    <label><input type="radio" name="wageType" value="日給" onchange="update()"> 日給</label>
-                    <label><input type="radio" name="wageType" value="月給" onchange="update()"> 月給</label>
+                    <label><input type="radio" name="wageType" value="時給" checked onchange="applyWageDefault()"> 時給</label>
+                    <label><input type="radio" name="wageType" value="日給" onchange="applyWageDefault()"> 日給</label>
+                    <label><input type="radio" name="wageType" value="月給" onchange="applyWageDefault()"> 月給</label>
                 </div>
             </div>
             <div class="fg"><label>時間外手当（円）</label><input type="number" id="overtimeWage" placeholder="例：1500" oninput="update()"></div>
@@ -517,6 +517,16 @@ function updateRemarks(){
     document.querySelectorAll('.d-remarks').forEach(function(el){
         el.innerHTML = htmlLines;
     });
+}
+function applyWageDefault(){
+    var wt = gc('wageType');
+    if(wt==='日給' || wt==='月給'){
+        if(!g('baseWageLine1').value.trim()) g('baseWageLine1').value='円';
+    } else if(wt==='時給'){
+        if(!g('baseWageLine1').value.trim()) g('baseWageLine1').value='～時間　/　円';
+        if(!g('baseWageLine2').value.trim()) g('baseWageLine2').value='時間～　/　円';
+    }
+    update();
 }
 function updateBaseWage(){
     var lines = [
