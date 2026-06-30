@@ -211,21 +211,18 @@
         <div class="fg"><label>賃金形態・基本給</label>
             <div style="display:flex;flex-direction:column;gap:6px;">
                 <div style="display:flex;align-items:center;gap:8px;">
-                    <label style="white-space:nowrap;margin:0;"><input type="radio" name="wageType" value="時給" checked onchange="applyWageDefault()"> 時給</label>
+                    <label style="white-space:nowrap;margin:0;"><input type="checkbox" id="wageTypeHourly" checked onchange="applyWageDefault()"> 時給</label>
                     <input type="text" id="hourlyLine1" placeholder="例：～8時間　/　1200円" oninput="updateBaseWage()">
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;margin-left:60px;">
                     <input type="text" id="hourlyLine2" placeholder="例：8時間～　/　1500円" oninput="updateBaseWage()">
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;">
-                    <label style="white-space:nowrap;margin:0;"><input type="radio" name="wageType" value="日給" onchange="applyWageDefault()"> 日給</label>
+                    <label style="white-space:nowrap;margin:0;"><input type="checkbox" id="wageTypeDaily" onchange="applyWageDefault()"> 日給</label>
                     <input type="text" id="dailyLine1" placeholder="例：8,000円" oninput="updateBaseWage()">
                 </div>
-                <div style="display:flex;align-items:center;gap:8px;">
-                    <label style="white-space:nowrap;margin:0;"><input type="radio" name="wageType" value="月給" onchange="applyWageDefault()"> 月給</label>
-                    <input type="text" id="monthlyLine1" placeholder="例：200,000円" oninput="updateBaseWage()">
-                </div>
             </div>
+            <input type="hidden" id="wageTypeField">
             <input type="hidden" id="baseWageField">
         </div>
         <div class="row3">
@@ -514,35 +511,42 @@ function updateRemarks(){
         el.innerHTML = htmlLines;
     });
 }
+function getWageTypeList(){
+    var list=[];
+    if(g('wageTypeHourly').checked) list.push('時給');
+    if(g('wageTypeDaily').checked)  list.push('日給');
+    return list;
+}
 function applyWageDefault(){
-    var wt = gc('wageType');
-    if(wt==='時給'){
+    if(g('wageTypeHourly').checked){
         if(!g('hourlyLine1').value.trim()) g('hourlyLine1').value='～時間　/　円';
         if(!g('hourlyLine2').value.trim()) g('hourlyLine2').value='時間～　/　円';
-    } else if(wt==='日給'){
+    }
+    if(g('wageTypeDaily').checked){
         if(!g('dailyLine1').value.trim()) g('dailyLine1').value='円';
-    } else if(wt==='月給'){
-        if(!g('monthlyLine1').value.trim()) g('monthlyLine1').value='円';
     }
     update();
 }
 function updateBaseWage(){
-    var wt = gc('wageType');
     var lines = [];
-    if(wt==='時給'){
-        lines = [g('hourlyLine1').value, g('hourlyLine2').value];
-    } else if(wt==='日給'){
-        lines = [g('dailyLine1').value];
-    } else if(wt==='月給'){
-        lines = [g('monthlyLine1').value];
+    if(g('wageTypeHourly').checked){
+        lines.push(g('hourlyLine1').value);
+        lines.push(g('hourlyLine2').value);
+    }
+    if(g('wageTypeDaily').checked){
+        lines.push(g('dailyLine1').value);
     }
     lines = lines.filter(function(v){ return v.trim() !== ''; });
     var combined = lines.join('\n');
     g('baseWageField').value = combined;
+    g('wageTypeField').value = getWageTypeList().join('・');
     // PDF表示用：改行を<br>に変換してsetAll
     var htmlLines = lines.join('<br>');
     document.querySelectorAll('.d-base-wage').forEach(function(el){
         el.innerHTML = htmlLines;
+    });
+    document.querySelectorAll('.d-wage-type').forEach(function(el){
+        el.textContent = getWageTypeList().join('・');
     });
 }
 function getDow(cls){return Array.from(document.querySelectorAll('.'+cls+':checked')).map(function(c){return c.value;}).join('・');}
@@ -631,7 +635,6 @@ function update(){
     setAll('d-overtime-type',gc('overtime'));
     setAll('d-break',       breakStr);
     setAll('d-holiday',     hol.join('　'));
-    setAll('d-wage-type',   gc('wageType'));
     setAll('d-overtime-wage',ow);
     setAll('d-transport',   tr);
     setAll('d-raise',       gc('raise'));
@@ -679,11 +682,10 @@ function collectFormData(){
         holHoliday:     g('holHoliday').checked,
         holOther:       g('holOther').checked,
         holDow:         getDow('hol-dow'),
-        wageType:       gc('wageType'),
+        wageType:       getWageTypeList().join('・'),
         hourlyLine1:    g('hourlyLine1').value,
         hourlyLine2:    g('hourlyLine2').value,
         dailyLine1:     g('dailyLine1').value,
-        monthlyLine1:   g('monthlyLine1').value,
         baseWage:       g('baseWageField').value,
         overtimeWage:   g('overtimeWage').value,
         transNone:      g('transNone').checked,
@@ -787,29 +789,29 @@ function restoreFormData(fd){
         document.querySelectorAll('.hol-dow').forEach(function(cb){if(hdows.indexOf(cb.value)>=0)cb.checked=true;});
     }
 
-    if(data.wageType) document.querySelectorAll('input[name=wageType]').forEach(function(r){if(r.value===data.wageType)r.checked=true;});
-    if(data.hourlyLine1)  g('hourlyLine1').value=data.hourlyLine1;
-    if(data.hourlyLine2)  g('hourlyLine2').value=data.hourlyLine2;
-    if(data.dailyLine1)   g('dailyLine1').value=data.dailyLine1;
-    if(data.monthlyLine1) g('monthlyLine1').value=data.monthlyLine1;
-    if(!data.hourlyLine1 && !data.dailyLine1 && !data.monthlyLine1){
+    var wageTypes = (data.wageType || '').split('・').filter(function(v){ return v; });
+    g('wageTypeHourly').checked = wageTypes.indexOf('時給') >= 0;
+    g('wageTypeDaily').checked  = wageTypes.indexOf('日給') >= 0;
+    var dailyOnly = wageTypes.indexOf('日給') >= 0 && wageTypes.indexOf('時給') < 0;
+
+    if(data.hourlyLine1) g('hourlyLine1').value=data.hourlyLine1;
+    if(data.hourlyLine2) g('hourlyLine2').value=data.hourlyLine2;
+    if(data.dailyLine1)  g('dailyLine1').value=data.dailyLine1;
+    if(!data.hourlyLine1 && !data.dailyLine1){
         if(data.baseWageLine1){
             // 旧データ（賃金形態に関わらず共通の3行入力欄だった時期のデータ）との後方互換
-            if(data.wageType==='日給') g('dailyLine1').value=data.baseWageLine1;
-            else if(data.wageType==='月給') g('monthlyLine1').value=data.baseWageLine1;
-            else { g('hourlyLine1').value=data.baseWageLine1; if(data.baseWageLine2) g('hourlyLine2').value=data.baseWageLine2; }
+            if(dailyOnly){ g('dailyLine1').value=data.baseWageLine1; }
+            else { g('hourlyLine1').value=data.baseWageLine1; if(data.baseWageLine2) g('hourlyLine2').value=data.baseWageLine2; g('wageTypeHourly').checked=true; }
         } else if(data.wageLine1){
             // さらに古いデータ（賃金形態自体が3行自由入力だった時期）との後方互換
-            if(data.wageType==='日給') g('dailyLine1').value=data.wageLine1;
-            else if(data.wageType==='月給') g('monthlyLine1').value=data.wageLine1;
-            else { g('hourlyLine1').value=data.wageLine1; if(data.wageLine2) g('hourlyLine2').value=data.wageLine2; }
+            if(dailyOnly){ g('dailyLine1').value=data.wageLine1; }
+            else { g('hourlyLine1').value=data.wageLine1; if(data.wageLine2) g('hourlyLine2').value=data.wageLine2; g('wageTypeHourly').checked=true; }
         } else if(data.baseWage){
             // 最古データ（基本給が単一の数値だった時期）との後方互換
             var bwNum=parseInt(data.baseWage);
             var bwTxt=(isNaN(bwNum)?data.baseWage:bwNum.toLocaleString())+'　円';
-            if(data.wageType==='日給') g('dailyLine1').value=bwTxt;
-            else if(data.wageType==='月給') g('monthlyLine1').value=bwTxt;
-            else g('hourlyLine1').value=bwTxt;
+            if(dailyOnly){ g('dailyLine1').value=bwTxt; }
+            else { g('hourlyLine1').value=bwTxt; g('wageTypeHourly').checked=true; }
         }
     }
     if(data.overtimeWage) g('overtimeWage').value=data.overtimeWage;

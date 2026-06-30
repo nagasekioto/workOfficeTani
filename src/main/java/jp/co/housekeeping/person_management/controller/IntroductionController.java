@@ -201,11 +201,13 @@ public class IntroductionController {
             if (node.path("holHoliday").asBoolean()) holList.add("祝日");
             if (node.path("holOther").asBoolean()) holList.add("その他");
             fd.put("holiday", String.join("　", holList));
-            // 賃金形態（時給/日給/月給）
-            String wageTypeVal = node.path("wageType").asText("");
-            if (!wageTypeVal.equals("時給") && !wageTypeVal.equals("日給") && !wageTypeVal.equals("月給")) {
-                wageTypeVal = "";
+            // 賃金形態（時給・日給。複数選択可。月給は廃止）
+            String wageTypeRaw = node.path("wageType").asText("");
+            List<String> wageTypeParts = new ArrayList<>();
+            for (String p : wageTypeRaw.split("・")) {
+                if (p.equals("時給") || p.equals("日給")) wageTypeParts.add(p);
             }
+            String wageTypeVal = String.join("・", wageTypeParts);
             fd.put("wageType", wageTypeVal);
             // 基本給（時給/日給/月給ごとの専用欄／旧データ互換）
             String wageDetail;
@@ -490,12 +492,13 @@ public class IntroductionController {
             if (fd.path("holOther").asBoolean())     holSb.append("その他");
             addPdfRow(tbl, "休　日", holSb.toString().trim(), boldFont, normalFont);
 
-            // 賃金形態（時給/日給/月給）
-            String wageTypeVal = fd.path("wageType").asText("時給");
-            if (!wageTypeVal.equals("時給") && !wageTypeVal.equals("日給") && !wageTypeVal.equals("月給")) {
-                // 旧データ（賃金形態が3行自由入力だった時期のデータ）はラジオ値とみなさない
-                wageTypeVal = "時給";
+            // 賃金形態（時給・日給。複数選択可。月給は廃止）
+            String wageTypeRaw = fd.path("wageType").asText("時給");
+            List<String> wageTypeParts = new ArrayList<>();
+            for (String p : wageTypeRaw.split("・")) {
+                if (p.equals("時給") || p.equals("日給")) wageTypeParts.add(p);
             }
+            String wageTypeVal = wageTypeParts.isEmpty() ? "時給" : String.join("・", wageTypeParts);
             addPdfRow(tbl, "賃金形態", wageTypeVal, boldFont, normalFont);
 
             // 基本給（時給/日給/月給ごとの専用欄／旧データ互換）
