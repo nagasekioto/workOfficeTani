@@ -448,27 +448,35 @@ public class PersonController {
         doc.add(hdr);
 
         // ── メイン表 ──
-        // 列: 受付年月日|有効期間|取扱状況(紹介年月日・求人者氏名・採否・採用年月日)|備考|労働契約|転職勧奨禁止期間|離職状況|返戻金
+        // 列: 受付年月日|有効期間|取扱状況(紹介年月日・求人者氏名・採否・採用年月日)|備考|
+        //     取扱状況(労働契約・無期雇用就職者(転職勧奨禁止期間・離職状況(6カ月以内または不明・返戻金)))
         float[] colW = {1.6f, 1.8f, 1.6f, 1.9f, 0.7f, 1.6f, 1.6f, 0.9f, 1.4f, 1.4f, 0.7f};
         PdfPTable tbl = new PdfPTable(colW);
         tbl.setWidthPercentage(100);
         tbl.setSpacingBefore(2);
 
-        // ヘッダー行1（11列）
-        addPTh(tbl, "受付年月日",   bold6, 1, 2, 20f);
-        addPTh(tbl, "有効期間",     bold6, 1, 2, 20f);
-        addPTh(tbl, "取扱状況",     bold6, 4, 1, 15f);
-        addPTh(tbl, "備考",         bold6, 1, 2, 20f);
-        addPTh(tbl, "労働\n契約",  bold6, 1, 2, 20f);
-        addPTh(tbl, "転職勧奨禁止期間\n（2018.1以降）", bold5, 1, 2, 20f);
-        addPTh(tbl, "離職状況",     bold6, 1, 2, 20f);
-        addPTh(tbl, "返戻金",       bold6, 1, 2, 20f);
+        // ヘッダー行1（11列。受付年月日・有効期間・備考はrowspan4で4段分を貫通）
+        addPTh(tbl, "受付年月日", bold6, 1, 4, 15f);
+        addPTh(tbl, "有効期間",   bold6, 1, 4, 15f);
+        addPTh(tbl, "取扱状況",   bold6, 4, 1, 15f);
+        addPTh(tbl, "備考",       bold6, 1, 4, 15f);
+        addPTh(tbl, "取扱状況",   bold6, 4, 1, 15f);
 
-        // ヘッダー行2（取扱状況サブ）
-        addPThSub(tbl, "紹介年月日", bold6);
-        addPThSub(tbl, "求人者氏名", bold6);
-        addPThSub(tbl, "採否",       bold6);
-        addPThSub(tbl, "採用年月日", bold6);
+        // ヘッダー行2：紹介年月日・求人者氏名・採否・採用年月日（rowspan3）｜労働契約（rowspan3）｜無期雇用就職者
+        addPTh(tbl, "紹介年月日", bold6, 1, 3, 15f);
+        addPTh(tbl, "求人者氏名", bold6, 1, 3, 15f);
+        addPTh(tbl, "採否",       bold6, 1, 3, 15f);
+        addPTh(tbl, "採用年月日", bold6, 1, 3, 15f);
+        addPTh(tbl, "労働\n契約", bold6, 1, 3, 15f);
+        addPTh(tbl, "無期雇用就職者", bold6, 3, 1, 15f);
+
+        // ヘッダー行3：転職勧奨禁止期間（rowspan2）｜離職状況
+        addPTh(tbl, "転職勧奨禁止期間\n（2018.1以降）", bold5, 1, 2, 15f);
+        addPTh(tbl, "離職状況", bold6, 2, 1, 15f);
+
+        // ヘッダー行4：6カ月以内または不明｜返戻金
+        addPThSub(tbl, "6カ月以内\nまたは不明", bold5);
+        addPThSub(tbl, "返戻\n金", bold6);
 
         // データ行（実データ + 空行で計38行）
         int DATA_ROWS = 38;
@@ -498,7 +506,7 @@ public class PersonController {
             addPTdC(tbl, pnvl(row.remarks),   norm6);  // 備考
             addPTdC(tbl, laborContract,       norm6);  // 労働契約
             addPTdC(tbl, tenshokuPeriod,      norm6);  // 転職勧奨禁止期間
-            addPTdC(tbl, "",                  norm6);  // 離職状況
+            addPTdC(tbl, "",                  norm6);  // 離職状況（6カ月以内または不明）
             addPTdC(tbl, "",                  norm6);  // 返戻金
             filled++;
         }
