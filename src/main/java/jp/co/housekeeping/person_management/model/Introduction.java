@@ -16,6 +16,11 @@ public class Introduction {
     private String formData;
     private LocalDateTime createdAt;
 
+    // 求人管理簿（1-2-2）用の入力項目
+    private String empStatus;     // 雇用期間（状況）
+    private String hireResult;    // 採否
+    private String ledgerRemarks; // 備考
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getRefNo() { return refNo; }
@@ -32,4 +37,10 @@ public class Introduction {
     public void setFormData(String formData) { this.formData = formData; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public String getEmpStatus() { return empStatus; }
+    public void setEmpStatus(String empStatus) { this.empStatus = empStatus; }
+    public String getHireResult() { return hireResult; }
+    public void setHireResult(String hireResult) { this.hireResult = hireResult; }
+    public String getLedgerRemarks() { return ledgerRemarks; }
+    public void setLedgerRemarks(String ledgerRemarks) { this.ledgerRemarks = ledgerRemarks; }
 }

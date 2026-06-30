@@ -37,6 +37,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import jp.co.housekeeping.person_management.model.Customer;
 import jp.co.housekeeping.person_management.model.CustomerRequest;
@@ -72,11 +73,17 @@ public class CustomerController {
         for (Introduction intro : introductionRepository.findAll()) {
             if (!customerId.equals(intro.getCustomerId())) continue;
             KaijinRow row = new KaijinRow();
+            row.introId = intro.getId();
             row.introDate = intro.getIntroDate();
             row.introductionDate = intro.getIntroDate() != null ? intro.getIntroDate().toString() : "";
             row.personId = intro.getPersonId();
             row.customerId = intro.getCustomerId();
             row.formData = intro.getFormData() != null ? intro.getFormData() : "";
+            if (intro.getEmpStatus() != null && !intro.getEmpStatus().isBlank()) {
+                row.empStatus = intro.getEmpStatus();
+            }
+            row.hireResult = nvl(intro.getHireResult());
+            row.remarks = nvl(intro.getLedgerRemarks());
             if (intro.getPersonId() != null) {
                 personRepository.findById(intro.getPersonId())
                     .ifPresent(p -> row.personName = p.getLastNameKanji() + " " + p.getFirstNameKanji());
@@ -327,6 +334,37 @@ public class CustomerController {
             model.addAttribute("emptyRows", Math.max(5, 10 - rows.size()));
         }
         return "customer-report";
+    }
+
+    // ─── 1-2-2 紹介履歴の採否・雇用期間（状況）・備考を保存 ──
+    @PostMapping("/report/save-row-status")
+    @ResponseBody
+    public String saveRowStatus(@RequestParam Long customerId,
+                                @RequestParam(required = false) Long[] introIds,
+                                @RequestParam(required = false) String[] empStatusList,
+                                @RequestParam(required = false) String[] hireResultList,
+                                @RequestParam(required = false) String[] remarksList,
+                                HttpSession session) {
+        if (!checkAuth(session)) return "UNAUTHORIZED";
+        if (introIds == null) return "OK";
+
+        for (int i = 0; i < introIds.length; i++) {
+            Long introId = introIds[i];
+            if (introId == null) continue;
+            introductionRepository.findById(introId).ifPresent(intro -> {
+                if (empStatusList != null && i < empStatusList.length) {
+                    intro.setEmpStatus(empStatusList[i]);
+                }
+                if (hireResultList != null && i < hireResultList.length) {
+                    intro.setHireResult(hireResultList[i]);
+                }
+                if (remarksList != null && i < remarksList.length) {
+                    intro.setLedgerRemarks(remarksList[i]);
+                }
+                introductionRepository.save(intro);
+            });
+        }
+        return "OK";
     }
 
     // ─── 1-2-2 求人管理簿 PDF出力 ──────────────────────────
@@ -640,6 +678,7 @@ public class CustomerController {
     private String nvl(String s) { return s != null ? s : ""; }
 
     public static class KaijinRow {
+        public Long introId;
         public String introductionDate = "";
         public LocalDate introDate;
         public String personName = "";
