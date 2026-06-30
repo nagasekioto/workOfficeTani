@@ -387,6 +387,7 @@ public class CustomerController {
         Font norm7   = new Font(bf, 7);
         Font norm6   = new Font(bf, 6);
         Font bold6   = new Font(bf, 6,  Font.BOLD);
+        Font bold5   = new Font(bf, 5,  Font.BOLD);
 
         // ── タイトル ──
         PdfPTable titleTbl = new PdfPTable(1);
@@ -456,7 +457,7 @@ public class CustomerController {
         // ── メイン表 ──
         // 列: 受付年月日|有効期間|求人数|就業場所|雇用期間|賃金(給・円)|紹介年月日|求職者氏名|採否|採用年月日|備考|
         //     取扱情報(労働契約｜無期雇用就職者(転職勧奨禁止期間/6カ月以内または不明/返戻金))
-        float[] colW = {1.6f, 1.8f, 0.6f, 1.3f, 1.8f, 0.6f, 0.7f, 1.7f, 2.0f, 0.7f, 1.7f, 1.6f, 0.9f, 1.0f, 1.0f, 0.7f};
+        float[] colW = {1.5f, 1.7f, 0.5f, 1.1f, 2.3f, 0.6f, 1.5f, 1.5f, 1.7f, 0.6f, 1.5f, 1.3f, 0.8f, 1.3f, 1.3f, 0.6f};
         PdfPTable tbl = new PdfPTable(colW);
         tbl.setWidthPercentage(100);
         tbl.setSpacingBefore(2);
@@ -482,8 +483,8 @@ public class CustomerController {
         addTh(tbl, "無期雇用就職者",    bold6, 3, 1, 15f);
 
         // ヘッダー行3（無期雇用就職者サブ：転職勧奨禁止期間・6カ月以内または不明・返戻金）
-        addThSub(tbl, "転職勧奨\n禁止期間", bold6);
-        addThSub(tbl, "6カ月以内\nまたは不明", bold6);
+        addThSub(tbl, "転職勧奨禁止期間", bold5);
+        addThSub(tbl, "6カ月以内\nまたは不明", bold5);
         addThSub(tbl, "返戻\n金", bold6);
 
         // データ行（実データ + 空行で計38行）
@@ -497,7 +498,7 @@ public class CustomerController {
             String introDateStr = introDate != null ? formatDot(introDate) : "";
             String validPeriod  = formatValidPeriod(introDate);
             String workPeriod   = (introDate != null ? formatDot(introDate) : "")
-                    + "　〜　" + nvl(row.empStatus);
+                    + "〜" + nvl(row.empStatus);
 
             // 紹介状一覧（1-6-2）の賃金形態・基本給を参照（その行自身の紹介状データから直接取得）
             List<String[]> wageRows = extractWageRows(mapper, row.formData);
@@ -616,7 +617,7 @@ public class CustomerController {
         c.setColspan(colspan); c.setRowspan(rowspan);
         c.setBorder(Rectangle.BOX); c.setPadding(2);
         c.setHorizontalAlignment(Element.ALIGN_CENTER); c.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        c.setFixedHeight(h); c.setBackgroundColor(new BaseColor(220, 220, 220));
+        c.setMinimumHeight(h); c.setBackgroundColor(new BaseColor(220, 220, 220));
         t.addCell(c);
     }
 
@@ -624,7 +625,7 @@ public class CustomerController {
         PdfPCell c = new PdfPCell(new Phrase(text, f));
         c.setBorder(Rectangle.BOX); c.setPadding(1);
         c.setHorizontalAlignment(Element.ALIGN_CENTER); c.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        c.setFixedHeight(12f); c.setBackgroundColor(new BaseColor(230, 230, 230));
+        c.setMinimumHeight(12f); c.setBackgroundColor(new BaseColor(230, 230, 230));
         t.addCell(c);
     }
 
@@ -632,7 +633,7 @@ public class CustomerController {
         PdfPCell c = new PdfPCell(new Phrase(text != null ? text : "", f));
         c.setBorder(Rectangle.BOX); c.setPadding(1);
         c.setHorizontalAlignment(Element.ALIGN_CENTER); c.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        c.setFixedHeight(14f);
+        c.setMinimumHeight(14f);
         t.addCell(c);
     }
 
