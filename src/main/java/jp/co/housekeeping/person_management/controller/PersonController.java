@@ -1,10 +1,27 @@
 package jp.co.housekeeping.person_management.controller;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.Font;
+import com.itextpdf.text.PageSize;
+import com.itextpdf.text.Phrase;
+import com.itextpdf.text.Rectangle;
+import com.itextpdf.text.pdf.BaseFont;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -15,9 +32,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
+import jp.co.housekeeping.person_management.model.Introduction;
 import jp.co.housekeeping.person_management.model.Person;
 import jp.co.housekeeping.person_management.repository.CustomerRepository;
+import jp.co.housekeeping.person_management.repository.IntroductionRepository;
 import jp.co.housekeeping.person_management.repository.PersonRepository;
 import jp.co.housekeeping.person_management.repository.SalesDetailRepository;
 import jp.co.housekeeping.person_management.repository.SalesRepository;
@@ -30,6 +50,7 @@ public class PersonController {
     @Autowired private CustomerRepository customerRepository;
     @Autowired private SalesRepository salesRepository;
     @Autowired private SalesDetailRepository salesDetailRepository;
+    @Autowired private IntroductionRepository introductionRepository;
 
     private boolean checkAuth(HttpSession session) {
         return session.getAttribute("authenticated") != null;
@@ -260,25 +281,343 @@ public class PersonController {
             Person person = personRepository.findById(personId).orElse(null);
             model.addAttribute("selectedPerson", person);
 
-            List<jp.co.housekeeping.person_management.model.Sales> salesList =
-                salesRepository.findByPersonId(personId);
-            List<WorkingLedgerController.LedgerRow> rows = new ArrayList<>();
-            for (jp.co.housekeeping.person_management.model.Sales s : salesList) {
-                List<jp.co.housekeeping.person_management.model.SalesDetail> details =
-                    salesDetailRepository.findBySalesId(s.getId());
-                for (jp.co.housekeeping.person_management.model.SalesDetail d : details) {
-                    WorkingLedgerController.LedgerRow row = new WorkingLedgerController.LedgerRow();
-                    row.detail = d;
-                    row.sales = s;
-                    customerRepository.findById(d.getCustomerId() != null ? d.getCustomerId() : 0L)
-                        .ifPresent(c -> row.customerName = c.getLastNameKanji() + " " + c.getFirstNameKanji());
-                    rows.add(row);
-                }
-            }
+            List<PersonLedgerRow> rows = buildPersonRowsFromIntroductions(personId);
             model.addAttribute("rows", rows);
             model.addAttribute("emptyRows", Math.max(5, 10 - rows.size()));
         }
         return "person-shokuji-ledger";
+    }
+
+    // 紹介履歴行を「紹介状一覧（1-6-2）」のデータから構築する
+    private List<PersonLedgerRow> buildPersonRowsFromIntroductions(Long personId) {
+        List<PersonLedgerRow> rows = new ArrayList<>();
+        if (personId == null) return rows;
+
+        for (Introduction intro : introductionRepository.findAll()) {
+            if (!personId.equals(intro.getPersonId())) continue;
+            PersonLedgerRow row = new PersonLedgerRow();
+            row.introId = intro.getId();
+            row.introDate = intro.getIntroDate();
+            row.introductionDate = intro.getIntroDate() != null ? intro.getIntroDate().toString() : "";
+            row.customerId = intro.getCustomerId();
+            if (intro.getCustomerId() != null) {
+                customerRepository.findById(intro.getCustomerId())
+                    .ifPresent(c -> row.customerName = c.getLastNameKanji() + " " + c.getFirstNameKanji());
+            }
+            row.hireResult = nvl(intro.getHireResult());
+            row.remarks = nvl(intro.getLedgerRemarks());
+            rows.add(row);
+        }
+
+        rows.sort((a, b) -> {
+            if (a.introDate == null && b.introDate == null) return 0;
+            if (a.introDate == null) return 1;
+            if (b.introDate == null) return -1;
+            return a.introDate.compareTo(b.introDate);
+        });
+        return rows;
+    }
+
+    // ─── 1-1-4 求職管理簿 採否・備考の保存 ──────────────
+    @PostMapping("/shokuji-ledger/save-row-status")
+    @ResponseBody
+    public String saveShokujiRowStatus(@RequestParam Long personId,
+                                       @RequestParam(required = false) Long[] introIds,
+                                       @RequestParam(required = false) String[] hireResultList,
+                                       @RequestParam(required = false) String[] remarksList,
+                                       HttpSession session) {
+        if (!checkAuth(session)) return "UNAUTHORIZED";
+        if (introIds == null) return "OK";
+
+        for (int i = 0; i < introIds.length; i++) {
+            Long introId = introIds[i];
+            if (introId == null) continue;
+            final int idx = i;
+            introductionRepository.findById(introId).ifPresent(intro -> {
+                if (hireResultList != null && idx < hireResultList.length) {
+                    intro.setHireResult(hireResultList[idx]);
+                }
+                if (remarksList != null && idx < remarksList.length) {
+                    intro.setLedgerRemarks(remarksList[idx]);
+                }
+                introductionRepository.save(intro);
+            });
+        }
+        return "OK";
+    }
+
+    // ─── 1-1-4 求職管理簿 PDF出力 ──────────────────────────
+    @GetMapping("/shokuji-ledger/pdf")
+    public void shokujiLedgerPdf(@RequestParam(required = false) Long personId,
+                                 @RequestParam(required = false, defaultValue = "inline") String mode,
+                                 @RequestParam(required = false) String[] hireResultList,
+                                 @RequestParam(required = false) String[] remarksList,
+                                 HttpSession session, HttpServletResponse response)
+            throws IOException, DocumentException {
+        if (!checkAuth(session)) { response.sendError(401); return; }
+
+        Person person = personId != null
+                ? personRepository.findById(personId).orElse(null) : null;
+
+        List<PersonLedgerRow> rows = buildPersonRowsFromIntroductions(personId);
+        for (int i = 0; i < rows.size(); i++) {
+            PersonLedgerRow row = rows.get(i);
+            if (hireResultList != null && i < hireResultList.length && hireResultList[i] != null) {
+                row.hireResult = hireResultList[i];
+            }
+            if (remarksList != null && i < remarksList.length && remarksList[i] != null) {
+                row.remarks = remarksList[i];
+            }
+        }
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        buildPersonLedgerPdf(person, rows, baos);
+
+        response.setContentType("application/pdf");
+        boolean download = "download".equals(mode);
+        response.setHeader("Content-Disposition",
+                (download ? "attachment" : "inline") + "; filename=shokuji-ledger.pdf");
+        response.setContentLength(baos.size());
+        response.getOutputStream().write(baos.toByteArray());
+        response.getOutputStream().flush();
+    }
+
+    private void buildPersonLedgerPdf(Person p, List<PersonLedgerRow> rows, ByteArrayOutputStream baos)
+            throws DocumentException, IOException {
+
+        Document doc = new Document(PageSize.A4, 14, 14, 14, 14);
+        PdfWriter.getInstance(doc, baos);
+        doc.open();
+
+        BaseFont bf  = BaseFont.createFont("HeiseiMin-W3", "UniJIS-UCS2-H", BaseFont.NOT_EMBEDDED);
+        Font title   = new Font(bf, 14, Font.BOLD);
+        Font norm7   = new Font(bf, 7);
+        Font norm6   = new Font(bf, 6);
+        Font bold6   = new Font(bf, 6,  Font.BOLD);
+        Font bold5   = new Font(bf, 5,  Font.BOLD);
+
+        // ── タイトル ──
+        PdfPTable titleTbl = new PdfPTable(1);
+        titleTbl.setWidthPercentage(100);
+        titleTbl.setSpacingAfter(4);
+        PdfPCell titleCell = new PdfPCell(new Phrase("求　職　管　理　簿", title));
+        titleCell.setBorder(Rectangle.NO_BORDER);
+        titleCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        titleCell.setPaddingBottom(3);
+        titleTbl.addCell(titleCell);
+        doc.add(titleTbl);
+
+        // 電話番号：自宅電話番号を優先、無ければ携帯電話番号を使用
+        String personPhone = "";
+        if (p != null) {
+            String home = p.getHomePhone();
+            if (home != null && !home.isBlank() && !home.equals("-")) {
+                personPhone = home;
+            } else {
+                personPhone = pnvl(p.getMobilePhone());
+            }
+        }
+
+        // ── ヘッダー部（求職者情報｜取扱状況） ──
+        PdfPTable hdr = new PdfPTable(new float[]{3.5f, 2.5f});
+        hdr.setWidthPercentage(100);
+        hdr.setSpacingAfter(2);
+
+        // 左列: 求職者情報（氏名・〒・住所・電話番号・生年月日・希望職種の6行、各14f＝合計84f）
+        PdfPTable leftInfo = new PdfPTable(new float[]{1.0f, 1.2f, 4f});
+        leftInfo.setWidthPercentage(100);
+        addPHdrRow(leftInfo, "求職者", "氏名",
+                p != null ? (p.getLastNameKanji() + "　" + p.getFirstNameKanji()) : "", bold6, norm7, 6, 14f);
+        addPHdrRow2(leftInfo, "〒",
+                p != null && p.getPostalCode() != null ? p.getPostalCode() : "", bold6, norm7, 14f);
+        addPHdrRow2(leftInfo, "住所",
+                p != null ? pnvl(p.getAddress1()) + pnvl(p.getAddress2()) + pnvl(p.getAddress3()) : "", bold6, norm7, 14f);
+        addPHdrRow2(leftInfo, "電話番号", personPhone, bold6, norm7, 14f);
+        addPHdrRow2(leftInfo, "生年月日",
+                p != null && p.getBirthDate() != null ? p.getBirthDate().toString() : "", bold6, norm7, 14f);
+        addPHdrRow2(leftInfo, "希望職種",
+                p != null ? pnvl(p.getDesiredJob()) + (p.getDesiredType() != null && !p.getDesiredType().isBlank() ? "　/　" + p.getDesiredType() : "") : "",
+                bold6, norm7, 14f);
+        PdfPCell leftCell = new PdfPCell(leftInfo);
+        leftCell.setBorder(Rectangle.BOX); leftCell.setPadding(0);
+        hdr.addCell(leftCell);
+
+        // 右列: 取扱状況（求人管理簿[1-2-2]の右上ブロックを参照して構成）
+        // 取扱状況 ── 労働契約｜無期雇用就職者（転職勧奨禁止期間[2018.1以降]／離職状況[6カ月以内または不明]）｜返戻金
+        PdfPTable rightInfo = new PdfPTable(new float[]{1f, 1f, 1f, 1f});
+        rightInfo.setWidthPercentage(100);
+        PdfPCell rLabel = new PdfPCell(new Phrase("取扱状況", bold6));
+        rLabel.setColspan(4); rLabel.setBorder(Rectangle.BOX); rLabel.setPadding(2);
+        rLabel.setHorizontalAlignment(Element.ALIGN_CENTER); rLabel.setMinimumHeight(28f);
+        rightInfo.addCell(rLabel);
+
+        PdfPCell rouCell = new PdfPCell(new Phrase("労働\n契約", bold6));
+        rouCell.setRowspan(2); rouCell.setBorder(Rectangle.BOX); rouCell.setPadding(2);
+        rouCell.setHorizontalAlignment(Element.ALIGN_CENTER); rouCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        rouCell.setMinimumHeight(56f);
+        rightInfo.addCell(rouCell);
+
+        PdfPCell mukiLabel = new PdfPCell(new Phrase("無期雇用就職者", bold6));
+        mukiLabel.setColspan(2); mukiLabel.setBorder(Rectangle.BOX); mukiLabel.setPadding(2);
+        mukiLabel.setHorizontalAlignment(Element.ALIGN_CENTER); mukiLabel.setMinimumHeight(28f);
+        rightInfo.addCell(mukiLabel);
+
+        PdfPCell henreiCell = new PdfPCell(new Phrase("返戻\n金", bold6));
+        henreiCell.setRowspan(2); henreiCell.setBorder(Rectangle.BOX); henreiCell.setPadding(2);
+        henreiCell.setHorizontalAlignment(Element.ALIGN_CENTER); henreiCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        henreiCell.setMinimumHeight(56f);
+        rightInfo.addCell(henreiCell);
+
+        PdfPCell tenshokuCell = new PdfPCell(new Phrase("転職勧奨禁止期間\n（2018.1以降）", bold5));
+        tenshokuCell.setBorder(Rectangle.BOX); tenshokuCell.setPadding(2);
+        tenshokuCell.setHorizontalAlignment(Element.ALIGN_CENTER); tenshokuCell.setMinimumHeight(28f);
+        rightInfo.addCell(tenshokuCell);
+
+        PdfPCell rishokuCell = new PdfPCell(new Phrase("離職状況\n（6カ月以内\nまたは不明）", bold5));
+        rishokuCell.setBorder(Rectangle.BOX); rishokuCell.setPadding(2);
+        rishokuCell.setHorizontalAlignment(Element.ALIGN_CENTER); rishokuCell.setMinimumHeight(28f);
+        rightInfo.addCell(rishokuCell);
+
+        PdfPCell rCell = new PdfPCell(rightInfo);
+        rCell.setBorder(Rectangle.BOX); rCell.setPadding(0);
+        hdr.addCell(rCell);
+
+        doc.add(hdr);
+
+        // ── 希望職種行 ──
+        PdfPTable jobRow = new PdfPTable(new float[]{1.2f, 9f});
+        jobRow.setWidthPercentage(100);
+        jobRow.setSpacingAfter(2);
+        PdfPCell jLabel = new PdfPCell(new Phrase("希望職種", bold6));
+        jLabel.setBorder(Rectangle.BOX); jLabel.setPadding(2);
+        jLabel.setHorizontalAlignment(Element.ALIGN_CENTER); jLabel.setMinimumHeight(16f);
+        jobRow.addCell(jLabel);
+        String jobStr = p != null ? pnvl(p.getDesiredJob()) : "";
+        PdfPCell jVal = new PdfPCell(new Phrase(jobStr, norm7));
+        jVal.setBorder(Rectangle.BOX); jVal.setPadding(2); jVal.setMinimumHeight(16f);
+        jobRow.addCell(jVal);
+        doc.add(jobRow);
+
+        // ── メイン表 ──
+        // 列: 受付年月日|有効期間|取扱状況(紹介年月日・求人者氏名・採否・採用年月日)|備考|労働契約|転職勧奨禁止期間|離職状況|返戻金
+        float[] colW = {1.6f, 1.8f, 1.6f, 1.9f, 0.7f, 1.6f, 1.6f, 0.9f, 1.4f, 1.4f, 0.7f};
+        PdfPTable tbl = new PdfPTable(colW);
+        tbl.setWidthPercentage(100);
+        tbl.setSpacingBefore(2);
+
+        // ヘッダー行1（11列）
+        addPTh(tbl, "受付年月日",   bold6, 1, 2, 20f);
+        addPTh(tbl, "有効期間",     bold6, 1, 2, 20f);
+        addPTh(tbl, "取扱状況",     bold6, 4, 1, 15f);
+        addPTh(tbl, "備考",         bold6, 1, 2, 20f);
+        addPTh(tbl, "労働\n契約",  bold6, 1, 2, 20f);
+        addPTh(tbl, "転職勧奨禁止期間\n（2018.1以降）", bold5, 1, 2, 20f);
+        addPTh(tbl, "離職状況",     bold6, 1, 2, 20f);
+        addPTh(tbl, "返戻金",       bold6, 1, 2, 20f);
+
+        // ヘッダー行2（取扱状況サブ）
+        addPThSub(tbl, "紹介年月日", bold6);
+        addPThSub(tbl, "求人者氏名", bold6);
+        addPThSub(tbl, "採否",       bold6);
+        addPThSub(tbl, "採用年月日", bold6);
+
+        // データ行（実データ + 空行で計38行）
+        int DATA_ROWS = 38;
+        int filled = 0;
+        for (PersonLedgerRow row : rows) {
+            if (filled >= DATA_ROWS) break;
+
+            LocalDate introDate = row.introDate;
+            String introDateStr = introDate != null ? pformatDot(introDate) : "";
+            String validPeriod  = pformatValidPeriod(introDate);
+
+            addPTdC(tbl, introDateStr,        norm6);  // 受付年月日（紹介年月日と同じ）
+            addPTdC(tbl, validPeriod,         norm6);  // 有効期間
+            addPTdC(tbl, introDateStr,        norm6);  // 紹介年月日
+            addPTdC(tbl, row.customerName,    norm6);  // 求人者氏名
+            addPTdC(tbl, pnvl(row.hireResult),norm6);  // 採否
+            addPTdC(tbl, introDateStr,        norm6);  // 採用年月日（紹介年月日と同じ）
+            addPTdC(tbl, pnvl(row.remarks),   norm6);  // 備考
+            addPTdC(tbl, "有期",               norm6);  // 労働契約
+            addPTdC(tbl, "",                  norm6);  // 転職勧奨禁止期間
+            addPTdC(tbl, "",                  norm6);  // 離職状況
+            addPTdC(tbl, "",                  norm6);  // 返戻金
+            filled++;
+        }
+        for (int i = filled; i < DATA_ROWS; i++) {
+            for (int col = 0; col < 11; col++) {
+                addPTdC(tbl, (col == 1) ? "〜" : "", norm6);
+            }
+        }
+        doc.add(tbl);
+        doc.close();
+    }
+
+    // ─── 求職管理簿PDF用ヘルパー ──────────────────────────
+    private void addPHdrRow(PdfPTable t, String group, String label, String val, Font lf, Font vf, int rowspan, float rowHeight) {
+        PdfPCell g = new PdfPCell(new Phrase(group, lf));
+        g.setBorder(Rectangle.BOX); g.setPadding(2); g.setRowspan(rowspan);
+        g.setHorizontalAlignment(Element.ALIGN_CENTER); g.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        t.addCell(g);
+        PdfPCell lc = new PdfPCell(new Phrase(label, lf));
+        lc.setBorder(Rectangle.BOX); lc.setPadding(2); lc.setMinimumHeight(rowHeight); t.addCell(lc);
+        PdfPCell vc = new PdfPCell(new Phrase(val, vf));
+        vc.setBorder(Rectangle.NO_BORDER); vc.setPadding(2); vc.setMinimumHeight(rowHeight); t.addCell(vc);
+    }
+
+    private void addPHdrRow2(PdfPTable t, String label, String val, Font lf, Font vf, float rowHeight) {
+        PdfPCell lc = new PdfPCell(new Phrase(label, lf));
+        lc.setBorder(Rectangle.BOX); lc.setPadding(2); lc.setMinimumHeight(rowHeight); t.addCell(lc);
+        PdfPCell vc = new PdfPCell(new Phrase(val, vf));
+        vc.setBorder(Rectangle.NO_BORDER); vc.setPadding(2); vc.setMinimumHeight(rowHeight); t.addCell(vc);
+    }
+
+    private void addPTh(PdfPTable t, String text, Font f, int colspan, int rowspan, float h) {
+        PdfPCell c = new PdfPCell(new Phrase(text, f));
+        c.setColspan(colspan); c.setRowspan(rowspan);
+        c.setBorder(Rectangle.BOX); c.setPadding(2);
+        c.setHorizontalAlignment(Element.ALIGN_CENTER); c.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        c.setMinimumHeight(h); c.setBackgroundColor(new BaseColor(220, 220, 220));
+        t.addCell(c);
+    }
+
+    private void addPThSub(PdfPTable t, String text, Font f) {
+        PdfPCell c = new PdfPCell(new Phrase(text, f));
+        c.setBorder(Rectangle.BOX); c.setPadding(1);
+        c.setHorizontalAlignment(Element.ALIGN_CENTER); c.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        c.setMinimumHeight(12f); c.setBackgroundColor(new BaseColor(230, 230, 230));
+        t.addCell(c);
+    }
+
+    private void addPTdC(PdfPTable t, String text, Font f) {
+        PdfPCell c = new PdfPCell(new Phrase(text != null ? text : "", f));
+        c.setBorder(Rectangle.BOX); c.setPadding(1);
+        c.setHorizontalAlignment(Element.ALIGN_CENTER); c.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        c.setMinimumHeight(14f);
+        t.addCell(c);
+    }
+
+    private String pnvl(String s) { return s != null ? s : ""; }
+
+    private String pformatDot(LocalDate d) {
+        if (d == null) return "";
+        return d.getYear() + "." + d.getMonthValue() + "." + d.getDayOfMonth();
+    }
+
+    private String pformatValidPeriod(LocalDate introDate) {
+        if (introDate == null) return "";
+        YearMonth ym = YearMonth.from(introDate);
+        return pformatDot(ym.atDay(1)) + "〜" + pformatDot(ym.atEndOfMonth());
+    }
+
+    public static class PersonLedgerRow {
+        public Long introId;
+        public LocalDate introDate;
+        public String introductionDate = "";
+        public Long customerId;
+        public String customerName = "";
+        public String hireResult = "";
+        public String remarks = "";
     }
 
     // ─── 1-1-6 紹介状 ──────────────────────────────────

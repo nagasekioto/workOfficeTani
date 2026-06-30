@@ -25,7 +25,6 @@
         .status-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 15px; padding: 12px; background: #f9f9f9; border-radius: 5px; font-size: 13px; }
         .status-row .item label { font-size: 11px; color: #777; }
         .status-row .item span { font-weight: bold; }
-        .btn-print { background: #FF9800; color: white; border: none; border-radius: 5px; padding: 10px 24px; cursor: pointer; font-size: 15px; margin-top: 15px; }
         .empty-msg { text-align: center; padding: 40px; color: #999; }
     </style>
 </head>
@@ -87,25 +86,28 @@
                     <th>紹介年月日</th>
                     <th>求人者氏名</th>
                     <th>採否</th>
-                    <th>採用年月日</th>
-                    <th>契約</th>
-                    <th>６カ月以内<br>または不明</th>
-                    <th>返戻金</th>
+                    <th>備考</th>
                 </tr>
             </thead>
             <tbody>
-                <tr th:each="row : ${rows}" th:if="${rows != null and not #lists.isEmpty(rows)}">
-                    <td th:text="${row.detail.introductionDate}">-</td>
+                <tr th:each="row, iter : ${rows}" th:if="${rows != null and not #lists.isEmpty(rows)}"
+                    th:attr="data-intro-id=${row.introId}">
+                    <td th:text="${row.introductionDate}">-</td>
                     <td th:text="${row.customerName}">-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
+                    <td>
+                        <select class="row-hire-result" th:attr="data-idx=${iter.index}">
+                            <option value="" th:selected="${row.hireResult == null or row.hireResult.isEmpty()}">-</option>
+                            <option value="〇" th:selected="${row.hireResult == '〇'}">〇</option>
+                            <option value="×" th:selected="${row.hireResult == '×'}">×</option>
+                        </select>
+                    </td>
+                    <td>
+                        <input type="text" class="row-remarks" th:attr="data-idx=${iter.index}" th:value="${row.remarks}" style="width:140px;">
+                    </td>
                 </tr>
                 <!-- 空行（最低5行） -->
                 <tr th:each="i : ${emptyRows != null ? #numbers.sequence(1, emptyRows) : #numbers.sequence(1, 10)}" class="empty-row">
-                    <td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td>
+                    <td>&#160;</td><td>&#160;</td><td>&#160;</td><td>&#160;</td>
                 </tr>
             </tbody>
         </table>
@@ -141,7 +143,13 @@
             <div class="item"><label>離職状況</label><span>-</span></div>
         </div>
 
-        <button class="btn-print" onclick="window.print()">&#128438; 印刷</button>
+        <div style="display:flex;gap:10px;margin-top:15px;flex-wrap:wrap;">
+            <button onclick="saveRowStatus()" class="action-btn save">&#128190; 入力内容を保存</button>
+            <button onclick="viewPdf()" class="action-btn view">&#128196; 印刷内容確認</button>
+            <button onclick="printPdf()" class="action-btn print">&#128424; 印刷</button>
+            <button onclick="downloadPdf()" class="action-btn download">&#128190; 保存（PDF）</button>
+        </div>
+        <div id="saveMsg" style="display:none;margin-top:10px;padding:10px;background:#e8f5e9;color:#2e7d32;border-radius:5px;font-size:13px;">&#9989; 保存しました</div>
     </div>
 
     <div class="empty-msg" th:if="${selectedPerson == null}">
@@ -150,11 +158,67 @@
 </div>
 
 <style>
+.action-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: white; border: none; border-radius: 5px; padding: 10px 20px; cursor: pointer; font-size: 15px; min-width: 150px; box-sizing: border-box; }
+.action-btn.view { background: #4CAF50; }
+.action-btn.print { background: #FF9800; }
+.action-btn.download { background: #FF6F00; }
+.action-btn.save { background: #2196F3; }
 @media print {
-    .header, .select-area, .btn-print { display: none; }
+    .header, .select-area, .action-btn, #saveMsg { display: none; }
     body { background: white; padding: 0; }
     .ledger-card { box-shadow: none; }
 }
 </style>
+<script>
+function saveRowStatus() {
+    var id = new URLSearchParams(window.location.search).get('personId');
+    if (!id) return;
+    var params = new URLSearchParams();
+    params.append('personId', id);
+    document.querySelectorAll('tr[data-intro-id]').forEach(function(tr){
+        var introId    = tr.getAttribute('data-intro-id');
+        var hireResult = tr.querySelector('.row-hire-result');
+        var remarks    = tr.querySelector('.row-remarks');
+        params.append('introIds', introId || '');
+        params.append('hireResultList', hireResult ? hireResult.value : '');
+        params.append('remarksList', remarks ? remarks.value : '');
+    });
+    fetch('/person/shokuji-ledger/save-row-status', { method: 'POST', body: params })
+        .then(function(r){ return r.text(); })
+        .then(function(){
+            var msg = document.getElementById('saveMsg');
+            if (msg) {
+                msg.style.display = 'block';
+                setTimeout(function(){ msg.style.display = 'none'; }, 3000);
+            }
+        })
+        .catch(function(){ alert('保存に失敗しました'); });
+}
+function buildPdfParams() {
+    var id = new URLSearchParams(window.location.search).get('personId');
+    var params = new URLSearchParams();
+    if (id) params.append('personId', id);
+    document.querySelectorAll('.row-hire-result').forEach(function(el){ params.append('hireResultList', el.value); });
+    document.querySelectorAll('.row-remarks').forEach(function(el){ params.append('remarksList', el.value); });
+    return params;
+}
+function viewPdf() {
+    var params = buildPdfParams();
+    if (!params.get('personId')) return;
+    window.open('/person/shokuji-ledger/pdf?' + params.toString(), '_blank');
+}
+function downloadPdf() {
+    var params = buildPdfParams();
+    if (!params.get('personId')) return;
+    params.append('mode', 'download');
+    window.location.href = '/person/shokuji-ledger/pdf?' + params.toString();
+}
+function printPdf() {
+    var params = buildPdfParams();
+    if (!params.get('personId')) return;
+    var w = window.open('/person/shokuji-ledger/pdf?' + params.toString(), '_blank');
+    if (w) { w.onload = function() { w.print(); }; }
+}
+</script>
 </body>
 </html>
