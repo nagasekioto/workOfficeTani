@@ -43,6 +43,11 @@ public class MonthlySalesController {
 
         if (session.getAttribute("authenticated") == null) return "redirect:/login";
 
+        // 月未指定時は当月をデフォルト表示する
+        if (month == null || month.isBlank()) {
+            month = YearMonth.now().toString();
+        }
+
         model.addAttribute("selectedMonth",     month);
         model.addAttribute("rows",              new ArrayList<>());
         model.addAttribute("totalCount",        0);
@@ -50,8 +55,6 @@ public class MonthlySalesController {
         model.addAttribute("totalCommissionStr","0");
         model.addAttribute("totalFeesStr",      "0");
         model.addAttribute("errorMsg",          null);
-
-        if (month == null || month.isBlank()) return "sales-monthly";
 
         try {
             Map<Long, String> personMap = new HashMap<>();

@@ -207,13 +207,17 @@ public class IntroductionController {
                 wageTypeVal = "";
             }
             fd.put("wageType", wageTypeVal);
-            // 基本給（備考と同じ複数行構造／旧データ互換）
+            // 基本給（時給/日給/月給ごとの専用欄／旧データ互換）
             String wageDetail;
-            if (node.has("baseWageLine1")) {
+            if (node.has("hourlyLine1") || node.has("dailyLine1") || node.has("monthlyLine1")
+                    || node.has("baseWageLine1")) {
+                // 現行〜一世代前のデータ：保存時にbaseWageへ確定済みテキストが入っている
                 wageDetail = node.path("baseWage").asText("");
             } else if (node.has("wageLine1")) {
+                // さらに古いデータ（賃金形態が3行自由入力だった時期）
                 wageDetail = node.path("wageType").asText("");
             } else {
+                // 最古データ（基本給が単一の数値だった時期）
                 String oldBaseWage = node.path("baseWage").asText("");
                 wageDetail = oldBaseWage.isBlank() ? "" : oldBaseWage + "　円";
             }
@@ -494,9 +498,11 @@ public class IntroductionController {
             }
             addPdfRow(tbl, "賃金形態", wageTypeVal, boldFont, normalFont);
 
-            // 基本給（備考と同じ複数行構造／旧データ互換）
+            // 基本給（時給/日給/月給ごとの専用欄／旧データ互換）
             String baseWageDetail;
-            if (fd.has("baseWageLine1")) {
+            if (fd.has("hourlyLine1") || fd.has("dailyLine1") || fd.has("monthlyLine1")
+                    || fd.has("baseWageLine1")) {
+                // 現行〜一世代前のデータ：保存時にbaseWageへ確定済みテキストが入っている
                 baseWageDetail = fd.path("baseWage").asText("");
             } else if (fd.has("wageLine1")) {
                 // 旧データ（賃金形態が3行自由入力だった時期のデータ）
