@@ -427,6 +427,9 @@ public class CustomerController {
         Font norm6   = new Font(bf, 6);
         Font bold6   = new Font(bf, 6,  Font.BOLD);
         Font bold5   = new Font(bf, 5,  Font.BOLD);
+        Font infoVal = new Font(bf, 11, Font.BOLD);
+        Font infoLabel = new Font(bf, 10, Font.BOLD);
+        Font groupFont = new Font(bf, 18, Font.BOLD);
 
         // ── タイトル ──
         PdfPTable titleTbl = new PdfPTable(1);
@@ -456,28 +459,28 @@ public class CustomerController {
             }
         }
 
-        // 左列: 求人者情報（3列構成：グループ｜ラベル｜値）。各行14fで4行＝合計56f。
+        // 左列: 求人者情報（3列構成：グループ｜ラベル｜値）。各行18fで4行＝合計72f。
         PdfPTable leftInfo = new PdfPTable(new float[]{1.0f, 1.2f, 4f});
         leftInfo.setWidthPercentage(100);
         addHdrRow(leftInfo, "求人者", "氏名",
-                c != null ? (c.getLastNameKanji() + "　" + c.getFirstNameKanji()) : "", bold6, norm7, 4, 14f);
+                c != null ? (c.getLastNameKanji() + "　" + c.getFirstNameKanji()) : "", groupFont, infoLabel, infoVal, 4, 18f);
         addHdrRow2(leftInfo, "〒",
-                c != null && c.getPostalCode() != null ? c.getPostalCode() : "", bold6, norm7, 14f);
+                c != null && c.getPostalCode() != null ? c.getPostalCode() : "", infoLabel, infoVal, 18f);
         addHdrRow2(leftInfo, "住所",
-                c != null ? nvl(c.getAddress1()) + nvl(c.getAddress2()) : "", bold6, norm7, 14f);
-        addHdrRow2(leftInfo, "電話番号", customerPhone, bold6, norm7, 14f);
+                c != null ? nvl(c.getAddress1()) + nvl(c.getAddress2()) : "", infoLabel, infoVal, 18f);
+        addHdrRow2(leftInfo, "電話番号", customerPhone, infoLabel, infoVal, 18f);
         PdfPCell leftCell = new PdfPCell(leftInfo);
         leftCell.setBorder(Rectangle.BOX); leftCell.setPadding(0);
         hdr.addCell(leftCell);
 
-        // 中列: 連絡担当者（氏名・電話番号を同じ高さ28fにし、合計56fで求人者欄と揃える）。
+        // 中列: 連絡担当者（氏名・電話番号を同じ高さ36fにし、合計72fで求人者欄と揃える）。
         // 氏名＝担当者名、電話番号＝担当者電話番号を表示。
         String staffName  = c != null ? nvl(c.getStaffName())  : "";
         String staffPhone = c != null ? nvl(c.getStaffPhone()) : "";
         PdfPTable midInfo = new PdfPTable(new float[]{1.0f, 1.2f, 3f});
         midInfo.setWidthPercentage(100);
-        addHdrRow(midInfo, "連絡\n担当者", "氏名", staffName, bold6, norm7, 2, 28f);
-        addHdrRow2(midInfo, "電話番号", staffPhone, bold6, norm7, 28f);
+        addHdrRow(midInfo, "連絡\n担当者", "氏名", staffName, groupFont, infoLabel, infoVal, 2, 36f);
+        addHdrRow2(midInfo, "電話番号", staffPhone, infoLabel, infoVal, 36f);
         PdfPCell midCell = new PdfPCell(midInfo);
         midCell.setBorder(Rectangle.BOX); midCell.setPadding(0);
         hdr.addCell(midCell);
@@ -634,8 +637,8 @@ public class CustomerController {
 
     // ─── PDF ヘルパー ────────────────────────────────────────────
 
-    private void addHdrRow(PdfPTable t, String group, String label, String val, Font lf, Font vf, int rowspan, float rowHeight) {
-        PdfPCell g = new PdfPCell(new Phrase(group, lf));
+    private void addHdrRow(PdfPTable t, String group, String label, String val, Font gf, Font lf, Font vf, int rowspan, float rowHeight) {
+        PdfPCell g = new PdfPCell(new Phrase(group, gf));
         g.setBorder(Rectangle.BOX); g.setPadding(2); g.setRowspan(rowspan);
         g.setHorizontalAlignment(Element.ALIGN_CENTER); g.setVerticalAlignment(Element.ALIGN_MIDDLE);
         t.addCell(g);
