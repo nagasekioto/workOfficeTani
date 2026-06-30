@@ -36,6 +36,7 @@ public class Customer {
 
     // ─── 担当者 ──────────────────────────────
     private String staffName;       // 担当者名
+    private String staffPhone;      // 担当者電話番号
     private String staffNotes;      // 担当者備考
 
     // ─── 仕事内容（複数可、カンマ区切り） ───
@@ -106,6 +107,8 @@ public class Customer {
     public void setMobilePhone(String v) { this.mobilePhone = v; }
     public String getStaffName() { return staffName; }
     public void setStaffName(String v) { this.staffName = v; }
+    public String getStaffPhone() { return staffPhone; }
+    public void setStaffPhone(String v) { this.staffPhone = v; }
     public String getStaffNotes() { return staffNotes; }
     public void setStaffNotes(String v) { this.staffNotes = v; }
     public String getJobContents() { return jobContents; }

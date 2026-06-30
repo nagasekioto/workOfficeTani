@@ -54,6 +54,7 @@ public class DatabaseMigrationRunner implements ApplicationRunner {
 
             // ─── customers テーブル拡張 ───────────────────────
             stmt.execute("ALTER TABLE customers ADD COLUMN IF NOT EXISTS staff_name TEXT");
+            stmt.execute("ALTER TABLE customers ADD COLUMN IF NOT EXISTS staff_phone TEXT");
             stmt.execute("ALTER TABLE customers ADD COLUMN IF NOT EXISTS staff_notes TEXT");
             stmt.execute("ALTER TABLE customers ADD COLUMN IF NOT EXISTS job_contents TEXT");
             stmt.execute("ALTER TABLE customers ADD COLUMN IF NOT EXISTS freq_type TEXT");

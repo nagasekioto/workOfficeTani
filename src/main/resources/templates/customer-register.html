@@ -157,6 +157,10 @@
                     <input type="text" th:field="*{staffName}" placeholder="例：田中 花子">
                 </div>
                 <div class="form-group">
+                    <label>担当者電話番号</label>
+                    <input type="text" th:field="*{staffPhone}" placeholder="例：03-1234-5678" onblur="formatPhone(this)">
+                </div>
+                <div class="form-group">
                     <label>担当者備考</label>
                     <textarea th:field="*{staffNotes}" placeholder="担当者に関する特記事項"></textarea>
                 </div>
