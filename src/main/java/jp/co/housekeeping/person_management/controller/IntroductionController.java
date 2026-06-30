@@ -203,6 +203,17 @@ public class IntroductionController {
             fd.put("holiday", String.join("　", holList));
             fd.put("wageType", node.path("wageType").asText(""));
             fd.put("baseWage", node.path("baseWage").asText(""));
+            // 賃金形態（備考と同じ複数行構造／旧データ互換）
+            String wageDetail;
+            if (node.has("wageLine1")) {
+                wageDetail = node.path("wageType").asText("");
+            } else {
+                String oldWageType = node.path("wageType").asText("");
+                String oldBaseWage = node.path("baseWage").asText("");
+                wageDetail = oldBaseWage.isBlank() && oldWageType.isBlank()
+                    ? "" : oldWageType + "　　基本給　" + oldBaseWage + "　円";
+            }
+            fd.put("wageDetail", wageDetail);
             fd.put("overtimeWage", node.path("overtimeWage").asText(""));
             // 交通費
             List<String> trList = new ArrayList<>();
@@ -472,12 +483,19 @@ public class IntroductionController {
             addPdfRow(tbl, "休　日", holSb.toString().trim(), boldFont, normalFont);
 
             // 賃金
-            String wageType = fd.path("wageType").asText("時給");
-            String baseWage = fd.path("baseWage").asText("");
-            try { if (!baseWage.isBlank()) baseWage = String.format("%,d", Long.parseLong(baseWage)); }
-            catch (NumberFormatException ignored) {}
-            addPdfRow(tbl, "賃金形態",
-                wageType + "　　基本給　" + baseWage + "　円", boldFont, normalFont);
+            String wageDetail;
+            if (fd.has("wageLine1")) {
+                // 新データ（備考と同じ3行構造）
+                wageDetail = fd.path("wageType").asText("");
+            } else {
+                // 旧データ（時給/日給/月給ラジオ＋基本給）との後方互換
+                String oldWageType = fd.path("wageType").asText("時給");
+                String oldBaseWage = fd.path("baseWage").asText("");
+                try { if (!oldBaseWage.isBlank()) oldBaseWage = String.format("%,d", Long.parseLong(oldBaseWage)); }
+                catch (NumberFormatException ignored) {}
+                wageDetail = oldWageType + "　　基本給　" + oldBaseWage + "　円";
+            }
+            addPdfRow(tbl, "賃金形態", wageDetail, boldFont, normalFont);
 
             String owage = fd.path("overtimeWage").asText("");
             try { if (!owage.isBlank()) owage = String.format("%,d", Long.parseLong(owage)); }

@@ -65,6 +65,14 @@ public class SalesController {
             Person person = personRepository.findById(personId).orElse(null);
             model.addAttribute("selectedPerson", person);
             model.addAttribute("selectedPersonId", personId);
+
+            // 既存の売上明細を取得してフォームに復元できるようにする
+            List<SalesDetail> existingDetails = new ArrayList<>();
+            List<Sales> existingSales = salesRepository.findByPersonId(personId);
+            if (!existingSales.isEmpty()) {
+                existingDetails = salesDetailRepository.findBySalesId(existingSales.get(0).getId());
+            }
+            model.addAttribute("existingDetails", existingDetails);
         }
 
         return "person-sales";

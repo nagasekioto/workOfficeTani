@@ -208,15 +208,24 @@
     </div>
 
     <div class="sec"><h3>&#9315; 賃金</h3>
-        <div class="row3">
-            <div class="fg"><label>賃金形態</label>
-                <div class="cbg">
-                    <label><input type="radio" name="wageType" value="時給" checked onchange="update()"> 時給</label>
-                    <label><input type="radio" name="wageType" value="日給" onchange="update()"> 日給</label>
-                    <label><input type="radio" name="wageType" value="月給" onchange="update()"> 月給</label>
+        <div class="fg"><label>賃金形態</label>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:12px;color:#888;white-space:nowrap;">1行目</span>
+                    <input type="text" id="wageLine1" placeholder="例：8時間　/　時給1200円" oninput="updateWageType()">
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:12px;color:#888;white-space:nowrap;">2行目</span>
+                    <input type="text" id="wageLine2" placeholder="" oninput="updateWageType()">
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:12px;color:#888;white-space:nowrap;">3行目</span>
+                    <input type="text" id="wageLine3" placeholder="" oninput="updateWageType()">
                 </div>
             </div>
-            <div class="fg"><label>基本給（円）</label><input type="number" id="baseWage" placeholder="例：1200" oninput="update()"></div>
+            <input type="hidden" id="wageTypeField">
+        </div>
+        <div class="row3">
             <div class="fg"><label>時間外手当（円）</label><input type="number" id="overtimeWage" placeholder="例：1500" oninput="update()"></div>
         </div>
         <div class="row2">
@@ -321,7 +330,7 @@
         <tr><th>時間外労働</th><td><span class="d-overtime-type"></span></td></tr>
         <tr><th>休憩時間</th><td><span class="d-break"></span></td></tr>
         <tr><th>休　日</th><td><span class="d-holiday"></span></td></tr>
-        <tr><th>賃金形態</th><td><span class="d-wage-type"></span>　　<strong>基本給</strong>　<span class="d-base-wage"></span>　円</td></tr>
+        <tr><th>賃金形態</th><td><span class="d-wage-type"></span></td></tr>
         <tr><th>諸手当</th><td>時間外手当　<span class="d-overtime-wage"></span>　円</td></tr>
         <tr><th>交通費</th><td><span class="d-transport"></span></td></tr>
         <tr><th>昇給</th><td><span class="d-raise"></span></td></tr>
@@ -357,7 +366,7 @@
         <tr><th>時間外労働</th><td><span class="d-overtime-type"></span></td></tr>
         <tr><th>休憩時間</th><td><span class="d-break"></span></td></tr>
         <tr><th>休　日</th><td><span class="d-holiday"></span></td></tr>
-        <tr><th>賃金形態</th><td><span class="d-wage-type"></span>　　<strong>基本給</strong>　<span class="d-base-wage"></span>　円</td></tr>
+        <tr><th>賃金形態</th><td><span class="d-wage-type"></span></td></tr>
         <tr><th>諸手当</th><td>時間外手当　<span class="d-overtime-wage"></span>　円</td></tr>
         <tr><th>交通費</th><td><span class="d-transport"></span></td></tr>
         <tr><th>昇給</th><td><span class="d-raise"></span></td></tr>
@@ -393,7 +402,7 @@
         <tr><th>時間外労働</th><td><span class="d-overtime-type"></span></td></tr>
         <tr><th>休憩時間</th><td><span class="d-break"></span></td></tr>
         <tr><th>休　日</th><td><span class="d-holiday"></span></td></tr>
-        <tr><th>賃金形態</th><td><span class="d-wage-type"></span>　　<strong>基本給</strong>　<span class="d-base-wage"></span>　円</td></tr>
+        <tr><th>賃金形態</th><td><span class="d-wage-type"></span></td></tr>
         <tr><th>諸手当</th><td>時間外手当　<span class="d-overtime-wage"></span>　円</td></tr>
         <tr><th>交通費</th><td><span class="d-transport"></span></td></tr>
         <tr><th>昇給</th><td><span class="d-raise"></span></td></tr>
@@ -499,6 +508,20 @@ function updateRemarks(){
         el.innerHTML = htmlLines;
     });
 }
+function updateWageType(){
+    var lines = [
+        g('wageLine1').value,
+        g('wageLine2').value,
+        g('wageLine3').value
+    ].filter(function(v){ return v.trim() !== ''; });
+    var combined = lines.join('\n');
+    g('wageTypeField').value = combined;
+    // PDF表示用：改行を<br>に変換してsetAll
+    var htmlLines = lines.join('<br>');
+    document.querySelectorAll('.d-wage-type').forEach(function(el){
+        el.innerHTML = htmlLines;
+    });
+}
 function getDow(cls){return Array.from(document.querySelectorAll('.'+cls+':checked')).map(function(c){return c.value;}).join('・');}
 function getDowWithDay(cls){
     var dayMap={'月':'月曜日','火':'火曜日','水':'水曜日','木':'木曜日','金':'金曜日','土':'土曜日','日':'日曜日'};
@@ -544,7 +567,6 @@ function update(){
     if(g('holHoliday').checked) hol.push('祝日');
     if(g('holOther').checked) hol.push('その他');
 
-    var bw=g('baseWage').value?parseInt(g('baseWage').value).toLocaleString():'';
     var ow=g('overtimeWage').value?parseInt(g('overtimeWage').value).toLocaleString():'';
     var trParts=[];
     if(g('transNone').checked) trParts.push('無');
@@ -586,14 +608,13 @@ function update(){
     setAll('d-overtime-type',gc('overtime'));
     setAll('d-break',       breakStr);
     setAll('d-holiday',     hol.join('　'));
-    setAll('d-wage-type',   gc('wageType'));
-    setAll('d-base-wage',   bw);
     setAll('d-overtime-wage',ow);
     setAll('d-transport',   tr);
     setAll('d-raise',       gc('raise'));
     setAll('d-pay-method',  pay.join('　'));
     setAll('d-insurance',   ins.join('　'));
     updateRemarks();
+    updateWageType();
 
     ['doc1','doc2','doc3'].forEach(function(id){g(id).style.display='block';});
 }
@@ -634,8 +655,10 @@ function collectFormData(){
         holHoliday:     g('holHoliday').checked,
         holOther:       g('holOther').checked,
         holDow:         getDow('hol-dow'),
-        wageType:       gc('wageType'),
-        baseWage:       g('baseWage').value,
+        wageLine1:      g('wageLine1').value,
+        wageLine2:      g('wageLine2').value,
+        wageLine3:      g('wageLine3').value,
+        wageType:       g('wageTypeField').value,
         overtimeWage:   g('overtimeWage').value,
         transNone:      g('transNone').checked,
         transReal:      g('transReal').checked,
@@ -738,8 +761,14 @@ function restoreFormData(fd){
         document.querySelectorAll('.hol-dow').forEach(function(cb){if(hdows.indexOf(cb.value)>=0)cb.checked=true;});
     }
 
-    if(data.wageType) document.querySelectorAll('input[name=wageType]').forEach(function(r){if(r.value===data.wageType)r.checked=true;});
-    if(data.baseWage)     g('baseWage').value=data.baseWage;
+    if(data.wageLine1) g('wageLine1').value=data.wageLine1;
+    if(data.wageLine2) g('wageLine2').value=data.wageLine2;
+    if(data.wageLine3) g('wageLine3').value=data.wageLine3;
+    // 旧データ（時給/日給/月給ラジオ＋基本給）との後方互換
+    if(!data.wageLine1 && (data.wageType || data.baseWage)){
+        var bwNum = data.baseWage ? parseInt(data.baseWage).toLocaleString() : '';
+        g('wageLine1').value = (data.wageType || '') + '　　基本給　' + bwNum + '　円';
+    }
     if(data.overtimeWage) g('overtimeWage').value=data.overtimeWage;
     if(data.transNone) g('transNone').checked=true;
     if(data.transReal) g('transReal').checked=true;
