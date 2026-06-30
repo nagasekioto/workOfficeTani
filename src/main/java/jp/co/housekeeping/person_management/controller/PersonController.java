@@ -304,8 +304,8 @@ public class PersonController {
                 customerRepository.findById(intro.getCustomerId())
                     .ifPresent(c -> row.customerName = c.getLastNameKanji() + " " + c.getFirstNameKanji());
             }
-            row.hireResult = nvl(intro.getHireResult());
-            row.remarks = nvl(intro.getLedgerRemarks());
+            row.hireResult = pnvl(intro.getHireResult());
+            row.remarks = pnvl(intro.getLedgerRemarks());
             rows.add(row);
         }
 
