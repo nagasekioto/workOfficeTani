@@ -418,7 +418,7 @@ public class PersonController {
         Font bold5   = new Font(bf, 5,  Font.BOLD);
         Font infoVal = new Font(bf, 11, Font.BOLD);
         Font infoLabel = new Font(bf, 10, Font.BOLD);
-        Font groupFont = new Font(bf, 18, Font.BOLD);
+        Font groupFont = new Font(bf, 12, Font.BOLD);
 
         // ── タイトル ──
         PdfPTable titleTbl = new PdfPTable(1);
