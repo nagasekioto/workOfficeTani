@@ -281,6 +281,51 @@ public class ReceiptMenuController {
         response.getOutputStream().flush();
     }
 
+    // ─── 1-7-2 introルート PDF出力（紹介状フラグから） ────────
+    @GetMapping("/jobseeker-receipt/pdf-intro")
+    public void jobseekerReceiptPdfIntro(@RequestParam Long introId,
+                                          HttpSession session, HttpServletResponse response)
+            throws IOException, DocumentException {
+        if (session.getAttribute("authenticated") == null) { response.sendError(401); return; }
+
+        Introduction intro = introductionRepository.findById(introId).orElse(null);
+        if (intro == null) { response.sendError(404); return; }
+
+        Person person = null;
+        if (intro.getPersonId() != null)
+            person = personRepository.findById(intro.getPersonId()).orElse(null);
+
+        // introルートは1件固定（紹介状1枚＝710円）
+        LocalDate introDate = intro.getIntroDate() != null ? intro.getIntroDate() : LocalDate.now();
+
+        // 領収番号はintro.ledgerRemarksに「RCPT:XXXX」形式で保存
+        String receiptNo;
+        String ledger = intro.getLedgerRemarks();
+        if (ledger != null && ledger.startsWith("RCPT:")) {
+            receiptNo = ledger.substring(5);
+        } else {
+            int nextNo = salesDetailRepository.findMaxReceiptNo() + 1;
+            receiptNo  = String.format("%04d", nextNo);
+            intro.setLedgerRemarks("RCPT:" + receiptNo);
+            introductionRepository.save(intro);
+        }
+
+        // 既存のPDF生成ロジックを再利用するためダミーのSalesDetailを1件作成
+        SalesDetail dummy = new SalesDetail();
+        dummy.setIntroductionDate(introDate);
+        dummy.setReceptionFee(710);
+        List<SalesDetail> groupDetails = new java.util.Collections.singletonList(dummy);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        createJobseekerReceiptPdf(dummy, groupDetails, person, receiptNo, baos);
+
+        response.setContentType("application/pdf");
+        response.setHeader("Content-Disposition", "inline; filename=jobseeker-receipt.pdf");
+        response.setContentLength(baos.size());
+        response.getOutputStream().write(baos.toByteArray());
+        response.getOutputStream().flush();
+    }
+
     // ─── 発行済み一覧（月単位）────────────────────────
     @GetMapping("/issued-list")
     public String issuedList(@RequestParam(required = false) String month,
