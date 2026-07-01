@@ -47,8 +47,12 @@
             <tr th:each="item : ${items}">
                 <td th:text="${item.person.lastNameKanji + ' ' + item.person.firstNameKanji}"></td>
                 <td>
-                    <span th:each="d,iter : ${item.groupDetails}">
-                        <span th:text="${d.introductionDate}"></span><br th:if="${!iter.last}">
+                    <span th:if="${item.source == 'intro' and item.intro != null}"
+                          th:text="${item.intro.introDate}"></span>
+                    <span th:unless="${item.source == 'intro'}">
+                        <span th:each="d,iter : ${item.groupDetails}">
+                            <span th:text="${d.introductionDate}"></span><br th:if="${!iter.last}">
+                        </span>
                     </span>
                 </td>
                 <td th:text="${item.totalFee + '円（' + item.groupCount + '件）'}"></td>
@@ -61,14 +65,23 @@
                     <span th:unless="${item.issued}" class="badge badge-pending">未発行</span>
                 </td>
                 <td>
-                    <a th:href="@{/receipt-menu/jobseeker-receipt/pdf(detailId=${item.detail.id})}" target="_blank" class="pdf-btn" style="background:#4CAF50;">&#128196; 印刷内容確認</a>
-                    <button class="pdf-btn" style="background:#1976D2;margin-left:4px;"
-                        th:onclick="|printPdf('/receipt-menu/jobseeker-receipt/pdf?detailId=' + ${item.detail.id})|">&#128424; 印刷</button>
-                    <form th:if="${item.issued}" th:action="@{/receipt-menu/jobseeker-receipt/reset}" method="post"
-                          style="display:inline;" onsubmit="return confirm('領収番号をリセットしますか？')">
-                        <input type="hidden" name="detailId" th:value="${item.detail.id}">
-                        <button type="submit" style="background:#f44336;color:white;border:none;border-radius:4px;padding:6px 10px;cursor:pointer;font-size:12px;margin-left:4px;">&#x1F504; リセット</button>
-                    </form>
+                    <!-- salesルート -->
+                    <th:block th:if="${item.source != 'intro' and item.detail != null}">
+                        <a th:href="@{/receipt-menu/jobseeker-receipt/pdf(detailId=${item.detail.id})}" target="_blank" class="pdf-btn" style="background:#4CAF50;">&#128196; 印刷内容確認</a>
+                        <button class="pdf-btn" style="background:#1976D2;margin-left:4px;"
+                            th:onclick="|printPdf('/receipt-menu/jobseeker-receipt/pdf?detailId=' + ${item.detail.id})|">&#128424; 印刷</button>
+                        <form th:if="${item.issued}" th:action="@{/receipt-menu/jobseeker-receipt/reset}" method="post"
+                              style="display:inline;" onsubmit="return confirm('領収番号をリセットしますか？')">
+                            <input type="hidden" name="detailId" th:value="${item.detail.id}">
+                            <button type="submit" style="background:#f44336;color:white;border:none;border-radius:4px;padding:6px 10px;cursor:pointer;font-size:12px;margin-left:4px;">&#x1F504; リセット</button>
+                        </form>
+                    </th:block>
+                    <!-- introルート -->
+                    <th:block th:if="${item.source == 'intro' and item.intro != null}">
+                        <a th:href="@{/receipt-menu/jobseeker-receipt/pdf-intro(introId=${item.intro.id})}" target="_blank" class="pdf-btn" style="background:#4CAF50;">&#128196; 印刷内容確認</a>
+                        <button class="pdf-btn" style="background:#1976D2;margin-left:4px;"
+                            th:onclick="|printPdf('/receipt-menu/jobseeker-receipt/pdf-intro?introId=' + ${item.intro.id})|">&#128424; 印刷</button>
+                    </th:block>
                 </td>
             </tr>
         </tbody>
