@@ -7,24 +7,42 @@
         body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
         .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         h1 { margin: 0; color: #333; }
+        h2 { margin: 0 0 12px; color: #333; font-size: 16px; }
         .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; font-size: 14px; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,.1); }
-        .select-area { margin-bottom: 20px; }
-        select { padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; min-width: 300px; }
-        .legend { display: flex; gap: 20px; margin-bottom: 14px; font-size: 13px; align-items: center; }
-        .legend-box { width: 20px; height: 20px; border-radius: 3px; border: 1px solid #ccc; display: inline-block; }
+        .container { max-width: 1300px; margin: 0 auto; }
+
+        /* 空き検索カード */
+        .search-card { background: white; padding: 20px 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,.1); margin-bottom: 20px; }
+        .search-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+        .search-row label { font-weight: bold; font-size: 13px; color: #555; display: block; margin-bottom: 4px; }
+        .search-row select { padding: 9px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .btn-search { background: #FF9800; color: white; border: none; border-radius: 5px; padding: 10px 22px; font-size: 14px; cursor: pointer; font-weight: bold; }
+        .btn-search:hover { background: #F57C00; }
+        .search-result { margin-top: 16px; }
+        .result-tag { display: inline-block; background: #A5D6A7; color: #1B5E20; padding: 5px 14px; border-radius: 20px; font-size: 13px; margin: 4px 4px 0 0; font-weight: bold; }
+        .result-none { color: #c62828; font-weight: bold; font-size: 13px; margin-top: 8px; }
+
+        /* スケジュールカード */
+        .schedule-card { background: white; padding: 20px 24px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,.1); }
+        .person-select-row { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+        .person-select-row label { font-weight: bold; font-size: 13px; color: #555; }
+        .person-select-row select { padding: 9px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; min-width: 280px; }
+        .legend { display: flex; gap: 20px; margin-bottom: 12px; font-size: 13px; align-items: center; }
+        .legend-box { width: 18px; height: 18px; border-radius: 3px; border: 1px solid #bbb; display: inline-block; vertical-align: middle; margin-right: 4px; }
         .legend-booked { background: #EF9A9A; }
         .legend-free   { background: #A5D6A7; }
-        table { border-collapse: collapse; width: 100%; font-size: 13px; }
-        th { background: #4CAF50; color: white; padding: 8px 4px; text-align: center; border: 1px solid #388E3C; }
-        th.time-hdr { background: #37474F; }
-        td { border: 1px solid #ccc; padding: 4px 3px; text-align: center; min-width: 60px; font-size: 12px; }
-        td.time-col { background: #f5f5f5; font-weight: bold; color: #555; white-space: nowrap; min-width: 48px; }
+        .person-info { font-weight: bold; font-size: 14px; color: #333; margin-bottom: 12px; }
+
+        /* テーブル */
+        table { border-collapse: collapse; width: 100%; font-size: 12px; table-layout: fixed; }
+        th { background: #4CAF50; color: white; padding: 7px 3px; text-align: center; border: 1px solid #388E3C; }
+        th.time-hdr { background: #37474F; width: 120px; }
+        td { border: 1px solid #ccc; padding: 3px 2px; text-align: center; overflow: hidden; }
+        td.time-col { background: #f5f5f5; font-weight: bold; color: #555; white-space: nowrap; font-size: 11px; }
         td.booked { background: #EF9A9A; }
         td.free   { background: #A5D6A7; }
-        .customer-name { font-size: 10px; color: #c62828; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80px; display: block; }
+        .cust-names { font-size: 10px; color: #c62828; font-weight: bold; line-height: 1.4; }
         .empty-msg { text-align: center; padding: 40px; color: #999; }
-        .person-info { margin-bottom: 16px; font-size: 14px; color: #333; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -34,55 +52,117 @@
 </div>
 
 <div class="container">
-    <div class="select-area">
-        <label style="display:block;margin-bottom:6px;font-weight:bold;">求職者を選択</label>
-        <select onchange="if(this.value) location.href='/person/schedule?personId='+this.value">
-            <option value="">-- 選択してください --</option>
-            <option th:each="p : ${persons}"
-                    th:value="${p.id}"
-                    th:selected="${selectedPersonId != null and selectedPersonId == p.id}"
-                    th:text="${p.lastNameKanji + ' ' + p.firstNameKanji + ' (' + p.lastNameKana + ' ' + p.firstNameKana + ')'}">
-            </option>
-        </select>
+
+    <!-- ── 空き検索 ── -->
+    <div class="search-card">
+        <h2>🔍 空いている求職者を探す</h2>
+        <div class="search-row">
+            <div>
+                <label>曜日</label>
+                <select id="searchDay">
+                    <option value="月">月曜日</option>
+                    <option value="火">火曜日</option>
+                    <option value="水">水曜日</option>
+                    <option value="木">木曜日</option>
+                    <option value="金">金曜日</option>
+                    <option value="土">土曜日</option>
+                    <option value="日">日曜日</option>
+                </select>
+            </div>
+            <div>
+                <label>時間帯（開始時刻）</label>
+                <select id="searchHour">
+                    <option th:each="h : ${hours}" th:value="${h}" th:text="${h + ':00 〜 ' + (h+1) + ':00'}">0:00 〜 1:00</option>
+                </select>
+            </div>
+            <button class="btn-search" onclick="searchAvailable()">検索</button>
+        </div>
+        <div class="search-result" id="searchResult" style="display:none;"></div>
     </div>
 
-    <div th:if="${selectedPersonId != null}">
-        <div class="person-info" th:if="${selectedPerson != null}">
-            <span th:text="${selectedPerson.lastNameKanji + ' ' + selectedPerson.firstNameKanji}"></span> さんのスケジュール
+    <!-- ── 個人スケジュール ── -->
+    <div class="schedule-card">
+        <div class="person-select-row">
+            <label>求職者を選択</label>
+            <select onchange="if(this.value) location.href='/person/schedule?personId='+this.value">
+                <option value="">-- 選択してください --</option>
+                <option th:each="p : ${persons}"
+                        th:value="${p.id}"
+                        th:selected="${selectedPersonId != null and selectedPersonId == p.id}"
+                        th:text="${p.lastNameKanji + ' ' + p.firstNameKanji + ' (' + p.lastNameKana + ' ' + p.firstNameKana + ')'}">
+                </option>
+            </select>
         </div>
 
-        <div class="legend">
-            <span><span class="legend-box legend-booked"></span> 勤務中（埋まっている）</span>
-            <span><span class="legend-box legend-free"></span> 空いている</span>
+        <div th:if="${selectedPersonId != null}">
+            <div class="person-info" th:if="${selectedPerson != null}"
+                 th:text="${selectedPerson.lastNameKanji + ' ' + selectedPerson.firstNameKanji + ' さんのスケジュール'}"></div>
+            <div class="legend">
+                <span><span class="legend-box legend-booked"></span>勤務中（埋まっている）</span>
+                <span><span class="legend-box legend-free"></span>空いている</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th class="time-hdr">時間</th>
+                        <th th:each="day : ${days}" th:text="${day + '曜日'}"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="h : ${hours}">
+                        <td class="time-col" th:text="${h + ':00 〜 ' + (h+1) + ':00'}"></td>
+                        <td th:each="day : ${days}"
+                            th:with="key=${day + '_' + h},
+                                     booked=${bookedMap != null and bookedMap.containsKey(day + '_' + h)}"
+                            th:classappend="${booked} ? 'booked' : 'free'">
+                            <th:block th:if="${booked}">
+                                <div class="cust-names">
+                                    <span th:each="name, stat : ${bookedMap.get(day + '_' + h)}"
+                                          th:text="${name}"></span>
+                                </div>
+                            </th:block>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th class="time-hdr">時間</th>
-                    <th th:each="day : ${days}" th:text="${day + '曜日'}">月曜日</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr th:each="h : ${hours}">
-                    <td class="time-col" th:text="${h + ':00 〜 ' + (h+1) + ':00'}">7:00 〜 8:00</td>
-                    <td th:each="day : ${days}"
-                        th:with="key=${day + '_' + h}, booked=${bookedMap != null and bookedMap.containsKey(day + '_' + h)}"
-                        th:classappend="${booked} ? 'booked' : 'free'">
-                        <th:block th:if="${booked}">
-                            <span th:each="name : ${bookedMap.get(day + '_' + h)}"
-                                  class="customer-name"
-                                  th:text="${name}"></span>
-                        </th:block>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-    <div class="empty-msg" th:if="${selectedPersonId == null}">
-        求職者を選択するとスケジュールが表示されます
+        <div class="empty-msg" th:if="${selectedPersonId == null}">
+            求職者を選択するとスケジュールが表示されます
+        </div>
     </div>
 </div>
+
+<script>
+function searchAvailable() {
+    var day  = document.getElementById('searchDay').value;
+    var hour = document.getElementById('searchHour').value;
+    var resultDiv = document.getElementById('searchResult');
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = '<span style="color:#888;font-size:13px;">検索中...</span>';
+
+    fetch('/person/schedule/search?day=' + encodeURIComponent(day) + '&hour=' + hour)
+        .then(function(r){ return r.json(); })
+        .then(function(data) {
+            if (data.length === 0) {
+                resultDiv.innerHTML = '<div class="result-none">⚠ ' + day + '曜日 ' + hour + ':00〜' + (parseInt(hour)+1) + ':00 に空いている求職者はいません</div>';
+                return;
+            }
+            var label = day + '曜日 ' + hour + ':00 〜 ' + (parseInt(hour)+1) + ':00 に空いている求職者：';
+            var tags = data.map(function(p) {
+                return '<span class="result-tag" onclick="jumpToSchedule(' + p.id + ')" style="cursor:pointer;" title="クリックでスケジュール表示">'
+                     + p.name + '（' + p.kana + '）</span>';
+            }).join('');
+            resultDiv.innerHTML = '<div style="font-size:13px;margin-bottom:6px;font-weight:bold;">' + label + '</div>' + tags
+                + '<div style="font-size:11px;color:#888;margin-top:8px;">※ 名前をクリックすると下のスケジュール欄に表示します</div>';
+        })
+        .catch(function() {
+            resultDiv.innerHTML = '<div class="result-none">検索に失敗しました</div>';
+        });
+}
+function jumpToSchedule(personId) {
+    location.href = '/person/schedule?personId=' + personId;
+}
+</script>
 </body>
 </html>

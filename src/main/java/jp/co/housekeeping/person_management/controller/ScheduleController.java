@@ -15,6 +15,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import jp.co.housekeeping.person_management.model.Introduction;
 import jp.co.housekeeping.person_management.model.Person;
@@ -29,10 +30,11 @@ public class ScheduleController {
     @Autowired private CustomerRepository customerRepository;
     @Autowired private IntroductionRepository introductionRepository;
 
-    private static final int HOUR_START = 7;
-    private static final int HOUR_END   = 22;
+    private static final int HOUR_START = 0;
+    private static final int HOUR_END   = 24;
     private static final String[] DAYS  = {"月", "火", "水", "木", "金", "土", "日"};
 
+    // ─── 個人スケジュール画面 ──────────────────────────────
     @GetMapping("/person/schedule")
     public String schedule(@RequestParam(required = false) Long personId,
                            HttpSession session, Model model) {
@@ -46,15 +48,31 @@ public class ScheduleController {
             Person person = personRepository.findById(personId).orElse(null);
             model.addAttribute("selectedPerson", person);
             model.addAttribute("selectedPersonId", personId);
+            model.addAttribute("bookedMap", buildBookedMap(personId));
+        }
 
-            // key = "月_7"  → 値 = 求人者名のリスト（重複もありうる）
-            Map<String, List<String>> bookedMap = new LinkedHashMap<>();
-            ObjectMapper mapper = new ObjectMapper();
+        return "person-schedule";
+    }
 
+    // ─── 空き検索 API ───────────────────────────────────────
+    // 指定曜日・時間帯で「空いている求職者」の一覧をJSONで返す
+    @GetMapping("/person/schedule/search")
+    @ResponseBody
+    public List<Map<String, String>> searchAvailable(
+            @RequestParam String day,
+            @RequestParam int hour,
+            HttpSession session) {
+        if (session.getAttribute("authenticated") == null) return new ArrayList<>();
+
+        List<Map<String, String>> result = new ArrayList<>();
+        ObjectMapper mapper = new ObjectMapper();
+
+        // 全求職者について、指定曜日×時間が空いているか判定
+        for (Person p : personRepository.findAll()) {
+            boolean booked = false;
             for (Introduction intro : introductionRepository.findAll()) {
-                if (!Long.valueOf(personId).equals(intro.getPersonId())) continue;
+                if (!p.getId().equals(intro.getPersonId())) continue;
                 if (intro.getFormData() == null || intro.getFormData().isBlank()) continue;
-
                 try {
                     JsonNode fd = mapper.readTree(intro.getFormData());
                     String dowStr = fd.path("dow").asText("");
@@ -62,35 +80,72 @@ public class ScheduleController {
                     int startM = parseIntSafe(fd.path("wSM").asText(""));
                     int endH   = parseIntSafe(fd.path("wEH").asText(""));
                     int endM   = parseIntSafe(fd.path("wEM").asText(""));
-
                     if (dowStr.isBlank() || startH < 0 || endH < 0) continue;
-
-                    final String[] custName = {""};
-                    if (intro.getCustomerId() != null) {
-                        customerRepository.findById(intro.getCustomerId())
-                            .ifPresent(c -> custName[0] = c.getLastNameKanji() + " " + c.getFirstNameKanji());
-                    }
-
-                    int startMin = startH * 60 + startM;
-                    int endMin   = endH   * 60 + endM;
-
-                    for (String day : dowStr.split("・")) {
-                        day = day.trim();
-                        if (day.isBlank()) continue;
-                        for (int h = HOUR_START; h < HOUR_END; h++) {
-                            if (startMin < (h + 1) * 60 && endMin > h * 60) {
-                                String key = day + "_" + h;
-                                bookedMap.computeIfAbsent(key, k -> new ArrayList<>())
-                                         .add(custName[0]);
-                            }
+                    for (String d : dowStr.split("・")) {
+                        if (!d.trim().equals(day)) continue;
+                        int startMin = startH * 60 + startM;
+                        int endMin   = endH   * 60 + endM;
+                        if (startMin < (hour + 1) * 60 && endMin > hour * 60) {
+                            booked = true;
+                            break;
                         }
                     }
+                    if (booked) break;
                 } catch (Exception ignored) {}
             }
-            model.addAttribute("bookedMap", bookedMap);
+            if (!booked) {
+                Map<String, String> m = new LinkedHashMap<>();
+                m.put("id",   String.valueOf(p.getId()));
+                m.put("name", p.getLastNameKanji() + " " + p.getFirstNameKanji());
+                m.put("kana", p.getLastNameKana() + " " + p.getFirstNameKana());
+                result.add(m);
+            }
         }
+        return result;
+    }
 
-        return "person-schedule";
+    // ─── 共通：勤務中マップ構築 ─────────────────────────────
+    // key = "月_7"  → 値 = 求人者名のリスト
+    public Map<String, List<String>> buildBookedMap(Long personId) {
+        Map<String, List<String>> bookedMap = new LinkedHashMap<>();
+        ObjectMapper mapper = new ObjectMapper();
+
+        for (Introduction intro : introductionRepository.findAll()) {
+            if (!Long.valueOf(personId).equals(intro.getPersonId())) continue;
+            if (intro.getFormData() == null || intro.getFormData().isBlank()) continue;
+            try {
+                JsonNode fd = mapper.readTree(intro.getFormData());
+                String dowStr = fd.path("dow").asText("");
+                int startH = parseIntSafe(fd.path("wSH").asText(""));
+                int startM = parseIntSafe(fd.path("wSM").asText(""));
+                int endH   = parseIntSafe(fd.path("wEH").asText(""));
+                int endM   = parseIntSafe(fd.path("wEM").asText(""));
+
+                if (dowStr.isBlank() || startH < 0 || endH < 0) continue;
+
+                final String[] custName = {""};
+                if (intro.getCustomerId() != null) {
+                    customerRepository.findById(intro.getCustomerId())
+                        .ifPresent(c -> custName[0] = c.getLastNameKanji() + " " + c.getFirstNameKanji());
+                }
+
+                int startMin = startH * 60 + startM;
+                int endMin   = endH   * 60 + endM;
+
+                for (String day : dowStr.split("・")) {
+                    day = day.trim();
+                    if (day.isBlank()) continue;
+                    for (int h = HOUR_START; h < HOUR_END; h++) {
+                        if (startMin < (h + 1) * 60 && endMin > h * 60) {
+                            String key = day + "_" + h;
+                            bookedMap.computeIfAbsent(key, k -> new ArrayList<>())
+                                     .add(custName[0]);
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+        return bookedMap;
     }
 
     private int parseIntSafe(String s) {
