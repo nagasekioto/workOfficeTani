@@ -82,7 +82,7 @@
                 <label>終了時刻</label>
                 <select id="searchEnd">
                     <option th:each="slot : ${slots}" th:value="${slot.minutes}" th:text="${slot.label}"
-                            th:selected="${slot.minutes == 60}"></option>
+                            th:selected="${slot.minutes == 600}"></option>
                 </select>
             </div>
             <button class="btn-search" onclick="searchAvailable()">検索</button>
