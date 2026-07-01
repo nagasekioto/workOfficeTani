@@ -314,7 +314,8 @@ public class ReceiptMenuController {
         SalesDetail dummy = new SalesDetail();
         dummy.setIntroductionDate(introDate);
         dummy.setReceptionFee(710);
-        List<SalesDetail> groupDetails = new java.util.Collections.singletonList(dummy);
+        List<SalesDetail> groupDetails = new ArrayList<>();
+        groupDetails.add(dummy);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         createJobseekerReceiptPdf(dummy, groupDetails, person, receiptNo, baos);
