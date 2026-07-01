@@ -117,7 +117,7 @@
                 </thead>
                 <tbody>
                     <tr th:each="h : ${hours}">
-                        <td class="time-col" th:text="${h + ':00 〜 ' + (h+1) + ':00'}"></td>
+                        <td class="time-col" th:text="${h + ':00 〜 ' + (h == 23 ? 0 : h+1) + ':00'}"></td>
                         <td th:each="day : ${days}"
                             th:with="key=${day + '_' + h},
                                      booked=${bookedMap != null and bookedMap.containsKey(day + '_' + h)}"

@@ -30,8 +30,8 @@ public class ScheduleController {
     @Autowired private CustomerRepository customerRepository;
     @Autowired private IntroductionRepository introductionRepository;
 
-    private static final int HOUR_START = 0;
-    private static final int HOUR_END   = 24;
+    private static final int HOUR_START = 6;   // 6:00スタート
+    private static final int HOUR_END   = 6;   // 翌6:00で1周
     private static final String[] DAYS  = {"月", "火", "水", "木", "金", "土", "日"};
 
     // ─── 個人スケジュール画面 ──────────────────────────────
@@ -137,13 +137,18 @@ public class ScheduleController {
                 for (String day : dowStr.split("・")) {
                     day = day.trim();
                     if (day.isBlank()) continue;
-                    for (int h = HOUR_START; h < HOUR_END; h++) {
-                        if (startMin < (h + 1) * 60 && endMin > h * 60) {
+                    // 勤務時間と重なるすべての時間スロット（6:00始まり24時間サイクル）に登録
+                    int h = HOUR_START;
+                    do {
+                        int slotStart = h * 60;
+                        int slotEnd   = (h + 1) * 60;
+                        if (startMin < slotEnd && endMin > slotStart) {
                             String key = day + "_" + h;
                             bookedMap.computeIfAbsent(key, k -> new ArrayList<>())
                                      .add(custName[0]);
                         }
-                    }
+                        h = nextHour(h);
+                    } while (h != HOUR_START);
                 }
             } catch (Exception ignored) {}
         }
@@ -155,17 +160,27 @@ public class ScheduleController {
         catch (NumberFormatException e) { return -1; }
     }
 
+    // 6:00 → 7 → ... → 23 → 0 → 1 → ... → 5 の24時間サイクル
+    private static int nextHour(int h) { return (h + 1) % 24; }
+
     private List<Integer> buildHourList() {
         List<Integer> list = new ArrayList<>();
-        for (int h = HOUR_START; h < HOUR_END; h++) list.add(h);
+        int h = HOUR_START;
+        do {
+            list.add(h);
+            h = nextHour(h);
+        } while (h != HOUR_START);
         return list;
     }
 
     private List<SlotOption> buildSlotList() {
         List<SlotOption> list = new ArrayList<>();
-        for (int m = HOUR_START * 60; m <= HOUR_END * 60; m += 30) {
-            int h = m / 60, mm = m % 60;
-            list.add(new SlotOption(m, h + ":" + (mm == 0 ? "00" : mm)));
+        int m = HOUR_START * 60;
+        int total = 0;
+        while (total <= 24 * 60) {
+            int h = (m / 60) % 24, mm = m % 60;
+            list.add(new SlotOption(m % (24 * 60), h + ":" + (mm == 0 ? "00" : mm)));
+            m += 30; total += 30;
         }
         return list;
     }
