@@ -16,8 +16,11 @@
         .search-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
         .search-row label { font-weight: bold; font-size: 13px; color: #555; display: block; margin-bottom: 4px; }
         .search-row select { padding: 9px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
-        .btn-search { background: #FF9800; color: white; border: none; border-radius: 5px; padding: 10px 22px; font-size: 14px; cursor: pointer; font-weight: bold; }
-        .btn-search:hover { background: #F57C00; }
+        .filter-checks { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
+        .filter-checks label { font-size: 14px; font-weight: bold; color: #333; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+        .filter-checks input[type=checkbox] { width: 18px; height: 18px; cursor: pointer; accent-color: #4CAF50; }
+        .badge-care { background: #1565C0; color: white; font-size: 11px; padding: 2px 7px; border-radius: 10px; margin-left: 4px; }
+        .badge-cook { background: #E65100; color: white; font-size: 11px; padding: 2px 7px; border-radius: 10px; margin-left: 4px; }
         .search-result { margin-top: 16px; }
         .result-tag { display: inline-block; background: #A5D6A7; color: #1B5E20; padding: 5px 14px; border-radius: 20px; font-size: 13px; margin: 4px 4px 0 0; font-weight: bold; }
         .result-none { color: #c62828; font-weight: bold; font-size: 13px; margin-top: 8px; }
@@ -83,6 +86,10 @@
                 </select>
             </div>
             <button class="btn-search" onclick="searchAvailable()">検索</button>
+        </div>
+        <div class="filter-checks">
+            <label><input type="checkbox" id="filterCare"> 介護ヘルパー資格ありのみ</label>
+            <label><input type="checkbox" id="filterCook"> 料理好きのみ</label>
         </div>
         <div class="search-result" id="searchResult" style="display:none;"></div>
     </div>
@@ -155,21 +162,44 @@ function searchAvailable() {
 
     var startLabel = formatMin(start);
     var endLabel   = formatMin(end);
+    var filterCare = document.getElementById('filterCare').checked;
+    var filterCook = document.getElementById('filterCook').checked;
 
     fetch('/person/schedule/search?day=' + encodeURIComponent(day) + '&slotStart=' + start + '&slotEnd=' + end)
         .then(function(r){ return r.json(); })
         .then(function(data) {
-            if (data.length === 0) {
-                resultDiv.innerHTML = '<div class="result-none">⚠ ' + day + '曜日 ' + startLabel + '〜' + endLabel + ' に空いている求職者はいません</div>';
+            // フィルター適用（チェックが入っている条件だけ絞り込む）
+            var filtered = data.filter(function(p) {
+                if (filterCare && p.careHelper !== '1') return false;
+                if (filterCook && p.cookingGood !== '1') return false;
+                return true;
+            });
+
+            // 介護ヘルパー資格あり・料理好きを上位にソート
+            filtered.sort(function(a, b) {
+                var sa = (a.careHelper === '1' ? 2 : 0) + (a.cookingGood === '1' ? 1 : 0);
+                var sb = (b.careHelper === '1' ? 2 : 0) + (b.cookingGood === '1' ? 1 : 0);
+                return sb - sa;
+            });
+
+            if (filtered.length === 0) {
+                resultDiv.innerHTML = '<div class="result-none">⚠ 条件に合う空き求職者はいません</div>';
                 return;
             }
-            var label = day + '曜日 ' + startLabel + ' 〜 ' + endLabel + ' に空いている求職者：';
-            var tags = data.map(function(p) {
+            var filterNote = [];
+            if (filterCare) filterNote.push('介護ヘルパー資格あり');
+            if (filterCook) filterNote.push('料理好き');
+            var noteStr = filterNote.length > 0 ? '（絞込：' + filterNote.join('・') + '）' : '';
+            var label = day + '曜日 ' + startLabel + ' 〜 ' + endLabel + ' に空いている求職者' + noteStr + '：';
+            var tags = filtered.map(function(p) {
+                var badges = '';
+                if (p.careHelper === '1') badges += '<span class="badge-care">介護ヘルパー</span>';
+                if (p.cookingGood === '1') badges += '<span class="badge-cook">料理好き</span>';
                 return '<span class="result-tag" onclick="jumpToSchedule(' + p.id + ')" style="cursor:pointer;" title="クリックでスケジュール表示">'
-                     + p.name + '（' + p.kana + '）</span>';
+                     + p.name + '（' + p.kana + '）' + badges + '</span>';
             }).join('');
             resultDiv.innerHTML = '<div style="font-size:13px;margin-bottom:6px;font-weight:bold;">' + label + '</div>' + tags
-                + '<div style="font-size:11px;color:#888;margin-top:8px;">※ 名前をクリックすると下のスケジュール欄に表示します</div>';
+                + '<div style="font-size:11px;color:#888;margin-top:8px;">※ 名前をクリックすると下のスケジュール欄に表示します。介護ヘルパー資格あり・料理好きの方が上位表示されます。</div>';
         })
         .catch(function() {
             resultDiv.innerHTML = '<div class="result-none">検索に失敗しました</div>';

@@ -97,9 +97,11 @@ public class ScheduleController {
             }
             if (!booked) {
                 Map<String, String> m = new LinkedHashMap<>();
-                m.put("id",   String.valueOf(p.getId()));
-                m.put("name", p.getLastNameKanji() + " " + p.getFirstNameKanji());
-                m.put("kana", p.getLastNameKana() + " " + p.getFirstNameKana());
+                m.put("id",          String.valueOf(p.getId()));
+                m.put("name",        p.getLastNameKanji() + " " + p.getFirstNameKanji());
+                m.put("kana",        p.getLastNameKana() + " " + p.getFirstNameKana());
+                m.put("careHelper",  Boolean.TRUE.equals(p.getQualCareHelper()) ? "1" : "0");
+                m.put("cookingGood", "好き".equals(p.getCooking()) ? "1" : "0");
                 result.add(m);
             }
         }
