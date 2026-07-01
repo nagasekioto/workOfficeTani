@@ -271,6 +271,19 @@
     </div>
 
     <div class="sec"><h3>&#9317; 備考</h3>
+        <!-- 受付料チェックボックス -->
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;padding:12px;background:#f9f9f9;border-radius:6px;border:1px solid #e0e0e0;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:bold;">
+                <input type="checkbox" id="feeReceptionCheck" onchange="applyReceptionFee()">
+                <span>求人受付手数料　<strong>1,000円（固定）</strong></span>
+                <span style="font-size:12px;color:#888;">チェックすると備考2行目に「初回精算時のみ受付手数料別途　1,000円」を自動入力</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:bold;">
+                <input type="checkbox" id="feeJobseekerCheck" onchange="updateFeeFlags()">
+                <span>受付料　<strong>710円（固定）</strong></span>
+                <span style="font-size:12px;color:#888;">求職受付手数料領収書（1-7-2）に連携</span>
+            </label>
+        </div>
         <div style="display:flex;flex-direction:column;gap:6px;">
             <div style="display:flex;align-items:center;gap:8px;">
                 <span style="font-size:12px;color:#888;white-space:nowrap;">1行目</span>
@@ -495,6 +508,18 @@ function toggleTrialPeriod(){
 }
 
 function gc(name){var v=document.querySelector('input[name='+name+']:checked');return v?v.value:'';}
+function applyReceptionFee(){
+    var checked = g('feeReceptionCheck').checked;
+    var target = g('remarks2');
+    var FEE_TEXT = '初回精算時のみ受付手数料別途　1,000円';
+    if(checked){
+        if(!target.value.trim()) target.value = FEE_TEXT;
+    } else {
+        if(target.value === FEE_TEXT) target.value = '';
+    }
+    updateRemarks();
+}
+function updateFeeFlags(){ update(); }
 function updateRemarks(){
     var lines = [
         g('remarks1').value,
@@ -720,7 +745,9 @@ function collectFormData(){
         remarks3:       g('remarks3').value,
         remarks4:       g('remarks4').value,
         remarks5:       g('remarks5').value,
-        remarks:        g('remarksField').value
+        remarks:        g('remarksField').value,
+        feeReception:   g('feeReceptionCheck').checked,
+        feeJobseeker:   g('feeJobseekerCheck').checked
     };
 }
 
@@ -849,6 +876,8 @@ function restoreFormData(fd){
     if(data.remarks3) g('remarks3').value=data.remarks3;
     if(data.remarks4) g('remarks4').value=data.remarks4;
     if(data.remarks5) g('remarks5').value=data.remarks5;
+    if(data.feeReception) g('feeReceptionCheck').checked=true;
+    if(data.feeJobseeker) g('feeJobseekerCheck').checked=true;
     // 旧データ（remarks単一テキスト）との後方互換
     if(data.remarks && !data.remarks1) {
         var oldLines = data.remarks.split('\n');

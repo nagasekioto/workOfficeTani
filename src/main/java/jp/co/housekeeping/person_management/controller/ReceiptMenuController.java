@@ -35,11 +35,16 @@ import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import jp.co.housekeeping.person_management.model.Customer;
+import jp.co.housekeeping.person_management.model.Introduction;
 import jp.co.housekeeping.person_management.model.Person;
 import jp.co.housekeeping.person_management.model.Sales;
 import jp.co.housekeeping.person_management.model.SalesDetail;
 import jp.co.housekeeping.person_management.repository.CustomerRepository;
+import jp.co.housekeeping.person_management.repository.IntroductionRepository;
 import jp.co.housekeeping.person_management.repository.PersonRepository;
 import jp.co.housekeeping.person_management.repository.SalesDetailRepository;
 import jp.co.housekeeping.person_management.repository.SalesRepository;
@@ -54,6 +59,7 @@ public class ReceiptMenuController {
     @Autowired private SalesRepository       salesRepository;
     @Autowired private SalesDetailRepository salesDetailRepository;
     @Autowired private PersonRepository      personRepository;
+    @Autowired private IntroductionRepository introductionRepository;
 
     @GetMapping("")
     public String menu(HttpSession session, Model model) {
@@ -143,6 +149,7 @@ public class ReceiptMenuController {
         // 求職者×年月 でグループ化して1行表示（PDF生成も同グループで1枚）
         java.util.Map<String, JobseekerReceiptItem> groupMap = new java.util.LinkedHashMap<>();
 
+        // ─ 従来ルート：SalesDetail.receptionFee が 710円 ─
         for (Sales s : salesRepository.findAll()) {
             if (s.getPersonId() == null) continue;
             Person person = personRepository.findById(s.getPersonId()).orElse(null);
@@ -153,27 +160,63 @@ public class ReceiptMenuController {
                 if (d.getReceptionFee() == null || d.getReceptionFee() <= 0) continue;
 
                 LocalDate iDate = d.getIntroductionDate() != null ? d.getIntroductionDate() : LocalDate.now();
-                String key = s.getPersonId() + "_" + iDate.getYear() + "_" + iDate.getMonthValue();
+                String key = "sales_" + s.getPersonId() + "_" + iDate.getYear() + "_" + iDate.getMonthValue();
 
                 if (!groupMap.containsKey(key)) {
                     JobseekerReceiptItem item = new JobseekerReceiptItem();
                     item.person       = person;
-                    item.detail       = d; // 代表レコード（領収番号管理）
+                    item.detail       = d;
                     item.groupDetails = new ArrayList<>();
                     item.salesId      = s.getId();
+                    item.source       = "sales";
                     groupMap.put(key, item);
                 }
-                JobseekerReceiptItem item = groupMap.get(key);
-                item.groupDetails.add(d); // 件数上限なし（PDF生成時に最大3件）
+                groupMap.get(key).groupDetails.add(d);
             }
+        }
+
+        // ─ 新ルート：紹介状作成（1-6-1）で「受付料 710円」チェックが入っているもの ─
+        ObjectMapper mapper = new ObjectMapper();
+        for (Introduction intro : introductionRepository.findAll()) {
+            if (intro.getPersonId() == null) continue;
+            if (intro.getFormData() == null || intro.getFormData().isBlank()) continue;
+            try {
+                JsonNode fd = mapper.readTree(intro.getFormData());
+                if (!fd.path("feeJobseeker").asBoolean(false)) continue;
+
+                Person person = personRepository.findById(intro.getPersonId()).orElse(null);
+                if (person == null) continue;
+
+                LocalDate iDate = intro.getIntroDate() != null ? intro.getIntroDate() : LocalDate.now();
+                String key = "intro_" + intro.getPersonId() + "_" + iDate.getYear() + "_" + iDate.getMonthValue();
+
+                if (!groupMap.containsKey(key)) {
+                    JobseekerReceiptItem item = new JobseekerReceiptItem();
+                    item.person       = person;
+                    item.intro        = intro;
+                    item.groupDetails = new ArrayList<>();
+                    item.source       = "intro";
+                    groupMap.put(key, item);
+                }
+            } catch (Exception ignored) {}
         }
 
         List<JobseekerReceiptItem> items = new ArrayList<>();
         for (JobseekerReceiptItem item : groupMap.values()) {
-            item.groupCount    = item.groupDetails.size();
-            item.totalFee      = 710 * Math.min(item.groupCount, 3);
-            item.issued        = item.detail.getReceiptNo() != null && !item.detail.getReceiptNo().isEmpty();
-            item.receiptNumber = item.issued ? item.detail.getReceiptNo() : "";
+            if ("intro".equals(item.source)) {
+                item.groupCount    = 1;
+                item.totalFee      = 710;
+                item.issued        = item.intro.getLedgerRemarks() != null
+                                  && item.intro.getLedgerRemarks().startsWith("RCPT:");
+                item.receiptNumber = item.issued ? item.intro.getLedgerRemarks().substring(5) : "";
+            } else {
+                item.groupCount    = item.groupDetails.size();
+                item.totalFee      = 710 * Math.min(item.groupCount, 3);
+                item.issued        = item.detail != null
+                                  && item.detail.getReceiptNo() != null
+                                  && !item.detail.getReceiptNo().isEmpty();
+                item.receiptNumber = item.issued ? item.detail.getReceiptNo() : "";
+            }
             items.add(item);
         }
         model.addAttribute("items", items);
@@ -996,13 +1039,15 @@ public class ReceiptMenuController {
     // ─── 内部クラス ────────────────────────────────────────────
     public static class JobseekerReceiptItem {
         public Person             person;
-        public SalesDetail        detail;       // 代表レコード（領収番号管理用）
+        public SalesDetail        detail;       // 代表レコード（領収番号管理用）- salesルートのみ
+        public Introduction       intro;        // 紹介状レコード - introルートのみ
         public List<SalesDetail>  groupDetails; // グループ内の全明細（最大3件）
         public Long               salesId;
         public boolean            issued;
         public String             receiptNumber;
         public int                groupCount;   // グループ件数
         public int                totalFee;     // 710×件数
+        public String             source = "sales"; // "sales" or "intro"
     }
 
     public static class ReceiptItem {
