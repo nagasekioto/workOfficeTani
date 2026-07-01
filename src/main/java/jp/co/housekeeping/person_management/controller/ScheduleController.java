@@ -42,6 +42,7 @@ public class ScheduleController {
 
         model.addAttribute("persons", personRepository.findAll());
         model.addAttribute("hours", buildHourList());
+        model.addAttribute("slots", buildSlotList());
         model.addAttribute("days", java.util.Arrays.asList(DAYS));
 
         if (personId != null) {
@@ -55,19 +56,20 @@ public class ScheduleController {
     }
 
     // ─── 空き検索 API ───────────────────────────────────────
-    // 指定曜日・時間帯で「空いている求職者」の一覧をJSONで返す
+    // 指定曜日・時間帯（分単位）で「空いている求職者」の一覧をJSONで返す
     @GetMapping("/person/schedule/search")
     @ResponseBody
     public List<Map<String, String>> searchAvailable(
             @RequestParam String day,
-            @RequestParam int hour,
+            @RequestParam int slotStart,   // 例: 9:30 → 570
+            @RequestParam int slotEnd,     // 例: 11:00 → 660
             HttpSession session) {
         if (session.getAttribute("authenticated") == null) return new ArrayList<>();
 
         List<Map<String, String>> result = new ArrayList<>();
         ObjectMapper mapper = new ObjectMapper();
 
-        // 全求職者について、指定曜日×時間が空いているか判定
+        // 全求職者について、指定曜日×時間帯に既存の勤務と重なっているか判定
         for (Person p : personRepository.findAll()) {
             boolean booked = false;
             for (Introduction intro : introductionRepository.findAll()) {
@@ -83,9 +85,9 @@ public class ScheduleController {
                     if (dowStr.isBlank() || startH < 0 || endH < 0) continue;
                     for (String d : dowStr.split("・")) {
                         if (!d.trim().equals(day)) continue;
-                        int startMin = startH * 60 + startM;
-                        int endMin   = endH   * 60 + endM;
-                        if (startMin < (hour + 1) * 60 && endMin > hour * 60) {
+                        int wStart = startH * 60 + startM;
+                        int wEnd   = endH   * 60 + endM;
+                        if (wStart < slotEnd && wEnd > slotStart) {
                             booked = true;
                             break;
                         }
@@ -157,5 +159,22 @@ public class ScheduleController {
         List<Integer> list = new ArrayList<>();
         for (int h = HOUR_START; h < HOUR_END; h++) list.add(h);
         return list;
+    }
+
+    private List<SlotOption> buildSlotList() {
+        List<SlotOption> list = new ArrayList<>();
+        for (int m = HOUR_START * 60; m <= HOUR_END * 60; m += 30) {
+            int h = m / 60, mm = m % 60;
+            list.add(new SlotOption(m, h + ":" + (mm == 0 ? "00" : mm)));
+        }
+        return list;
+    }
+
+    public static class SlotOption {
+        public final int minutes;
+        public final String label;
+        public SlotOption(int minutes, String label) { this.minutes = minutes; this.label = label; }
+        public int getMinutes() { return minutes; }
+        public String getLabel() { return label; }
     }
 }

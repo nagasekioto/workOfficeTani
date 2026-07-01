@@ -70,9 +70,16 @@
                 </select>
             </div>
             <div>
-                <label>時間帯（開始時刻）</label>
-                <select id="searchHour">
-                    <option th:each="h : ${hours}" th:value="${h}" th:text="${h + ':00 〜 ' + (h+1) + ':00'}">0:00 〜 1:00</option>
+                <label>開始時刻</label>
+                <select id="searchStart">
+                    <option th:each="slot : ${slots}" th:value="${slot.minutes}" th:text="${slot.label}"></option>
+                </select>
+            </div>
+            <div>
+                <label>終了時刻</label>
+                <select id="searchEnd">
+                    <option th:each="slot : ${slots}" th:value="${slot.minutes}" th:text="${slot.label}"
+                            th:selected="${slot.minutes == 60}"></option>
                 </select>
             </div>
             <button class="btn-search" onclick="searchAvailable()">検索</button>
@@ -135,20 +142,28 @@
 
 <script>
 function searchAvailable() {
-    var day  = document.getElementById('searchDay').value;
-    var hour = document.getElementById('searchHour').value;
+    var day   = document.getElementById('searchDay').value;
+    var start = parseInt(document.getElementById('searchStart').value);
+    var end   = parseInt(document.getElementById('searchEnd').value);
+    if (isNaN(start) || isNaN(end) || end <= start) {
+        alert('終了時刻は開始時刻より後にしてください');
+        return;
+    }
     var resultDiv = document.getElementById('searchResult');
     resultDiv.style.display = 'block';
     resultDiv.innerHTML = '<span style="color:#888;font-size:13px;">検索中...</span>';
 
-    fetch('/person/schedule/search?day=' + encodeURIComponent(day) + '&hour=' + hour)
+    var startLabel = formatMin(start);
+    var endLabel   = formatMin(end);
+
+    fetch('/person/schedule/search?day=' + encodeURIComponent(day) + '&slotStart=' + start + '&slotEnd=' + end)
         .then(function(r){ return r.json(); })
         .then(function(data) {
             if (data.length === 0) {
-                resultDiv.innerHTML = '<div class="result-none">⚠ ' + day + '曜日 ' + hour + ':00〜' + (parseInt(hour)+1) + ':00 に空いている求職者はいません</div>';
+                resultDiv.innerHTML = '<div class="result-none">⚠ ' + day + '曜日 ' + startLabel + '〜' + endLabel + ' に空いている求職者はいません</div>';
                 return;
             }
-            var label = day + '曜日 ' + hour + ':00 〜 ' + (parseInt(hour)+1) + ':00 に空いている求職者：';
+            var label = day + '曜日 ' + startLabel + ' 〜 ' + endLabel + ' に空いている求職者：';
             var tags = data.map(function(p) {
                 return '<span class="result-tag" onclick="jumpToSchedule(' + p.id + ')" style="cursor:pointer;" title="クリックでスケジュール表示">'
                      + p.name + '（' + p.kana + '）</span>';
@@ -159,6 +174,11 @@ function searchAvailable() {
         .catch(function() {
             resultDiv.innerHTML = '<div class="result-none">検索に失敗しました</div>';
         });
+}
+function formatMin(min) {
+    var h = Math.floor(min / 60);
+    var m = min % 60;
+    return h + ':' + (m === 0 ? '00' : m);
 }
 function jumpToSchedule(personId) {
     location.href = '/person/schedule?personId=' + personId;
