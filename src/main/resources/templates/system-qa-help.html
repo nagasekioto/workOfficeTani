@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Q&amp;A表（1-7-2）</title>
+    <style>
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; color: #333; }
+        .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; font-size: 14px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .qa-section { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,.1); margin-bottom: 20px; overflow: hidden; }
+        .qa-section-header { background: #4CAF50; color: white; padding: 12px 20px; font-size: 15px; font-weight: bold; }
+        .qa-item { border-bottom: 1px solid #f0f0f0; }
+        .qa-item:last-child { border-bottom: none; }
+        .qa-q { padding: 14px 20px 8px; display: flex; gap: 10px; cursor: pointer; }
+        .qa-q:hover { background: #f9f9f9; }
+        .q-icon { background: #4CAF50; color: white; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; flex-shrink: 0; }
+        .q-text { font-size: 14px; font-weight: bold; color: #222; line-height: 1.5; flex: 1; }
+        .qa-a { padding: 0 20px 14px 52px; display: none; }
+        .qa-a.open { display: block; }
+        .a-icon { background: #FF9800; color: white; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; flex-shrink: 0; vertical-align: top; margin-right: 8px; }
+        .a-text { font-size: 13px; color: #444; line-height: 1.7; display: inline; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>❓ Q&amp;A表（1-7-2）</h1>
+    <a href="/other-menu" class="back-btn">← その他に戻る</a>
+</div>
+<div class="container">
+
+    <!-- 求職者管理 -->
+    <div class="qa-section">
+        <div class="qa-section-header">📋 求職者管理</div>
+        <div class="qa-item"><div class="qa-q" onclick="toggle(this)"><span class="q-icon">Q</span><span class="q-text">売上入力（1-1-3）で「修正」を押すと情報が消える</span></div>
+        <div class="qa-a"><span class="a-icon">A</span><span class="a-text">修正リンクから開く際は既存データが自動復元されます。情報が消える場合は一度ページを再読み込みし、再度「修正」ボタンを押してください。また就労開始日の入力欄が新たに追加されているため、開始日を入力してから保存すると就労日数が正しく計算されます。</span></div></div>
+
+        <div class="qa-item"><div class="qa-q" onclick="toggle(this)"><span class="q-icon">Q</span><span class="q-text">稼働管理簿（1-1-5）で稼働履歴が増えてしまう</span></div>
+        <div class="qa-a"><span class="a-icon">A</span><span class="a-text">「修正→保存」を繰り返すと重複が起きる場合があります。現在のシステムでは各行に紐づくID（detailId）をもとに更新するため、通常は重複しません。それでも増える場合は不要な行を稼働管理簿の「🗑 削除」ボタンで削除してください。</span></div></div>
+
+        <div class="qa-item"><div class="qa-q" onclick="toggle(this)"><span class="q-icon">Q</span><span class="q-text">スケジュール（1-1-2）で勤務中（赤）セルが表示されない</span></div>
+        <div class="qa-a"><span class="a-icon">A</span><span class="a-text">紹介状作成（1-4-1）の「③ 雇用条件」で勤務日（曜日）と勤務時間（開始・終了）が入力されているか確認してください。これらが未入力の場合、スケジュールに反映されません。</span></div></div>
+
+        <div class="qa-item"><div class="qa-q" onclick="toggle(this)"><span class="q-icon">Q</span><span class="q-text">就労日数を変更して保存しても反映されない</span></div>
+        <div class="qa-a"><span class="a-icon">A</span><span class="a-text">就労日数は「就労開始日」から計算されます。就労開始日の日付欄に正しい日付を入力してから就労日数を変更してください。</span></div></div>
+    </div>
+
+    <!-- 紹介状 -->
+    <div class="qa-section">
+        <div class="qa-section-header">📄 紹介状（1-4）</div>
+        <div class="qa-item"><div class="qa-q" onclick="toggle(this)"><span class="q-icon">Q</span><span class="q-text">紹介状PDFの賃金欄が空白になる</span></div>
+        <div class="qa-a"><span class="a-icon">A</span><span class="a-text">賃金形態（時給・日給）のチェックボックスにチェックが入っているか確認してください。チェックが入っていない形態の入力内容はPDFに反映されません。また基本給欄に金額が入力されているかも確認してください。</span></div></div>
+
+        <div class="qa-item"><div class="qa-q" onclick="toggle(this)"><span class="q-icon">Q</span><span class="q-text">紹介状を修正すると内容がリセットされる</span></div>
+        <div class="qa-a"><span class="a-icon">A</span><span class="a-text">紹介状一覧（1-4-2）の「修正」ボタンから開くと、前回保存した内容が自動復元されます。新規作成ボタンを押すと空の状態になりますのでご注意ください。</span></div></div>
+
+        <div class="qa-item"><div class="qa-q" onclick="toggle(this)"><span class="q-icon">Q</span><span class="q-text">求人受付手数料（1,000円）のチェックが保存されない</span></div>
+        <div class="qa-a"><span class="a-icon">A</span><span class="a-text">チェックボックスの状態は紹介状の保存データ（formData）に記録されます。紹介状を保存（印刷）した後、修正画面を開き直すと状態が復元されます。</span></div></div>
+    </div>
+
+    <!-- 求人管理簿 -->
+    <div class="qa-section">
+        <div class="qa-section-header">📊 求人管理簿（1-2-2）</div>
+        <div class="qa-item"><div class="qa-q" onclick="toggle(this)"><span class="q-icon">Q</span><span class="q-text">求人管理簿PDFの賃金欄が空欄になる</span></div>
+        <div class="qa-a"><span class="a-icon">A</span><span class="a-text">賃金は紹介状作成（1-4-1）で入力した「賃金形態・基本給」を参照しています。紹介状を作成し、賃金形態（時給・日給）にチェックを入れて基本給を入力してください。紹介状が作成されていない求職者の行は賃金欄が空欄になります。</span></div></div>
+
+        <div class="qa-item"><div class="qa-q" onclick="toggle(this)"><span class="q-icon">Q</span><span class="q-text">求人管理簿の採否・備考が保存されない</span></div>
+        <div class="qa-a"><span class="a-icon">A</span><span class="a-text">「💾 入力内容を保存」ボタンを押してください。「印刷内容確認」や「印刷」ボタンを押しただけでは保存されません。</span></div></div>
+    </div>
+
+    <!-- 領収書 -->
+    <div class="qa-section">
+        <div class="qa-section-header">🧾 領収書（1-5）</div>
+        <div class="qa-item"><div class="qa-q" onclick="toggle(this)"><span class="q-icon">Q</span><span class="q-text">求職受付手数料領収書（1-5-2）に表示されない</span></div>
+        <div class="qa-a"><span class="a-icon">A</span><span class="a-text">紹介状作成（1-4-1）の「受付料 710円（固定）」チェックボックスにチェックを入れて紹介状を保存すると自動的に一覧に表示されます。</span></div></div>
+
+        <div class="qa-item"><div class="qa-q" onclick="toggle(this)"><span class="q-icon">Q</span><span class="q-text">領収番号をリセットしたい</span></div>
+        <div class="qa-a"><span class="a-icon">A</span><span class="a-text">発行済み行の「🔄 リセット」ボタンを押すと領収番号がクリアされ、次回印刷時に新しい番号が採番されます。</span></div></div>
+    </div>
+
+</div>
+<script>
+function toggle(el) {
+    var ans = el.nextElementSibling;
+    ans.classList.toggle('open');
+}
+</script>
+</body>
+</html>

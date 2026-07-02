@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>システム説明書（1-7-1）</title>
+    <style>
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; color: #333; }
+        .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; font-size: 14px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .section { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,.1); margin-bottom: 20px; overflow: hidden; }
+        .section-header { background: #1565C0; color: white; padding: 14px 20px; font-size: 16px; font-weight: bold; }
+        .section-body { padding: 20px; }
+        .subsection { margin-bottom: 18px; }
+        .subsection-title { font-size: 15px; font-weight: bold; color: #1565C0; border-left: 4px solid #1565C0; padding-left: 10px; margin-bottom: 8px; }
+        .step-list { list-style: none; padding: 0; margin: 0; }
+        .step-list li { padding: 6px 0 6px 20px; position: relative; font-size: 14px; line-height: 1.6; color: #333; }
+        .step-list li::before { content: "▶"; position: absolute; left: 0; color: #1565C0; font-size: 11px; top: 9px; }
+        .note { background: #FFF8E1; border-left: 4px solid #FFC107; padding: 10px 14px; border-radius: 0 4px 4px 0; font-size: 13px; color: #555; margin: 8px 0; }
+        .tag { display: inline-block; background: #E3F2FD; color: #1565C0; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; margin-right: 4px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+        th { background: #E3F2FD; color: #1565C0; padding: 8px 12px; text-align: left; border: 1px solid #BBDEFB; }
+        td { padding: 8px 12px; border: 1px solid #e0e0e0; vertical-align: top; }
+        tr:nth-child(even) td { background: #fafafa; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>📖 システム説明書（1-7-1）</h1>
+    <a href="/other-menu" class="back-btn">← その他に戻る</a>
+</div>
+<div class="container">
+
+    <!-- 1-1 求職者管理 -->
+    <div class="section">
+        <div class="section-header">1-1 求職者管理</div>
+        <div class="section-body">
+            <div class="subsection">
+                <div class="subsection-title">1-1-1 求職者登録・修正</div>
+                <ul class="step-list">
+                    <li>求職者の基本情報（氏名・住所・電話番号・希望職種・資格など）を登録・修正します。</li>
+                    <li>「新規登録」ボタンから登録。既存求職者は一覧の「修正」ボタンから修正できます。</li>
+                    <li>介護ヘルパー資格・料理の好みはスケジュール検索（1-1-2）の絞り込みに使われます。</li>
+                </ul>
+            </div>
+            <div class="subsection">
+                <div class="subsection-title">1-1-2 求職者管理スケジュール</div>
+                <ul class="step-list">
+                    <li>求職者を選択すると、6:00〜翌6:00の週間スケジュールグリッドが表示されます。</li>
+                    <li>赤セル：紹介状（1-4-1）に登録済みの勤務時間（埋まっている）。求人者名が表示されます。</li>
+                    <li>緑セル：空いている時間帯。</li>
+                    <li>「空いている求職者を探す」で曜日・時間帯を指定すると、その時間に空いている求職者一覧が表示されます。介護ヘルパー資格・料理好きで絞り込みも可能です。</li>
+                </ul>
+            </div>
+            <div class="subsection">
+                <div class="subsection-title">1-1-3 売上入力</div>
+                <ul class="step-list">
+                    <li>求職者ごとに最大5件分の売上明細（就業先・就業日数・時給・備考など）を登録します。</li>
+                    <li>登録した明細は稼働管理簿（1-1-5）・月別売上一覧に反映されます。</li>
+                </ul>
+            </div>
+            <div class="subsection">
+                <div class="subsection-title">1-1-4 求職管理簿（PDF出力）</div>
+                <ul class="step-list">
+                    <li>求職者を選択すると、紹介状一覧（1-4-2）に基づく紹介履歴一覧が表示されます。</li>
+                    <li>採否・備考を入力して「入力内容を保存」すると次回以降も復元されます。</li>
+                    <li>「印刷内容確認」「保存（PDF）」から求職管理簿PDFを出力できます。</li>
+                </ul>
+            </div>
+            <div class="subsection">
+                <div class="subsection-title">1-1-5 稼働管理簿</div>
+                <ul class="step-list">
+                    <li>求職者ごとの稼働履歴を一覧表示します。備考の入力・保存、行の削除が可能です。</li>
+                    <li>「✏ 修正」ボタンで売上入力（1-1-3）画面に遷移し、既存データを保持した状態で修正できます。</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1-2 求人者管理 -->
+    <div class="section">
+        <div class="section-header">1-2 求人者管理</div>
+        <div class="section-body">
+            <div class="subsection">
+                <div class="subsection-title">1-2-1 求人者新規登録</div>
+                <ul class="step-list">
+                    <li>求人者（就業先）の基本情報（氏名・住所・担当者・電話番号・仕事内容など）を登録します。</li>
+                </ul>
+            </div>
+            <div class="subsection">
+                <div class="subsection-title">1-2-2 求人管理簿（PDF出力）</div>
+                <ul class="step-list">
+                    <li>求人者を選択すると、紹介状一覧（1-4-2）に基づく紹介履歴が表示されます。</li>
+                    <li>採否・雇用期間状況・備考を入力して保存し、PDFを出力できます。</li>
+                    <li>賃金（給／円）は紹介状作成（1-4-1）の賃金設定から自動参照されます。</li>
+                </ul>
+            </div>
+            <div class="subsection">
+                <div class="subsection-title">1-2-3 求人者情報</div>
+                <ul class="step-list">
+                    <li>登録済み求人者の一覧です。修正・削除が可能です。</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1-4 紹介状 -->
+    <div class="section">
+        <div class="section-header">1-4 紹介状</div>
+        <div class="section-body">
+            <div class="subsection">
+                <div class="subsection-title">1-4-1 紹介状作成</div>
+                <ul class="step-list">
+                    <li>求職者・求人者を選択して紹介状を作成します。</li>
+                    <li>① 雇用先情報　② 職務内容　③ 雇用条件（雇用期間・勤務日・勤務時間）　④ 賃金　⑤ 保険・書類　⑥ 備考　の各セクションを入力します。</li>
+                    <li>「求人受付手数料 1,000円（固定）」チェックで備考2行目に「初回精算時のみ受付手数料別途 1,000円」を自動入力します。</li>
+                    <li>「受付料 710円（固定）」チェックで求職受付手数料領収書（1-5-2）に自動連携されます。</li>
+                    <li>賃金形態は時給・日給の複数選択が可能です。PDF・印刷プレビュー・詳細画面すべてに反映されます。</li>
+                </ul>
+            </div>
+            <div class="subsection">
+                <div class="subsection-title">1-4-2 紹介状一覧</div>
+                <ul class="step-list">
+                    <li>作成済みの紹介状一覧です。「印刷内容確認」でPDFプレビュー、「修正」で内容を編集できます。</li>
+                    <li>修正時は既存データが保持された状態で編集画面が開きます。</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1-5 領収書作成 -->
+    <div class="section">
+        <div class="section-header">1-5 領収書作成</div>
+        <div class="section-body">
+            <div class="subsection">
+                <div class="subsection-title">1-5-1 売上領収書</div>
+                <ul class="step-list">
+                    <li>売上明細をもとに領収書PDFを発行します。発行すると領収番号が採番され、発行済みとして管理されます。</li>
+                </ul>
+            </div>
+            <div class="subsection">
+                <div class="subsection-title">1-5-2 求職受付手数料領収書</div>
+                <ul class="step-list">
+                    <li>求職受付手数料（710円）の領収書を発行します。</li>
+                    <li>紹介状作成（1-4-1）で「受付料 710円」にチェックを入れた場合、この一覧に自動で表示されます。</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 月別売上一覧 -->
+    <div class="section">
+        <div class="section-header">月別売上一覧</div>
+        <div class="section-body">
+            <ul class="step-list">
+                <li>稼働管理簿（1-1-5）の「月別売上一覧」から遷移します。月を選択すると、その月の売上明細が一覧表示されます。</li>
+                <li>稼働管理簿から遷移した場合、当月がデフォルトで選択されます。</li>
+            </ul>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

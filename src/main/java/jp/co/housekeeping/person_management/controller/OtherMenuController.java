@@ -37,7 +37,19 @@ public class OtherMenuController {
         return "other-menu";
     }
 
-    // ─── 1-5-1 システム診断 ──────────────────────────────────────
+    @GetMapping("/system-manual")
+    public String systemManual(HttpSession session) {
+        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+        return "system-manual";
+    }
+
+    @GetMapping("/system-qa-help")
+    public String systemQaHelp(HttpSession session) {
+        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+        return "system-qa-help";
+    }
+
+    // ─── 1-7-3 システム診断 ──────────────────────────────────────
     @GetMapping("/system-qa")
     public String systemQa(@RequestParam(required = false) String month,
                             HttpSession session, Model model) {
