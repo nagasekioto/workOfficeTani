@@ -347,7 +347,7 @@ public class ReceiptMenuController {
 
                 boolean isCustomer  = d.getCustomerFee()  != null && d.getCustomerFee()  > 0;
                 boolean isJobseeker = d.getReceptionFee() != null && d.getReceptionFee() > 0;
-                row.receiptType = isCustomer ? "1-7-1 求人者宛" : (isJobseeker ? "1-7-2 求職受付" : "不明");
+                row.receiptType = isCustomer ? "1-5-1 求人者宛" : (isJobseeker ? "1-5-2 求職受付" : "不明");
 
                 if (isCustomer) {
                     int tw = d.getMonthlyTotal() != null ? d.getMonthlyTotal() : 0;
