@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>領収書削除（1-5-4） - ※テスト用</title>
+    <style>
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #fff3f3; margin: 0; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; border: 2px solid #f44336; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; color: #c62828; }
+        .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; font-size: 14px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .warn-banner { background: #FFEBEE; border: 2px solid #f44336; border-radius: 8px; padding: 16px 20px; margin-bottom: 20px; font-size: 14px; color: #b71c1c; }
+        .warn-banner strong { font-size: 16px; display: block; margin-bottom: 6px; }
+        .card { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,.1); padding: 24px; margin-bottom: 20px; }
+        .card h2 { margin-top: 0; color: #333; font-size: 16px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .action-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+        .btn-danger { background: #f44336; color: white; border: none; border-radius: 5px; padding: 10px 20px; font-size: 14px; font-weight: bold; cursor: pointer; }
+        .btn-danger:hover { background: #b71c1c; }
+        .result-box { background: #E8F5E9; border: 1px solid #4CAF50; border-radius: 6px; padding: 12px 16px; font-size: 13px; color: #1b5e20; margin-top: 12px; display: none; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; }
+        th { background: #f5f5f5; padding: 8px 12px; text-align: left; border: 1px solid #ddd; }
+        td { padding: 8px 12px; border: 1px solid #ddd; }
+        tr:nth-child(even) td { background: #fafafa; }
+        .badge-issued { background: #FFECB3; color: #E65100; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; }
+        select, input[type=month] { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>🗑️ 領収書削除（1-5-4）<span style="font-size:14px;margin-left:12px;color:#f44336;">※ テスト用機能</span></h1>
+    <a href="/receipt-menu" class="back-btn">← 領収書作成に戻る</a>
+</div>
+<div class="container">
+
+    <div class="warn-banner">
+        <strong>⚠️ この機能はテスト時のみ使用してください</strong>
+        削除した領収書番号は元に戻せません。本番運用中は使用しないでください。
+    </div>
+
+    <!-- 全件リセット -->
+    <div class="card">
+        <h2>🔄 全件リセット（すべての領収書番号をクリア）</h2>
+        <p style="font-size:13px;color:#666;margin:0 0 12px;">発行済みのすべての SalesDetail.receiptNo と Introduction.ledgerRemarks(RCPT:) をクリアします。</p>
+        <form action="/receipt-menu/delete/all" method="post"
+              onsubmit="return confirm('⚠️ 全件の領収書番号をリセットします。\nこの操作は元に戻せません。\nよろしいですか？')">
+            <button type="submit" class="btn-danger">🗑️ 全件リセット実行</button>
+        </form>
+        <div th:if="${resetDone}" class="result-box" style="display:block;"
+             th:text="'✅ ' + ${resetCount} + '件をリセットしました'"></div>
+    </div>
+
+    <!-- 発行済み一覧 + 個別削除 -->
+    <div class="card">
+        <h2>📋 発行済み領収書一覧（個別削除）</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>種別</th>
+                    <th>相手方</th>
+                    <th>領収番号</th>
+                    <th>削除</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="item : ${issuedItems}">
+                    <td th:text="${item.type}"></td>
+                    <td th:text="${item.partyName}"></td>
+                    <td><span class="badge-issued" th:text="${item.receiptNo}"></span></td>
+                    <td>
+                        <form th:action="@{/receipt-menu/delete/one}" method="post" style="display:inline;"
+                              th:onsubmit="'return confirm(\'領収番号 ' + ${item.receiptNo} + ' を削除します。よろしいですか？\')'">
+                            <input type="hidden" name="type" th:value="${item.type}">
+                            <input type="hidden" name="targetId" th:value="${item.targetId}">
+                            <button type="submit" class="btn-danger" style="padding:4px 12px;font-size:12px;">削除</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(issuedItems)}">
+                    <td colspan="4" style="text-align:center;color:#999;padding:20px;">発行済みの領収書はありません</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+</body>
+</html>

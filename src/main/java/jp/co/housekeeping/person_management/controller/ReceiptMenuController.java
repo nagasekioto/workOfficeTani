@@ -289,6 +289,100 @@ public class ReceiptMenuController {
         response.getOutputStream().flush();
     }
 
+    // ─── 1-5-4 領収書削除（テスト用）──────────────────────
+    @GetMapping("/delete")
+    public String deleteReceiptPage(HttpSession session, Model model) {
+        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+
+        List<DeleteReceiptItem> items = new ArrayList<>();
+        // SalesDetail.receiptNoが設定されているもの
+        for (Sales s : salesRepository.findAll()) {
+            if (s.getPersonId() == null) continue;
+            final String[] pname = {""};
+            personRepository.findById(s.getPersonId()).ifPresent(p -> pname[0] = p.getLastNameKanji() + " " + p.getFirstNameKanji());
+            for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {
+                if (d.getReceiptNo() == null || d.getReceiptNo().isBlank()) continue;
+                DeleteReceiptItem item = new DeleteReceiptItem();
+                item.type      = d.getCustomerFee() != null && d.getCustomerFee() > 0 ? "1-5-1 求人者宛" : "1-5-2 求職受付";
+                item.partyName = pname[0];
+                item.receiptNo = d.getReceiptNo();
+                item.targetId  = String.valueOf(d.getId());
+                items.add(item);
+            }
+        }
+        // Introduction.ledgerRemarksがRCPT:で始まるもの
+        for (Introduction intro : introductionRepository.findAll()) {
+            String lr = intro.getLedgerRemarks();
+            if (lr == null || !lr.startsWith("RCPT:")) continue;
+            final String[] pname = {""};
+            if (intro.getPersonId() != null)
+                personRepository.findById(intro.getPersonId()).ifPresent(p -> pname[0] = p.getLastNameKanji() + " " + p.getFirstNameKanji());
+            DeleteReceiptItem item = new DeleteReceiptItem();
+            item.type      = "1-5-2 求職受付(紹介状)";
+            item.partyName = pname[0];
+            item.receiptNo = lr.substring(5);
+            item.targetId  = String.valueOf(intro.getId());
+            items.add(item);
+        }
+
+        model.addAttribute("issuedItems", items);
+        return "receipt-delete";
+    }
+
+    @PostMapping("/delete/all")
+    public String deleteAllReceipts(HttpSession session, Model model) {
+        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+        int count = 0;
+        for (Sales s : salesRepository.findAll()) {
+            for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {
+                if (d.getReceiptNo() != null && !d.getReceiptNo().isBlank()) {
+                    d.setReceiptNo(null);
+                    salesDetailRepository.save(d);
+                    count++;
+                }
+            }
+        }
+        for (Introduction intro : introductionRepository.findAll()) {
+            String lr = intro.getLedgerRemarks();
+            if (lr != null && lr.startsWith("RCPT:")) {
+                intro.setLedgerRemarks(null);
+                introductionRepository.save(intro);
+                count++;
+            }
+        }
+        List<DeleteReceiptItem> items = new ArrayList<>();
+        model.addAttribute("issuedItems", items);
+        model.addAttribute("resetDone", true);
+        model.addAttribute("resetCount", count);
+        return "receipt-delete";
+    }
+
+    @PostMapping("/delete/one")
+    public String deleteOneReceipt(@RequestParam String type,
+                                   @RequestParam String targetId,
+                                   HttpSession session) {
+        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+        if (type.startsWith("1-5-2 求職受付(紹介状)")) {
+            introductionRepository.findById(Long.parseLong(targetId)).ifPresent(intro -> {
+                intro.setLedgerRemarks(null);
+                introductionRepository.save(intro);
+            });
+        } else {
+            salesDetailRepository.findById(Long.parseLong(targetId)).ifPresent(d -> {
+                d.setReceiptNo(null);
+                salesDetailRepository.save(d);
+            });
+        }
+        return "redirect:/receipt-menu/delete";
+    }
+
+    public static class DeleteReceiptItem {
+        public String type;
+        public String partyName;
+        public String receiptNo;
+        public String targetId;
+    }
+
     // ─── 発行済み一覧（月単位）────────────────────────
     @GetMapping("/issued-list")
     public String issuedList(@RequestParam(required = false) String month,
