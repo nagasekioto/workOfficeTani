@@ -213,14 +213,11 @@ public class SalesController {
             if (saved.getId() != null) newDetailIds.add(saved.getId());
         }
 
-        // 今回の保存に含まれなかった旧レコードを削除（receiptNo発行済みは保持）
-        for (SalesDetail od : oldDetails) {
-            if (!newDetailIds.contains(od.getId())) {
-                if (od.getReceiptNo() == null || od.getReceiptNo().isEmpty()) {
-                    salesDetailRepository.deleteById(od.getId());
-                }
-            }
-        }
+        // 今回の保存に含まれなかった旧レコードは削除しない（保持する）
+        // ── 求人者を選択しなかったスロットの既存データはそのまま残す。
+        //    ユーザーが「勤務先1を空欄のまま勤務先2だけ入力して保存」したとき、
+        //    既存の勤務先1データが消えないようにするための仕様変更。
+        // ── 完全に削除したい場合は稼働管理簿（1-1-5）の「削除」ボタンを使う。
 
         return "redirect:/person/sales?saved=" + personId;
     }
