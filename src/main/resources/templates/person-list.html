@@ -98,7 +98,7 @@
                 <td>
                     <a th:href="@{/person/edit/{id}(id=${p.id})}" class="edit-link">修正</a>
                     <a href="#" class="delete-link"
-                       th:attr="onclick='confirmDeleteP(' + ${p.id} + ', this)'">削除</a>
+                       th:attr="onclick='confirmPersonDelete(' + ${p.id} + ', this)'">削除</a>
                 </td>
             </tr>
         </tbody>
@@ -160,9 +160,14 @@ function sortTable(col, dir) {
     });
 }
 
-function confirmDelete(form) {
-    var name = form.closest('tr').cells[1].textContent.trim();
-    return confirm('「' + name + '」を削除してもいいですか？\nこの操作は元に戻せません。');
+function confirmPersonDelete(id, el) {
+    var name = el.closest('tr').cells[1].textContent.trim();
+    if (!confirm('「' + name + '」を削除してもいいですか？\nこの操作は元に戻せません。')) return;
+    var form = document.createElement('form');
+    form.method = 'post';
+    form.action = '/person/delete/' + id;
+    document.body.appendChild(form);
+    form.submit();
 }
 
 window.addEventListener('load', function() {
