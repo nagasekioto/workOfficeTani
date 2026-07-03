@@ -190,54 +190,6 @@
     <!-- ═══════════════════════════════════════════════════ -->
     <!-- チェック3: 受付手数料なし（1-3-2に出てこない原因） -->
     <!-- ═══════════════════════════════════════════════════ -->
-    <div class="check-card">
-        <div th:class="${#lists.isEmpty(noReceptionFeeRows)} ? 'check-header ok' : 'check-header warn'">
-            <span class="check-icon" th:text="${#lists.isEmpty(noReceptionFeeRows)} ? '✅' : '⚠️'"></span>
-            <span class="check-title">【チェック③】求人受付事務費（710円）が未設定のデータ（求職受付手数料管理簿に表示されない原因）</span>
-            <span th:class="${#lists.isEmpty(noReceptionFeeRows)} ? 'check-count count-ok' : 'check-count count-warn'"
-                  th:text="${#lists.isEmpty(noReceptionFeeRows)} ? '問題なし' : (${#lists.size(noReceptionFeeRows)} + '件 要確認')"></span>
-        </div>
-        <div class="check-body">
-            <th:block th:if="${not #lists.isEmpty(noReceptionFeeRows)}">
-                <div class="cause-box">
-                    <div class="cause-title">&#9888; 原因</div>
-                    領収書は発行済みですが、<strong>求人受付事務費（710円）が設定されていない</strong>ため、<br>
-                    求職受付手数料管理簿（1-3-2）に表示されません。<br>
-                    初めてその求人者のもとへ行く場合は 710円 が必要ですが、設定が漏れている可能性があります。
-                </div>
-                <div class="fix-box">
-                    <div class="fix-title">&#128161; 確認方法</div>
-                    <div class="fix-step">① 該当の求職者の売上明細（1-1-3）を開く</div>
-                    <div class="fix-step">② 「受付料（710円）」欄が空欄になっていれば、初回訪問かどうか確認する</div>
-                    <div class="fix-step">③ 初回訪問の場合は 710 を入力して保存し、領収書を再発行する</div>
-                    <div class="fix-step">④ 2回目以降であれば設定不要（1-3-2には表示されない）</div>
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>求職者名</th>
-                            <th>求人者名</th>
-                            <th>領収書番号</th>
-                            <th>就労開始日</th>
-                            <th class="warn-th">受付料（710円）</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr th:each="r : ${noReceptionFeeRows}">
-                            <td th:text="${r.personName}">-</td>
-                            <td th:text="${r.customerName}">-</td>
-                            <td th:text="${r.receiptNo}">-</td>
-                            <td th:text="${r.workStartDate}">-</td>
-                            <td><span class="badge badge-no">未設定（0円）</span></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </th:block>
-            <div class="ok-message" th:if="${#lists.isEmpty(noReceptionFeeRows)}">
-                ✅ 求人受付事務費が未設定の発行済みデータはありません。
-            </div>
-        </div>
-    </div>
 
 </div>
 </body>
