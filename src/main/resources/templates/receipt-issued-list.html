@@ -50,7 +50,7 @@
 </head>
 <body>
 <div class="header">
-    <h1>&#128203; 発行済み領収書一覧（1-7-1 / 1-7-2）</h1>
+    <h1>&#128203; 発行済み領収書一覧（1-5-1 / 1-5-2）</h1>
     <div style="display:flex;gap:8px;align-items:center;">
         <a th:if="${not #lists.isEmpty(rows)}"
            th:href="${viewMode == 'year'
@@ -123,17 +123,17 @@
                 <tr th:each="r : ${rows}">
                     <td th:text="${r.receiptNumber}"></td>
                     <td>
-                        <span th:if="${r.receiptType.contains('1-7-1')}"  class="badge-customer"  th:text="${r.receiptType}"></span>
-                        <span th:unless="${r.receiptType.contains('1-7-1')}" class="badge-jobseeker" th:text="${r.receiptType}"></span>
+                        <span th:if="${r.receiptType.contains('1-5-1')}"  class="badge-customer"  th:text="${r.receiptType}"></span>
+                        <span th:unless="${r.receiptType.contains('1-5-1')}" class="badge-jobseeker" th:text="${r.receiptType}"></span>
                     </td>
                     <td th:text="${r.partyName}"></td>
                     <td th:text="${r.amountStr}"></td>
                     <td th:text="${r.issuedAt != null ? #temporals.format(r.issuedAt, 'MM/dd HH:mm') : (r.issuedDate != null ? r.issuedDate.toString() : '-')}"></td>
                     <td>
-                        <a th:if="${r.receiptType.contains('1-7-1')}"
+                        <a th:if="${r.receiptType.contains('1-5-1')}"
                            th:href="@{/receipt-menu/customer-receipt/pdf(detailId=${r.salesDetailId})}"
                            target="_blank" class="pdf-link">&#128196; PDF</a>
-                        <a th:unless="${r.receiptType.contains('1-7-1')}"
+                        <a th:unless="${r.receiptType.contains('1-5-1')}"
                            th:href="@{/receipt-menu/jobseeker-receipt/pdf(detailId=${r.salesDetailId})}"
                            target="_blank" class="pdf-link">&#128196; PDF</a>
                     </td>
