@@ -68,7 +68,7 @@
                     <td><span class="badge-issued" th:text="${item.receiptNo}"></span></td>
                     <td>
                         <form th:action="@{/receipt-menu/delete/one}" method="post" style="display:inline;"
-                              th:onsubmit="'return confirm(\'領収番号 ' + ${item.receiptNo} + ' を削除します。よろしいですか？\')'">
+                              onsubmit="return confirm('この領収書番号を削除します。よろしいですか？')">
                             <input type="hidden" name="type" th:value="${item.type}">
                             <input type="hidden" name="targetId" th:value="${item.targetId}">
                             <button type="submit" class="btn-danger" style="padding:4px 12px;font-size:12px;">削除</button>
