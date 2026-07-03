@@ -141,41 +141,13 @@ public class ReceiptMenuController {
         response.getOutputStream().flush();
     }
 
-    // ─── 1-7-2 求職受付手数料領収書一覧 ─────────────────
+    // ─── 1-5-2 求職受付手数料領収書一覧 ─────────────────
     @GetMapping("/jobseeker-receipt")
     public String jobseekerReceipt(HttpSession session, Model model) {
         if (session.getAttribute("authenticated") == null) return "redirect:/login";
 
-        // 求職者×年月 でグループ化して1行表示（PDF生成も同グループで1枚）
+        // 紹介状作成（1-4-1）で「受付料 710円」チェックが入っているものだけを対象にする
         java.util.Map<String, JobseekerReceiptItem> groupMap = new java.util.LinkedHashMap<>();
-
-        // ─ 従来ルート：SalesDetail.receptionFee が 710円 ─
-        for (Sales s : salesRepository.findAll()) {
-            if (s.getPersonId() == null) continue;
-            Person person = personRepository.findById(s.getPersonId()).orElse(null);
-            if (person == null) continue;
-
-            List<SalesDetail> details = salesDetailRepository.findBySalesId(s.getId());
-            for (SalesDetail d : details) {
-                if (d.getReceptionFee() == null || d.getReceptionFee() <= 0) continue;
-
-                LocalDate iDate = d.getIntroductionDate() != null ? d.getIntroductionDate() : LocalDate.now();
-                String key = "sales_" + s.getPersonId() + "_" + iDate.getYear() + "_" + iDate.getMonthValue();
-
-                if (!groupMap.containsKey(key)) {
-                    JobseekerReceiptItem item = new JobseekerReceiptItem();
-                    item.person       = person;
-                    item.detail       = d;
-                    item.groupDetails = new ArrayList<>();
-                    item.salesId      = s.getId();
-                    item.source       = "sales";
-                    groupMap.put(key, item);
-                }
-                groupMap.get(key).groupDetails.add(d);
-            }
-        }
-
-        // ─ 新ルート：紹介状作成（1-6-1）で「受付料 710円」チェックが入っているもの ─
         ObjectMapper mapper = new ObjectMapper();
         for (Introduction intro : introductionRepository.findAll()) {
             if (intro.getPersonId() == null) continue;
@@ -203,29 +175,19 @@ public class ReceiptMenuController {
 
         List<JobseekerReceiptItem> items = new ArrayList<>();
         for (JobseekerReceiptItem item : groupMap.values()) {
-            if ("intro".equals(item.source)) {
-                item.groupCount    = 1;
-                item.totalFee      = 710;
-                item.issued        = item.intro.getLedgerRemarks() != null
-                                  && item.intro.getLedgerRemarks().startsWith("RCPT:");
-                item.receiptNumber = item.issued ? item.intro.getLedgerRemarks().substring(5) : "";
-            } else {
-                item.groupCount    = item.groupDetails.size();
-                item.totalFee      = 710 * Math.min(item.groupCount, 3);
-                item.issued        = item.detail != null
-                                  && item.detail.getReceiptNo() != null
-                                  && !item.detail.getReceiptNo().isEmpty();
-                item.receiptNumber = item.issued ? item.detail.getReceiptNo() : "";
-            }
+            item.groupCount    = 1;
+            item.totalFee      = 710;
+            item.issued        = item.intro != null
+                              && item.intro.getLedgerRemarks() != null
+                              && item.intro.getLedgerRemarks().startsWith("RCPT:");
+            item.receiptNumber = item.issued ? item.intro.getLedgerRemarks().substring(5) : "";
             items.add(item);
         }
         model.addAttribute("items", items);
         return "receipt-jobseeker-list";
     }
 
-
-
-    // ─── 1-7-2 PDF出力 ────────────────────────────────
+    // ─── 1-5-2 PDF出力（introルート） ─────────────────
     @GetMapping("/jobseeker-receipt/pdf")
     public void jobseekerReceiptPdf(@RequestParam Long detailId,
                                      HttpSession session, HttpServletResponse response)
