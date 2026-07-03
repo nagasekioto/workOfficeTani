@@ -100,23 +100,7 @@
                         </div>
                         <input type="hidden" name="workEndDates" id="workEnd1" th:value="${d?.workEndDate}">
                     </div>
-                    <div class="form-group"><label>受付料</label>
-                        <div class="fee-fixed"><span>710円（固定）</span>
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <input type="checkbox" id="recFeeCheck1" th:checked="${d != null and d.receptionFee != null and d.receptionFee > 0}" onchange="toggleReceptionFee(1)">
-                                <label for="recFeeCheck1" style="font-weight:normal;margin:0;">適用する</label>
-                                <input type="hidden" name="receptionFees" id="recFeeVal1" th:value="${d != null and d.receptionFee != null ? d.receptionFee : ''}">
-                            </div>
-                        </div>
                     </div>
-                    <div class="form-group"><label>求人受付手数料</label>
-                        <div class="fee-fixed"><span>1,000円（固定）</span>
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <input type="checkbox" id="cusFeeCheck1" th:checked="${d != null and d.customerFee != null and d.customerFee > 0}" onchange="toggleCustomerFee(1)">
-                                <label for="cusFeeCheck1" style="font-weight:normal;margin:0;">適用する</label>
-                                <input type="hidden" name="customerFees" id="cusFeeVal1" th:value="${d != null and d.customerFee != null ? d.customerFee : ''}">
-                            </div>
-                        </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label>時給（円）</label>
@@ -165,23 +149,7 @@
                         </div>
                         <input type="hidden" name="workEndDates" id="workEnd2" th:value="${d?.workEndDate}">
                     </div>
-                    <div class="form-group"><label>受付料</label>
-                        <div class="fee-fixed"><span>710円（固定）</span>
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <input type="checkbox" id="recFeeCheck2" th:checked="${d != null and d.receptionFee != null and d.receptionFee > 0}" onchange="toggleReceptionFee(2)">
-                                <label for="recFeeCheck2" style="font-weight:normal;margin:0;">適用する</label>
-                                <input type="hidden" name="receptionFees" id="recFeeVal2" th:value="${d != null and d.receptionFee != null ? d.receptionFee : ''}">
-                            </div>
-                        </div>
                     </div>
-                    <div class="form-group"><label>求人受付手数料</label>
-                        <div class="fee-fixed"><span>1,000円（固定）</span>
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <input type="checkbox" id="cusFeeCheck2" th:checked="${d != null and d.customerFee != null and d.customerFee > 0}" onchange="toggleCustomerFee(2)">
-                                <label for="cusFeeCheck2" style="font-weight:normal;margin:0;">適用する</label>
-                                <input type="hidden" name="customerFees" id="cusFeeVal2" th:value="${d != null and d.customerFee != null ? d.customerFee : ''}">
-                            </div>
-                        </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label>時給（円）</label>
@@ -230,23 +198,7 @@
                         </div>
                         <input type="hidden" name="workEndDates" id="workEnd3" th:value="${d?.workEndDate}">
                     </div>
-                    <div class="form-group"><label>受付料</label>
-                        <div class="fee-fixed"><span>710円（固定）</span>
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <input type="checkbox" id="recFeeCheck3" th:checked="${d != null and d.receptionFee != null and d.receptionFee > 0}" onchange="toggleReceptionFee(3)">
-                                <label for="recFeeCheck3" style="font-weight:normal;margin:0;">適用する</label>
-                                <input type="hidden" name="receptionFees" id="recFeeVal3" th:value="${d != null and d.receptionFee != null ? d.receptionFee : ''}">
-                            </div>
-                        </div>
                     </div>
-                    <div class="form-group"><label>求人受付手数料</label>
-                        <div class="fee-fixed"><span>1,000円（固定）</span>
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <input type="checkbox" id="cusFeeCheck3" th:checked="${d != null and d.customerFee != null and d.customerFee > 0}" onchange="toggleCustomerFee(3)">
-                                <label for="cusFeeCheck3" style="font-weight:normal;margin:0;">適用する</label>
-                                <input type="hidden" name="customerFees" id="cusFeeVal3" th:value="${d != null and d.customerFee != null ? d.customerFee : ''}">
-                            </div>
-                        </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label>時給（円）</label>
@@ -295,23 +247,7 @@
                         </div>
                         <input type="hidden" name="workEndDates" id="workEnd4" th:value="${d?.workEndDate}">
                     </div>
-                    <div class="form-group"><label>受付料</label>
-                        <div class="fee-fixed"><span>710円（固定）</span>
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <input type="checkbox" id="recFeeCheck4" th:checked="${d != null and d.receptionFee != null and d.receptionFee > 0}" onchange="toggleReceptionFee(4)">
-                                <label for="recFeeCheck4" style="font-weight:normal;margin:0;">適用する</label>
-                                <input type="hidden" name="receptionFees" id="recFeeVal4" th:value="${d != null and d.receptionFee != null ? d.receptionFee : ''}">
-                            </div>
-                        </div>
                     </div>
-                    <div class="form-group"><label>求人受付手数料</label>
-                        <div class="fee-fixed"><span>1,000円（固定）</span>
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <input type="checkbox" id="cusFeeCheck4" th:checked="${d != null and d.customerFee != null and d.customerFee > 0}" onchange="toggleCustomerFee(4)">
-                                <label for="cusFeeCheck4" style="font-weight:normal;margin:0;">適用する</label>
-                                <input type="hidden" name="customerFees" id="cusFeeVal4" th:value="${d != null and d.customerFee != null ? d.customerFee : ''}">
-                            </div>
-                        </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label>時給（円）</label>
@@ -360,23 +296,7 @@
                         </div>
                         <input type="hidden" name="workEndDates" id="workEnd5" th:value="${d?.workEndDate}">
                     </div>
-                    <div class="form-group"><label>受付料</label>
-                        <div class="fee-fixed"><span>710円（固定）</span>
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <input type="checkbox" id="recFeeCheck5" th:checked="${d != null and d.receptionFee != null and d.receptionFee > 0}" onchange="toggleReceptionFee(5)">
-                                <label for="recFeeCheck5" style="font-weight:normal;margin:0;">適用する</label>
-                                <input type="hidden" name="receptionFees" id="recFeeVal5" th:value="${d != null and d.receptionFee != null ? d.receptionFee : ''}">
-                            </div>
-                        </div>
                     </div>
-                    <div class="form-group"><label>求人受付手数料</label>
-                        <div class="fee-fixed"><span>1,000円（固定）</span>
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <input type="checkbox" id="cusFeeCheck5" th:checked="${d != null and d.customerFee != null and d.customerFee > 0}" onchange="toggleCustomerFee(5)">
-                                <label for="cusFeeCheck5" style="font-weight:normal;margin:0;">適用する</label>
-                                <input type="hidden" name="customerFees" id="cusFeeVal5" th:value="${d != null and d.customerFee != null ? d.customerFee : ''}">
-                            </div>
-                        </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label>時給（円）</label>
@@ -409,25 +329,6 @@
 </div>
 
 <script>
-function toggleReceptionFee(idx) {
-    const cb  = document.getElementById('recFeeCheck' + idx);
-    const val = document.getElementById('recFeeVal' + idx);
-    val.value = cb.checked ? '710' : '';
-}
-function toggleCustomerFee(idx) {
-    const cb  = document.getElementById('cusFeeCheck' + idx);
-    const val = document.getElementById('cusFeeVal' + idx);
-    val.value = cb.checked ? '1000' : '';
-}
-
-// ページロード時：チェック済みのhiddenが空なら1000をセット
-document.addEventListener('DOMContentLoaded', function() {
-    for (let i = 1; i <= 5; i++) {
-        const cb  = document.getElementById('cusFeeCheck' + i);
-        const val = document.getElementById('cusFeeVal' + i);
-        if (cb && val && cb.checked && !val.value) val.value = '1000';
-    }
-});
 function onCustomerChange(idx) {}
 
 function syncDaysToHidden(idx) {
