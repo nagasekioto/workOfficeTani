@@ -11,6 +11,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class LoginController {
     
     private static final String CORRECT_PASSWORD = "7136";
+
+    // ⚠️ テスト段階のため一時的にパスワードチェックを無効化(常に成功扱い)。
+    //    本番運用に戻す際は、この行を false に戻すこと。
+    private static final boolean SKIP_PASSWORD_CHECK = true;
     
     @GetMapping("/login")
     public String loginPage() {
@@ -19,7 +23,7 @@ public class LoginController {
     
     @PostMapping("/login")
     public String login(@RequestParam String password, HttpSession session) {
-        if (CORRECT_PASSWORD.equals(password)) {
+        if (SKIP_PASSWORD_CHECK || CORRECT_PASSWORD.equals(password)) {
             session.setAttribute("authenticated", true);
             return "redirect:/menu";
         }
