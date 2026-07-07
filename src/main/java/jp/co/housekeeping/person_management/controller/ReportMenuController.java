@@ -761,21 +761,23 @@ public class ReportMenuController {
         }
 
         // 労働局決算表
+        SettlementData laborSettlement = null;
         if (laborYear != null) {
             Paragraph t = new Paragraph("手数料収入決算表（労働局用決算表）　"
                 + laborYear + "年4月 ～ " + (laborYear+1) + "年3月", titleF);
             t.setSpacingAfter(4); doc.add(t);
 
-            SettlementData sd = buildSettlementData(laborYear, laborMonths, "labor");
-            doc.add(buildSettlementTable(sd, laborMonths, bold, normal, bf));
+            laborSettlement = buildSettlementData(laborYear, laborMonths, "labor");
+            doc.add(buildSettlementTable(laborSettlement, laborMonths, bold, normal, bf));
             doc.add(new Paragraph(" ", normal));
         }
 
-        // 事業報告書月別表（準備中）
-        Paragraph rpt = new Paragraph("事業報告書月別表（労働局用年度別）　※準備中", titleF);
+        // 事業報告書月別表
+        Paragraph rpt = new Paragraph("事業報告書月別表（労働局用年度別）", titleF);
         rpt.setSpacingAfter(4); doc.add(rpt);
         if (laborYear != null) {
-            doc.add(buildReportTable(laborYear, laborMonths, bold, normal));
+            ReportData reportData = buildReportData(laborYear, laborMonths, laborSettlement);
+            doc.add(buildReportTable(reportData, laborMonths, bold, normal));
         }
 
         doc.close();
@@ -836,7 +838,7 @@ public class ReportMenuController {
         return t;
     }
 
-    private PdfPTable buildReportTable(int laborYear, List<Integer> months, Font bold, Font normal) {
+    private PdfPTable buildReportTable(ReportData rd, List<Integer> months, Font bold, Font normal) {
         float[] w = new float[months.size() + 3];
         w[0] = 1.0f; w[1] = 2.5f;
         for (int i = 2; i <= months.size() + 1; i++) w[i] = 1.1f;
@@ -852,32 +854,57 @@ public class ReportMenuController {
         for (int m : months) t.addCell(hdrN(m + "月", bold));
         t.addCell(hdrN("決算額", bold));
 
-        String[][] rows = {
-            {"求\n人", "常用"}, {null, "臨時"}, {null, "日雇"},
-            {"求\n職", "有効"}, {null, "新規申込み"},
-            {"就\n職", "常用"}, {null, "臨時"}, {null, "日雇"},
-            {"手\n数\n料", "常用"}, {null, "臨時"}, {null, "日雇"}, {null, "求職受付料"}
+        // row = { グループラベル(先頭行のみ), 小ラベル, データmap(未実装ならnull), 合計値, 金額表示か(true=カンマ区切り/false=単純な件数) }
+        Object[][] rows = {
+            {"求\n人", "常用",       null,           0,                       false},
+            {null,     "臨時",       rd.jobTemp,     rd.jobTempTotal,         false},
+            {null,     "日雇",       null,           0,                       false},
+            {"求\n職", "有効",       rd.seekerValid, rd.seekerValidTotal,     false},
+            {null,     "新規申込み", null,           0,                       false},
+            {"就\n職", "常用",       null,           0,                       false},
+            {null,     "臨時",       null,           0,                       false},
+            {null,     "日雇",       null,           0,                       false},
+            {"手\n数\n料", "常用",   rd.feeRegular,  rd.feeRegularTotal,      true},
+            {null,     "臨時",       rd.feeTemp,     rd.feeTempTotal,         true},
+            {null,     "日雇",       rd.feeDaily,    rd.feeDailyTotal,        true},
+            {null,     "求職受付料", rd.feeReception,rd.feeReceptionTotal,    true},
         };
 
         int[] groupSpans = {3, 2, 3, 4};
         int groupIdx = 0, inGroup = 0, spanLeft = groupSpans[0];
 
-        for (String[] row : rows) {
-            if (row[0] != null) {
-                PdfPCell gc = new PdfPCell(new Phrase(row[0], bold));
+        for (Object[] row : rows) {
+            String groupLabel = (String) row[0];
+            String subLabel   = (String) row[1];
+            @SuppressWarnings("unchecked")
+            Map<String,Integer> data = (Map<String,Integer>) row[2];
+            int total      = (Integer) row[3];
+            boolean isMoney = (Boolean) row[4];
+
+            if (groupLabel != null) {
+                PdfPCell gc = new PdfPCell(new Phrase(groupLabel, bold));
                 gc.setRowspan(spanLeft); gc.setBorder(Rectangle.BOX); gc.setPadding(2);
                 gc.setHorizontalAlignment(Element.ALIGN_CENTER); gc.setVerticalAlignment(Element.ALIGN_MIDDLE);
                 t.addCell(gc);
             }
-            PdfPCell sc = new PdfPCell(new Phrase(row[1], normal));
+            PdfPCell sc = new PdfPCell(new Phrase(subLabel, normal));
             sc.setBorder(Rectangle.BOX); sc.setPadding(2);
             t.addCell(sc);
+
             for (int m : months) {
-                PdfPCell dc = new PdfPCell(new Phrase("-", normal));
+                String text;
+                if (data == null) {
+                    text = "";
+                } else {
+                    int v = data.getOrDefault(String.valueOf(m), 0);
+                    text = isMoney ? fmt(v) : String.valueOf(v);
+                }
+                PdfPCell dc = new PdfPCell(new Phrase(text, normal));
                 dc.setBorder(Rectangle.BOX); dc.setPadding(2);
                 dc.setHorizontalAlignment(Element.ALIGN_CENTER); t.addCell(dc);
             }
-            PdfPCell tc = new PdfPCell(new Phrase("0", bold));
+            String totalText = data == null ? "0" : (isMoney ? fmt(total) : String.valueOf(total));
+            PdfPCell tc = new PdfPCell(new Phrase(totalText, bold));
             tc.setBorder(Rectangle.BOX); tc.setPadding(2);
             tc.setHorizontalAlignment(Element.ALIGN_RIGHT); t.addCell(tc);
 

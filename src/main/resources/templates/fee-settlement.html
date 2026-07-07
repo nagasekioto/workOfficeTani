@@ -108,7 +108,7 @@
     <div class="tab-bar">
         <button type="button" class="tab-btn active" data-tab="company" onclick="showTab(this)">会社決算表</button>
         <button type="button" class="tab-btn"        data-tab="labor"   onclick="showTab(this)">労働局用決算表</button>
-        <button type="button" class="tab-btn"        data-tab="report"  onclick="showTab(this)">事業報告書月別表<span class="badge">準備中</span></button>
+        <button type="button" class="tab-btn"        data-tab="report"  onclick="showTab(this)">事業報告書月別表</button>
     </div>
 
     <!-- ══════════════════════════════════════════════════
@@ -329,7 +329,7 @@
             </table>
             <p style="color:#888;font-size:12px;margin-top:10px;">
                 ※ 「求人-臨時」「求職-有効」「手数料」欄は実データに対応済みです。
-                それ以外（求人-常用/日雇、求職-新規申込み、就職-常用/臨時/日雇）は準備中です。
+                それ以外（求人-常用/日雇、求職-新規申込み、就職-常用/臨時/日雇）は未実装のため空欄です。
             </p>
         </th:block>
         <div class="no-year" th:if="${selectedLaborYear == null}">
