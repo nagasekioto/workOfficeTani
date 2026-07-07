@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>会費 - 家政婦紹介事務所</title>
+    <style>
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; color: #333; }
+        .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .month-label { font-size: 14px; color: #777; margin-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { background: #9C27B0; color: white; padding: 10px; text-align: left; }
+        td { padding: 9px 10px; border-bottom: 1px solid #e0e0e0; vertical-align: middle; }
+        select { padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+        .unpaid-badge { display: inline-block; background: #f44336; color: white; border-radius: 12px; padding: 3px 12px; font-size: 12px; font-weight: bold; }
+        .paid-badge   { display: inline-block; background: #4CAF50; color: white; border-radius: 12px; padding: 3px 12px; font-size: 12px; font-weight: bold; }
+        .none-badge   { display: inline-block; background: #9E9E9E; color: white; border-radius: 12px; padding: 3px 12px; font-size: 12px; }
+        tr.unpaid-row { background: #ffebee; }
+        .save-note { font-size: 11px; color: #999; margin-left: 6px; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>&#128179; 会費（1-1-7）</h1>
+    <a href="/person-menu" class="back-btn">&#8592; 求職者管理に戻る</a>
+</div>
+<div class="container">
+    <div class="month-label" th:text="'今月（' + ${currentMonth} + '）の会費入金状況を表示しています'"></div>
+    <table>
+        <thead>
+            <tr>
+                <th>氏名</th>
+                <th>会費 有無</th>
+                <th>会費金額</th>
+                <th>今月の状況</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="row : ${rows}"
+                th:id="'row-' + ${row.id}"
+                th:class="${row.hasFee and !row.paidThisMonth} ? 'unpaid-row' : ''">
+                <td th:text="${row.name}"></td>
+                <td>
+                    <select th:id="'fee-' + ${row.id}" onchange="onFeeChange(this)" th:attr="data-id=${row.id}">
+                        <option value="無" th:selected="${!row.hasFee}">無</option>
+                        <option value="有" th:selected="${row.hasFee}">有</option>
+                    </select>
+                </td>
+                <td>
+                    <select th:id="'amt-' + ${row.id}"
+                            th:disabled="${!row.hasFee}"
+                            th:attr="data-id=${row.id}"
+                            onchange="saveRow(this.getAttribute('data-id'))">
+                        <option value="1550" th:selected="${row.membershipFeeAmount == 1550}">1,550円</option>
+                        <option value="350"  th:selected="${row.membershipFeeAmount == 350}">350円</option>
+                    </select>
+                </td>
+                <td>
+                    <span th:if="${!row.hasFee}" class="none-badge">会費なし</span>
+                    <span th:if="${row.hasFee and row.paidThisMonth}" class="paid-badge">&#10003; 入金済み</span>
+                    <span th:if="${row.hasFee and !row.paidThisMonth}" class="unpaid-badge">&#9888; 未払い</span>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+function onFeeChange(sel) {
+    const id = sel.getAttribute('data-id');
+    const amtSel = document.getElementById('amt-' + id);
+    const hasFee = sel.value === '有';
+    amtSel.disabled = !hasFee;
+    saveRow(id);
+}
+
+function saveRow(id) {
+    const feeSel = document.getElementById('fee-' + id);
+    const amtSel = document.getElementById('amt-' + id);
+    const membershipFee = feeSel.value;
+    const membershipFeeAmount = amtSel.value;
+
+    fetch('/person/membership/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ personId: id, membershipFee, membershipFeeAmount })
+    }).then(r => {
+        if (r.ok) location.reload();
+        else alert('保存に失敗しました');
+    });
+}
+</script>
+</body>
+</html>

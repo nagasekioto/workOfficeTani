@@ -58,9 +58,18 @@
             <input type="number" id="salary" placeholder="例: 150000" min="0">
         </div>
         <div class="form-group">
-            <label for="memo">備考</label>
-            <input type="text" id="memo" placeholder="例: 田中様宅">
+            <label for="membershipFee">会費</label>
+            <select id="membershipFee">
+                <option value="0">なし</option>
+                <option value="1550">1,550円</option>
+                <option value="350">350円</option>
+            </select>
         </div>
+    </div>
+
+    <div class="form-group">
+        <label for="memo">備考</label>
+        <input type="text" id="memo" placeholder="例: 田中様宅">
     </div>
 
     <button class="btn-save" onclick="save()">&#128190; 記録する</button>
@@ -68,28 +77,35 @@
 
 <script>
 function save() {
-    const personId  = document.getElementById('personSelect').value;
-    const workMonth = document.getElementById('workMonth').value;
-    const salary    = document.getElementById('salary').value;
-    const memo      = document.getElementById('memo').value;
+    const personId       = document.getElementById('personSelect').value;
+    const workMonth       = document.getElementById('workMonth').value;
+    const salaryInput     = document.getElementById('salary').value;
+    const membershipFee   = document.getElementById('membershipFee').value;
+    const memo            = document.getElementById('memo').value;
 
-    if (!personId)                        { alert('求職者を選択してください'); return; }
-    if (!workMonth)                       { alert('対象月を選択してください'); return; }
-    if (!salary || parseInt(salary) <= 0) { alert('振込額を入力してください'); return; }
+    if (!personId)                                 { alert('求職者を選択してください'); return; }
+    if (!workMonth)                                { alert('対象月を選択してください'); return; }
+    if (!salaryInput || parseInt(salaryInput) <= 0) { alert('振込額を入力してください'); return; }
 
-    const fee = Math.floor(parseInt(salary) * 0.165);
+    // レジ一覧に表示される金額 = 振込額 - 会費
+    const transferAmount = parseInt(salaryInput);
+    const feeAmount       = parseInt(membershipFee) || 0;
+    if (feeAmount > transferAmount) { alert('会費が振込額を超えています'); return; }
+    const salary = transferAmount - feeAmount;
+    const fee    = Math.floor(salary * 0.165);
 
     fetch('/register/calc/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ personId, workMonth, salary, fee, memo })
+        body: new URLSearchParams({ personId, workMonth, salary, fee, membershipFee: feeAmount, memo })
     }).then(r => {
         if (r.ok) {
             document.getElementById('successMsg').style.display = 'block';
-            document.getElementById('personSelect').value = '';
-            document.getElementById('workMonth').value   = '';
-            document.getElementById('salary').value      = '';
-            document.getElementById('memo').value        = '';
+            document.getElementById('personSelect').value  = '';
+            document.getElementById('workMonth').value    = '';
+            document.getElementById('salary').value       = '';
+            document.getElementById('membershipFee').value = '0';
+            document.getElementById('memo').value          = '';
             setTimeout(() => document.getElementById('successMsg').style.display = 'none', 3000);
         } else {
             alert('保存に失敗しました');

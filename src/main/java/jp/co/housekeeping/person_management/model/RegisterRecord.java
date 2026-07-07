@@ -15,6 +15,8 @@ public class RegisterRecord {
     private String workMonth;   // "2025-01" format
     private Integer salary;
     private Integer fee;        // salary * 0.165
+    private Integer membershipFee; // 会費(1550/350)。振込金入力時に会費として徴収した額
+    private Boolean transferred;   // 振込済みかどうか
     private String memo;
     private LocalDateTime createdAt;
 
@@ -30,6 +32,10 @@ public class RegisterRecord {
     public void setSalary(Integer salary) { this.salary = salary; }
     public Integer getFee() { return fee; }
     public void setFee(Integer fee) { this.fee = fee; }
+    public Integer getMembershipFee() { return membershipFee; }
+    public void setMembershipFee(Integer membershipFee) { this.membershipFee = membershipFee; }
+    public Boolean getTransferred() { return transferred; }
+    public void setTransferred(Boolean transferred) { this.transferred = transferred; }
     public String getMemo() { return memo; }
     public void setMemo(String memo) { this.memo = memo; }
     public LocalDateTime getCreatedAt() { return createdAt; }

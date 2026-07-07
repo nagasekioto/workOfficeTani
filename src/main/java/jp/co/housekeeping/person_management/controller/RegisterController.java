@@ -77,6 +77,7 @@ public class RegisterController {
             @RequestParam String workMonth,
             @RequestParam Integer salary,
             @RequestParam Integer fee,
+            @RequestParam(required = false, defaultValue = "0") Integer membershipFee,
             @RequestParam(required = false) String memo,
             HttpSession session) {
         if (!checkAuth(session)) return "UNAUTHORIZED";
@@ -86,9 +87,25 @@ public class RegisterController {
         record.setWorkMonth(workMonth);
         record.setSalary(salary);
         record.setFee(fee);
+        record.setMembershipFee(membershipFee);
+        record.setTransferred(false);
         record.setMemo(memo);
         record.setCreatedAt(LocalDateTime.now());
         registerRecordRepository.save(record);
+        return "OK";
+    }
+
+    // ─── 振込済みチェックの切り替え ─────────────────────
+    @PostMapping("/calc/toggle-transferred")
+    @ResponseBody
+    public String toggleTransferred(@RequestParam Long id,
+                                     @RequestParam boolean transferred,
+                                     HttpSession session) {
+        if (!checkAuth(session)) return "UNAUTHORIZED";
+        registerRecordRepository.findById(id).ifPresent(r -> {
+            r.setTransferred(transferred);
+            registerRecordRepository.save(r);
+        });
         return "OK";
     }
 
@@ -156,6 +173,7 @@ public class RegisterController {
         List<RegisterRecord> raw = registerRecordRepository.findByWorkMonth(month);
         List<RegisterRow> records = new ArrayList<>();
         long totalSalary = 0, totalFee = 0;
+        long totalTransferred = 0, totalUnpaid = 0;
         for (RegisterRecord r : raw) {
             RegisterRow row = new RegisterRow();
             row.id = r.getId();
@@ -166,6 +184,7 @@ public class RegisterController {
             row.fee = r.getFee() != null ? r.getFee() : 0;
             row.salaryStr = fmtYen(row.salary);
             row.feeStr    = fmtYen(row.fee);
+            row.transferred = r.getTransferred() != null && r.getTransferred();
             row.memo = r.getMemo();
             row.createdAt = r.getCreatedAt();
 
@@ -181,12 +200,16 @@ public class RegisterController {
             records.add(row);
             totalSalary += row.salary;
             totalFee += row.fee;
+            if (row.transferred) totalTransferred += row.salary;
+            else totalUnpaid += row.salary;
         }
         model.addAttribute("records", records);
         model.addAttribute("totalSalary", totalSalary);
         model.addAttribute("totalFee", totalFee);
         model.addAttribute("totalSalaryStr", fmtYen(totalSalary));
         model.addAttribute("totalFeeStr",    fmtYen(totalFee));
+        model.addAttribute("totalTransferredStr", fmtYen(totalTransferred));
+        model.addAttribute("totalUnpaidStr",      fmtYen(totalUnpaid));
         model.addAttribute("selectedMonth", month);
 
         return "register-list";
@@ -529,6 +552,7 @@ public class RegisterController {
         public long fee;
         public String salaryStr;
         public String feeStr;
+        public boolean transferred;
         public String memo;
         public LocalDateTime createdAt;
         // 照合フィールド

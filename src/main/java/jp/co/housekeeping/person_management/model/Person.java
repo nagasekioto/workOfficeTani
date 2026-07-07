@@ -76,6 +76,10 @@ public class Person {
     /** 備考 */
     private String notes;
 
+    // 1-1-7 会費
+    private String membershipFee;        // '有' / '無'
+    private Integer membershipFeeAmount; // 1550 または 350（membershipFee='有'の場合のみ意味を持つ）
+
     public Person() {}
 
     // ─── getters / setters ──────────────────────────────
@@ -167,4 +171,8 @@ public class Person {
     public void setBabysitterAvail(String babysitterAvail) { this.babysitterAvail = babysitterAvail; }
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
+    public String getMembershipFee() { return membershipFee; }
+    public void setMembershipFee(String membershipFee) { this.membershipFee = membershipFee; }
+    public Integer getMembershipFeeAmount() { return membershipFeeAmount; }
+    public void setMembershipFeeAmount(Integer membershipFeeAmount) { this.membershipFeeAmount = membershipFeeAmount; }
 }

@@ -82,6 +82,14 @@ public class DatabaseMigrationRunner implements ApplicationRunner {
             stmt.execute("ALTER TABLE introductions ADD COLUMN IF NOT EXISTS henreikin TEXT");
             stmt.execute("ALTER TABLE introductions ADD COLUMN IF NOT EXISTS emp_period TEXT");
 
+            // ─── register_records テーブル拡張（会費・振込済みフラグ） ─
+            stmt.execute("ALTER TABLE register_records ADD COLUMN IF NOT EXISTS membership_fee INTEGER");
+            stmt.execute("ALTER TABLE register_records ADD COLUMN IF NOT EXISTS transferred BOOLEAN NOT NULL DEFAULT FALSE");
+
+            // ─── persons テーブル拡張（1-1-7 会費） ───────────────
+            stmt.execute("ALTER TABLE persons ADD COLUMN IF NOT EXISTS membership_fee TEXT"); // '有' / '無'
+            stmt.execute("ALTER TABLE persons ADD COLUMN IF NOT EXISTS membership_fee_amount INTEGER"); // 1550 or 350
+
             System.out.println("[Migration] persons テーブルのカラム追加完了（IF NOT EXISTS）");
 
         } catch (SQLException e) {

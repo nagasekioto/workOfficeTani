@@ -38,6 +38,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import jp.co.housekeeping.person_management.model.Introduction;
 import jp.co.housekeeping.person_management.model.Person;
+import jp.co.housekeeping.person_management.model.RegisterRecord;
 import jp.co.housekeeping.person_management.repository.CustomerRepository;
 import jp.co.housekeeping.person_management.repository.IntroductionRepository;
 import jp.co.housekeeping.person_management.repository.PersonRepository;
@@ -53,6 +54,7 @@ public class PersonController {
     @Autowired private SalesRepository salesRepository;
     @Autowired private SalesDetailRepository salesDetailRepository;
     @Autowired private IntroductionRepository introductionRepository;
+    @Autowired private jp.co.housekeeping.person_management.repository.RegisterRecordRepository registerRecordRepository;
 
     private boolean checkAuth(HttpSession session) {
         return session.getAttribute("authenticated") != null;
@@ -269,6 +271,65 @@ public class PersonController {
         if (!checkAuth(session)) return "redirect:/login";
         personRepository.deleteById(id);
         return "redirect:/person/register";
+    }
+
+    // ─── 1-1-7 会費 ────────────────────────────────────
+    @GetMapping("/membership")
+    public String membership(HttpSession session, Model model) {
+        if (!checkAuth(session)) return "redirect:/login";
+
+        String currentMonth = YearMonth.now().toString(); // "2026-07" 等
+
+        List<Person> persons = new ArrayList<>();
+        personRepository.findAll().forEach(persons::add);
+
+        // 当月分の会費入金record(membership_fee > 0)がある求職者idの集合
+        java.util.Set<Long> paidThisMonth = new java.util.HashSet<>();
+        for (RegisterRecord r : registerRecordRepository.findByWorkMonth(currentMonth)) {
+            if (r.getMembershipFee() != null && r.getMembershipFee() > 0 && r.getPersonId() != null) {
+                paidThisMonth.add(r.getPersonId());
+            }
+        }
+
+        List<MembershipRow> rows = new ArrayList<>();
+        for (Person p : persons) {
+            MembershipRow row = new MembershipRow();
+            row.id = p.getId();
+            row.name = p.getLastNameKanji() + " " + p.getFirstNameKanji();
+            row.membershipFee = p.getMembershipFee() != null ? p.getMembershipFee() : "無";
+            row.membershipFeeAmount = p.getMembershipFeeAmount();
+            row.hasFee = "有".equals(row.membershipFee);
+            row.paidThisMonth = paidThisMonth.contains(p.getId());
+            rows.add(row);
+        }
+
+        model.addAttribute("rows", rows);
+        model.addAttribute("currentMonth", currentMonth);
+        return "person-membership";
+    }
+
+    @PostMapping("/membership/save")
+    @ResponseBody
+    public String membershipSave(@RequestParam Long personId,
+                                  @RequestParam String membershipFee,
+                                  @RequestParam(required = false) Integer membershipFeeAmount,
+                                  HttpSession session) {
+        if (!checkAuth(session)) return "UNAUTHORIZED";
+        personRepository.findById(personId).ifPresent(p -> {
+            p.setMembershipFee(membershipFee);
+            p.setMembershipFeeAmount("有".equals(membershipFee) ? membershipFeeAmount : null);
+            personRepository.save(p);
+        });
+        return "OK";
+    }
+
+    public static class MembershipRow {
+        public Long id;
+        public String name;
+        public String membershipFee;       // '有' / '無'
+        public Integer membershipFeeAmount; // 1550 / 350
+        public boolean hasFee;
+        public boolean paidThisMonth;
     }
 
     // ─── 1-1-4 求職管理簿 ──────────────────────────────
