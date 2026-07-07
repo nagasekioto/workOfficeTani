@@ -126,7 +126,7 @@
                     <div style="margin:3px 0;">〜</div>
                     <div id="empToSel" style="display:flex;gap:4px;align-items:center;"></div><input type="hidden" id="empTo">
                     <div class="cbg" style="margin-top:8px;">
-                        <label><input type="radio" name="empSubType" value="" checked onchange="update()"> 該当なし</label>
+                        <label><input type="radio" name="empSubType" value="" checked onchange="update()"> 常用</label>
                         <label><input type="radio" name="empSubType" value="臨時" onchange="update()"> 臨時</label>
                         <label><input type="radio" name="empSubType" value="日雇い" onchange="update()"> 日雇い</label>
                     </div>
@@ -505,7 +505,7 @@ function toggleEmpPeriod(){
     var isKikan=v&&v.value==='有期';
     g('empPeriodArea').style.display=isKikan?'block':'none';
     if(!isKikan){
-        // 無期を選んだ場合は「臨時/日雇い」の選択を「該当なし」にリセット
+        // 無期を選んだ場合は「臨時/日雇い」の選択を「常用」にリセット
         var noneSub=document.querySelector('input[name=empSubType][value=""]');
         if(noneSub) noneSub.checked=true;
     }
