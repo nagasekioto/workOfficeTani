@@ -901,7 +901,7 @@ public class ReportMenuController {
                 }
                 PdfPCell dc = new PdfPCell(new Phrase(text, normal));
                 dc.setBorder(Rectangle.BOX); dc.setPadding(2);
-                dc.setHorizontalAlignment(Element.ALIGN_CENTER); t.addCell(dc);
+                dc.setHorizontalAlignment(Element.ALIGN_RIGHT); t.addCell(dc);
             }
             String totalText = data == null ? "0" : (isMoney ? fmt(total) : String.valueOf(total));
             PdfPCell tc = new PdfPCell(new Phrase(totalText, bold));
