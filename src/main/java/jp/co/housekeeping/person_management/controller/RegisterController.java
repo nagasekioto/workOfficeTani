@@ -146,6 +146,7 @@ public class RegisterController {
     public String editSave(@RequestParam Long id,
                            @RequestParam Integer salary,
                            @RequestParam Integer fee,
+                           @RequestParam(required = false, defaultValue = "0") Integer membershipFee,
                            @RequestParam(required = false) String memo,
                            @RequestParam(required = false) String month,
                            HttpSession session) {
@@ -153,6 +154,7 @@ public class RegisterController {
         registerRecordRepository.findById(id).ifPresent(r -> {
             r.setSalary(salary);
             r.setFee(fee);
+            r.setMembershipFee(membershipFee);
             r.setMemo(memo);
             registerRecordRepository.save(r);
         });

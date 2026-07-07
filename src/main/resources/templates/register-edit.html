@@ -52,17 +52,21 @@
         </div>
 
         <div class="form-group">
-            <label>給料（円）</label>
+            <label>手数料（16.5%、円）</label>
             <input type="number" id="salary" name="salary" th:value="${record.salary}"
                    min="0" step="1" oninput="calcFee()" required>
         </div>
 
         <div class="form-group">
-            <label>手数料（円）</label>
-            <input type="number" id="fee" name="fee" th:value="${record.fee}"
-                   min="0" step="1" required>
-            <div class="fee-hint">※ 給料を入力すると16.5%で自動計算されます（手動変更も可）</div>
+            <label>会費</label>
+            <select name="membershipFee">
+                <option value="0"    th:selected="${record.membershipFee == null or record.membershipFee == 0}">なし</option>
+                <option value="1550" th:selected="${record.membershipFee != null and record.membershipFee == 1550}">1,550円</option>
+                <option value="350"  th:selected="${record.membershipFee != null and record.membershipFee == 350}">350円</option>
+            </select>
         </div>
+
+        <input type="hidden" id="fee" name="fee" th:value="${record.fee}">
 
         <div class="form-group">
             <label>備考</label>
