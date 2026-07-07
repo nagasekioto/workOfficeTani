@@ -19,6 +19,11 @@
         .none-badge   { display: inline-block; background: #9E9E9E; color: white; border-radius: 12px; padding: 3px 12px; font-size: 12px; }
         tr.unpaid-row { background: #ffebee; }
         .save-note { font-size: 11px; color: #999; margin-left: 6px; }
+        .filter-row { display: flex; gap: 15px; align-items: flex-end; margin-bottom: 20px; }
+        .filter-row label { font-weight: bold; color: #555; font-size: 14px; display: block; margin-bottom: 4px; }
+        .filter-row input[type="month"] { padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .filter-btn { background: #9C27B0; color: white; border: none; border-radius: 4px; padding: 9px 20px; cursor: pointer; font-size: 14px; }
+        .filter-btn:hover { background: #7B1FA2; }
     </style>
 </head>
 <body>
@@ -27,13 +32,24 @@
     <a href="/person-menu" class="back-btn">&#8592; 求職者管理に戻る</a>
 </div>
 <div class="container">
-    <div class="month-label" th:text="'今月（' + ${currentMonth} + '）の会費入金状況を表示しています'"></div>
+    <form method="get" action="/person/membership">
+        <div class="filter-row">
+            <div>
+                <label for="month">表示月</label>
+                <input type="month" id="month" name="month" th:value="${selectedMonth}">
+            </div>
+            <button type="submit" class="filter-btn">&#128269; 表示</button>
+        </div>
+    </form>
+    <div class="month-label" th:text="${currentMonth + ' の会費入金状況を表示しています'}"></div>
+    <input type="hidden" id="currentMonthValue" th:value="${selectedMonth}">
     <table>
         <thead>
             <tr>
                 <th>氏名</th>
                 <th>会費 有無</th>
                 <th>会費金額</th>
+                <th>振込確認</th>
                 <th>今月の状況</th>
             </tr>
         </thead>
@@ -57,9 +73,14 @@
                         <option value="350"  th:selected="${row.membershipFeeAmount == 350}">350円</option>
                     </select>
                 </td>
+                <td style="text-align:center;">
+                    <input type="checkbox" th:disabled="${!row.hasFee}"
+                           th:checked="${row.paidThisMonth}"
+                           th:attr="onchange='toggleConfirm(' + ${row.id} + ', this.checked)'">
+                </td>
                 <td>
                     <span th:if="${!row.hasFee}" class="none-badge">会費なし</span>
-                    <span th:if="${row.hasFee and row.paidThisMonth}" class="paid-badge">&#10003; 入金済み</span>
+                    <span th:if="${row.hasFee and row.paidThisMonth}" class="paid-badge">&#10003; 支払い完了</span>
                     <span th:if="${row.hasFee and !row.paidThisMonth}" class="unpaid-badge">&#9888; 未払い</span>
                 </td>
             </tr>
@@ -68,6 +89,12 @@
 </div>
 
 <script>
+const CURRENT_MONTH = document.getElementById('currentMonthValue').value;
+
+function reloadWithMonth() {
+    location.href = '/person/membership?month=' + encodeURIComponent(CURRENT_MONTH);
+}
+
 function onFeeChange(sel) {
     const id = sel.getAttribute('data-id');
     const amtSel = document.getElementById('amt-' + id);
@@ -87,8 +114,19 @@ function saveRow(id) {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({ personId: id, membershipFee, membershipFeeAmount })
     }).then(r => {
-        if (r.ok) location.reload();
+        if (r.ok) reloadWithMonth();
         else alert('保存に失敗しました');
+    });
+}
+
+function toggleConfirm(id, checked) {
+    fetch('/person/membership/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ personId: id, month: CURRENT_MONTH, confirmed: checked })
+    }).then(r => {
+        if (r.ok) reloadWithMonth();
+        else alert('更新に失敗しました');
     });
 }
 </script>

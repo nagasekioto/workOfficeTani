@@ -90,6 +90,17 @@ public class DatabaseMigrationRunner implements ApplicationRunner {
             stmt.execute("ALTER TABLE persons ADD COLUMN IF NOT EXISTS membership_fee TEXT"); // '有' / '無'
             stmt.execute("ALTER TABLE persons ADD COLUMN IF NOT EXISTS membership_fee_amount INTEGER"); // 1550 or 350
 
+            // ─── 会費(1-1-7)の月別・振込確認チェック ──────────────
+            stmt.execute(
+                "CREATE TABLE IF NOT EXISTS membership_confirmations (" +
+                "  id BIGSERIAL PRIMARY KEY," +
+                "  person_id BIGINT NOT NULL," +
+                "  work_month VARCHAR(7) NOT NULL," +
+                "  confirmed BOOLEAN NOT NULL DEFAULT FALSE," +
+                "  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP," +
+                "  UNIQUE (person_id, work_month)" +
+                ")");
+
             System.out.println("[Migration] persons テーブルのカラム追加完了（IF NOT EXISTS）");
 
         } catch (SQLException e) {

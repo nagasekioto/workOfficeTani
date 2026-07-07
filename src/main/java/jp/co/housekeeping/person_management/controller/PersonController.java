@@ -26,6 +26,7 @@ import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -55,6 +56,7 @@ public class PersonController {
     @Autowired private SalesDetailRepository salesDetailRepository;
     @Autowired private IntroductionRepository introductionRepository;
     @Autowired private jp.co.housekeeping.person_management.repository.RegisterRecordRepository registerRecordRepository;
+    @Autowired private JdbcTemplate jdbcTemplate;
 
     private boolean checkAuth(HttpSession session) {
         return session.getAttribute("authenticated") != null;
@@ -275,21 +277,32 @@ public class PersonController {
 
     // ─── 1-1-7 会費 ────────────────────────────────────
     @GetMapping("/membership")
-    public String membership(HttpSession session, Model model) {
+    public String membership(@RequestParam(required = false) String month,
+                              HttpSession session, Model model) {
         if (!checkAuth(session)) return "redirect:/login";
 
-        String currentMonth = YearMonth.now().toString(); // "2026-07" 等
+        if (month == null || month.isBlank()) {
+            return "redirect:/person/membership?month=" + YearMonth.now();
+        }
 
         List<Person> persons = new ArrayList<>();
         personRepository.findAll().forEach(persons::add);
 
-        // 当月分の会費入金record(membership_fee > 0)がある求職者idの集合
-        java.util.Set<Long> paidThisMonth = new java.util.HashSet<>();
-        for (RegisterRecord r : registerRecordRepository.findByWorkMonth(currentMonth)) {
+        // 選択月に会費入金(membership_fee > 0)のあった求職者idの集合（自動判定用）
+        java.util.Set<Long> autoPaid = new java.util.HashSet<>();
+        for (RegisterRecord r : registerRecordRepository.findByWorkMonth(month)) {
             if (r.getMembershipFee() != null && r.getMembershipFee() > 0 && r.getPersonId() != null) {
-                paidThisMonth.add(r.getPersonId());
+                autoPaid.add(r.getPersonId());
             }
         }
+
+        // 手動の振込確認チェック(membership_confirmations)を選択月ぶん取得
+        java.util.Map<Long, Boolean> confirmedMap = new java.util.HashMap<>();
+        jdbcTemplate.query(
+            "SELECT person_id, confirmed FROM membership_confirmations WHERE work_month = ?",
+            rs -> {
+                confirmedMap.put(rs.getLong("person_id"), rs.getBoolean("confirmed"));
+            }, month);
 
         List<MembershipRow> rows = new ArrayList<>();
         for (Person p : persons) {
@@ -299,13 +312,32 @@ public class PersonController {
             row.membershipFee = p.getMembershipFee() != null ? p.getMembershipFee() : "無";
             row.membershipFeeAmount = p.getMembershipFeeAmount();
             row.hasFee = "有".equals(row.membershipFee);
-            row.paidThisMonth = paidThisMonth.contains(p.getId());
+            // 手動チェックが記録されていればそれを優先、無ければ振込金入力の自動判定を使う
+            row.paidThisMonth = confirmedMap.containsKey(p.getId())
+                ? confirmedMap.get(p.getId())
+                : autoPaid.contains(p.getId());
             rows.add(row);
         }
 
         model.addAttribute("rows", rows);
-        model.addAttribute("currentMonth", currentMonth);
+        model.addAttribute("currentMonth", month);
+        model.addAttribute("selectedMonth", month);
         return "person-membership";
+    }
+
+    @PostMapping("/membership/confirm")
+    @ResponseBody
+    public String membershipConfirm(@RequestParam Long personId,
+                                     @RequestParam String month,
+                                     @RequestParam boolean confirmed,
+                                     HttpSession session) {
+        if (!checkAuth(session)) return "UNAUTHORIZED";
+        jdbcTemplate.update(
+            "INSERT INTO membership_confirmations (person_id, work_month, confirmed, updated_at) " +
+            "VALUES (?, ?, ?, CURRENT_TIMESTAMP) " +
+            "ON CONFLICT (person_id, work_month) DO UPDATE SET confirmed = EXCLUDED.confirmed, updated_at = CURRENT_TIMESTAMP",
+            personId, month, confirmed);
+        return "OK";
     }
 
     @PostMapping("/membership/save")
