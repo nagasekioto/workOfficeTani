@@ -79,8 +79,9 @@ public class RegisterController {
             @RequestParam Integer fee,
             @RequestParam(required = false, defaultValue = "0") Integer membershipFee,
             @RequestParam(required = false) String memo,
-            HttpSession session) {
-        if (!checkAuth(session)) return "UNAUTHORIZED";
+            HttpSession session,
+            HttpServletResponse response) {
+        if (!checkAuth(session)) { response.setStatus(401); return "UNAUTHORIZED"; }
 
         RegisterRecord record = new RegisterRecord();
         record.setPersonId(personId);
@@ -100,8 +101,9 @@ public class RegisterController {
     @ResponseBody
     public String toggleTransferred(@RequestParam Long id,
                                      @RequestParam boolean transferred,
-                                     HttpSession session) {
-        if (!checkAuth(session)) return "UNAUTHORIZED";
+                                     HttpSession session,
+                                     HttpServletResponse response) {
+        if (!checkAuth(session)) { response.setStatus(401); return "UNAUTHORIZED"; }
         registerRecordRepository.findById(id).ifPresent(r -> {
             r.setTransferred(transferred);
             registerRecordRepository.save(r);

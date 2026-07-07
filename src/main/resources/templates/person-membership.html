@@ -115,6 +115,7 @@ function saveRow(id) {
         body: new URLSearchParams({ personId: id, membershipFee, membershipFeeAmount })
     }).then(r => {
         if (r.ok) reloadWithMonth();
+        else if (r.status === 401) { alert('セッションが切れています。再度ログインしてください。'); location.href = '/login'; }
         else alert('保存に失敗しました');
     });
 }
@@ -126,6 +127,7 @@ function toggleConfirm(id, checked) {
         body: new URLSearchParams({ personId: id, month: CURRENT_MONTH, confirmed: checked })
     }).then(r => {
         if (r.ok) reloadWithMonth();
+        else if (r.status === 401) { alert('セッションが切れています。再度ログインしてください。'); location.href = '/login'; }
         else alert('更新に失敗しました');
     });
 }

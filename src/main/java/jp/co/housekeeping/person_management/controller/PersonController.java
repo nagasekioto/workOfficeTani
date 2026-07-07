@@ -330,8 +330,9 @@ public class PersonController {
     public String membershipConfirm(@RequestParam Long personId,
                                      @RequestParam String month,
                                      @RequestParam boolean confirmed,
-                                     HttpSession session) {
-        if (!checkAuth(session)) return "UNAUTHORIZED";
+                                     HttpSession session,
+                                     HttpServletResponse response) {
+        if (!checkAuth(session)) { response.setStatus(401); return "UNAUTHORIZED"; }
         jdbcTemplate.update(
             "INSERT INTO membership_confirmations (person_id, work_month, confirmed, updated_at) " +
             "VALUES (?, ?, ?, CURRENT_TIMESTAMP) " +
@@ -345,8 +346,9 @@ public class PersonController {
     public String membershipSave(@RequestParam Long personId,
                                   @RequestParam String membershipFee,
                                   @RequestParam(required = false) Integer membershipFeeAmount,
-                                  HttpSession session) {
-        if (!checkAuth(session)) return "UNAUTHORIZED";
+                                  HttpSession session,
+                                  HttpServletResponse response) {
+        if (!checkAuth(session)) { response.setStatus(401); return "UNAUTHORIZED"; }
         personRepository.findById(personId).ifPresent(p -> {
             p.setMembershipFee(membershipFee);
             p.setMembershipFeeAmount("有".equals(membershipFee) ? membershipFeeAmount : null);
@@ -425,8 +427,9 @@ public class PersonController {
                                        @RequestParam(required = false) String[] remarksList,
                                        @RequestParam(required = false) String[] rishokuStatusList,
                                        @RequestParam(required = false) String[] henreikinList,
-                                       HttpSession session) {
-        if (!checkAuth(session)) return "UNAUTHORIZED";
+                                       HttpSession session,
+                                       HttpServletResponse response) {
+        if (!checkAuth(session)) { response.setStatus(401); return "UNAUTHORIZED"; }
         if (introIds == null) return "OK";
 
         for (int i = 0; i < introIds.length; i++) {

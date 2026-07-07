@@ -157,6 +157,7 @@ function toggleTransferred(id, checked) {
         body: new URLSearchParams({ id, transferred: checked })
     }).then(r => {
         if (r.ok) location.reload();
+        else if (r.status === 401) { alert('セッションが切れています。再度ログインしてください。'); location.href = '/login'; }
         else alert('更新に失敗しました');
     });
 }

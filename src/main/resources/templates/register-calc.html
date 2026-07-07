@@ -107,6 +107,9 @@ function save() {
             document.getElementById('membershipFee').value = '0';
             document.getElementById('memo').value          = '';
             setTimeout(() => document.getElementById('successMsg').style.display = 'none', 3000);
+        } else if (r.status === 401) {
+            alert('セッションが切れています。再度ログインしてください。');
+            location.href = '/login';
         } else {
             alert('保存に失敗しました');
         }
