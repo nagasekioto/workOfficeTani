@@ -26,6 +26,10 @@ public class Introduction {
     private String rishokuStatus; // 離職状況（6カ月以内または不明）
     private String henreikin;     // 返戻金
 
+    // 雇用期間区分（無期／有期／臨時／日雇い）: 紹介手数料管理簿(1-3-1)の
+    // 日雇1ヶ月・臨時3ヶ月の自動計算に使用
+    private String empPeriod;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getRefNo() { return refNo; }
@@ -54,4 +58,6 @@ public class Introduction {
     public void setRishokuStatus(String rishokuStatus) { this.rishokuStatus = rishokuStatus; }
     public String getHenreikin() { return henreikin; }
     public void setHenreikin(String henreikin) { this.henreikin = henreikin; }
+    public String getEmpPeriod() { return empPeriod; }
+    public void setEmpPeriod(String empPeriod) { this.empPeriod = empPeriod; }
 }

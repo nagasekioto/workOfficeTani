@@ -112,6 +112,20 @@ public class IntroductionController {
         try { if (introDate != null && !introDate.isBlank()) intro.setIntroDate(LocalDate.parse(introDate)); } catch (Exception ignored) {}
         try { if (startDate != null && !startDate.isBlank()) intro.setStartDate(LocalDate.parse(startDate)); } catch (Exception ignored) {}
         intro.setFormData(formData);
+
+        // formData(JSON)からempPeriod(雇用期間区分: 無期/有期/臨時/日雇い)を抽出して
+        // 専用カラムに保存する。紹介手数料管理簿(1-3-1)の日雇1ヶ月・臨時3ヶ月の
+        // 自動計算で使うため、JSON文字列のままではなく列として持たせる。
+        try {
+            if (formData != null && !formData.isBlank()) {
+                JsonNode node = new ObjectMapper().readTree(formData);
+                if (node.has("empPeriod")) {
+                    String ep = node.get("empPeriod").asText(null);
+                    intro.setEmpPeriod((ep == null || ep.isBlank()) ? null : ep);
+                }
+            }
+        } catch (Exception ignored) {}
+
         introductionRepository.save(intro);
         return refNo;
     }

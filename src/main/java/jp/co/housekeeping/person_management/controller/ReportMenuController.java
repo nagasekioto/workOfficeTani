@@ -83,34 +83,6 @@ public class ReportMenuController {
         return "report-menu";
     }
 
-    // ─── 1-3-1 日雇1ヶ月・臨時3ヶ月 保存 ───────────────────────
-    @PostMapping("/report-menu/save-daily-wage")
-    public String saveDailyWage(@RequestParam Map<String,String> params,
-                                 HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
-        String month = params.get("month");
-        params.forEach((key, value) -> {
-            if (key.startsWith("dw_")) {
-                try {
-                    Long detailId = Long.parseLong(key.substring(3));
-                    int val = value == null || value.isBlank() ? 0 : Integer.parseInt(value.trim());
-                    jdbcTemplate.update(
-                        "UPDATE sales_details SET daily_wage_1month = ? WHERE id = ?",
-                        val, detailId);
-                } catch (Exception ignored) {}
-            } else if (key.startsWith("t3_")) {
-                try {
-                    Long detailId = Long.parseLong(key.substring(3));
-                    int val = value == null || value.isBlank() ? 0 : Integer.parseInt(value.trim());
-                    jdbcTemplate.update(
-                        "UPDATE sales_details SET temp_3month = ? WHERE id = ?",
-                        val, detailId);
-                } catch (Exception ignored) {}
-            }
-        });
-        return "redirect:/report-menu?month=" + (month != null ? month : "");
-    }
-
     // ─── 1-3-1 PDF ────────────────────────────────────────────────
     @GetMapping("/report-menu/pdf")
     public void pdf(@RequestParam(required = false) String month,
@@ -290,16 +262,21 @@ public class ReportMenuController {
                 int comm   = (int)(wage * FEE_RATE);
                 int tax    = (int)(comm * 0.10);
 
+                // 日雇1ヶ月・臨時3ヶ月は手入力ではなく、紹介状(1-4-1)の
+                // 雇用期間区分(emp_period)が「日雇い」「臨時」の場合に
+                // 手数料※1(届出手数料)＋手数料※2 の金額を自動的に設定する。
                 int dw1m = 0, t3m = 0;
+                String empPeriod = findEmpPeriod(s.getPersonId(), d.getCustomerId());
+                int autoFee = comm + tax;
+                if ("日雇い".equals(empPeriod)) dw1m = autoFee;
+                if ("臨時".equals(empPeriod))   t3m  = autoFee;
+
+                // 集計(1-3-3)側は sales_details のカラムを直接読むため、
+                // 自動計算した値をその都度DBへ書き戻して整合を保つ。
                 try {
-                    Integer v = jdbcTemplate.queryForObject(
-                        "SELECT daily_wage_1month FROM sales_details WHERE id = ?", Integer.class, d.getId());
-                    if (v != null) dw1m = v;
-                } catch (Exception ignored) {}
-                try {
-                    Integer v = jdbcTemplate.queryForObject(
-                        "SELECT temp_3month FROM sales_details WHERE id = ?", Integer.class, d.getId());
-                    if (v != null) t3m = v;
+                    jdbcTemplate.update(
+                        "UPDATE sales_details SET daily_wage_1month = ?, temp_3month = ? WHERE id = ?",
+                        dw1m, t3m, d.getId());
                 } catch (Exception ignored) {}
 
                 FeeLedgerRow row = new FeeLedgerRow();
@@ -537,6 +514,23 @@ public class ReportMenuController {
             "AND EXTRACT(MONTH FROM COALESCE(issued_at::date, work_end_date, work_start_date, introduction_date)) = ?";
         Integer v = jdbcTemplate.queryForObject(sql, Integer.class, ym.getYear(), ym.getMonthValue());
         return v != null ? v : 0;
+    }
+
+    /**
+     * 求職者(personId)・求人者(customerId)の組み合わせに一致する紹介状(1-4-1)のうち
+     * 最新のものから雇用期間区分(無期/有期/臨時/日雇い)を取得する。
+     * 一致するものが無ければnull。
+     */
+    private String findEmpPeriod(Long personId, Long customerId) {
+        if (personId == null || customerId == null) return null;
+        try {
+            List<String> r = jdbcTemplate.queryForList(
+                "SELECT emp_period FROM introductions " +
+                "WHERE person_id = ? AND customer_id = ? AND emp_period IS NOT NULL " +
+                "ORDER BY id DESC LIMIT 1",
+                String.class, personId, customerId);
+            return r.isEmpty() ? null : r.get(0);
+        } catch (Exception e) { return null; }
     }
 
     private int calcReceptionFee710(YearMonth ym) {
