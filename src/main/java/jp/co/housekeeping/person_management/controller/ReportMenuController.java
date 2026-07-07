@@ -192,8 +192,11 @@ public class ReportMenuController {
         if (compYear != null) {
             model.addAttribute("compData", buildSettlementData(compYear, compMonths, "comp"));
         }
+        SettlementData laborData = null;
         if (laborYear != null) {
-            model.addAttribute("laborData", buildSettlementData(laborYear, laborMonths, "labor"));
+            laborData = buildSettlementData(laborYear, laborMonths, "labor");
+            model.addAttribute("laborData", laborData);
+            model.addAttribute("reportData", buildReportData(laborYear, laborMonths, laborData));
         }
         return "fee-settlement";
     }
@@ -431,6 +434,109 @@ public class ReportMenuController {
         d.grandTotal            = d.monthTotal.values().stream().mapToInt(Integer::intValue).sum();
 
         return d;
+    }
+
+    /**
+     * 事業報告書月別表（労働局用年度別）データ組み立て。
+     *
+     * 現時点で仕様が確定している以下6行のみ実装:
+     *   求人-臨時, 求職-有効, 手数料-常用, 手数料-臨時, 手数料-日雇, 手数料-求職受付手数料
+     * 他の行（求人-常用/日雇、求職-新規申込み、就職-常用/臨時/日雇）は未実装のため "-"/0 のまま。
+     */
+    private ReportData buildReportData(int baseYear, List<Integer> months, SettlementData laborData) {
+        ReportData rd = new ReportData();
+
+        for (int m : months) {
+            int actualYear = baseYear;
+            if (m == 1 || m == 2 || m == 3) actualYear = baseYear + 1;
+            String key = String.valueOf(m);
+
+            YearMonth yearMonth;
+            try { yearMonth = YearMonth.parse(actualYear + "-" + String.format("%02d", m)); }
+            catch (Exception e) { continue; }
+
+            // 求人-臨時: 紹介手数料管理簿(1-3-1)の「臨時3ヶ月」に金額が入っている"件数"
+            //           (金額の合計ではない。例: 1,000円と3,000円の2件なら "2")
+            int jobTemp = countTemp3MonthRecords(yearMonth);
+            rd.jobTemp.put(key, jobTemp);
+
+            // 求職-有効: 受付料 710円 の"件数"
+            int seekerValid = countReceptionFee710Records(yearMonth);
+            rd.seekerValid.put(key, seekerValid);
+
+            // 手数料-臨時: 紹介手数料管理簿(1-3-1)の当月「臨時3ヶ月」合計金額
+            int feeTemp = sumTemp3Month(yearMonth);
+            rd.feeTemp.put(key, feeTemp);
+
+            // 手数料-日雇: 紹介手数料管理簿(1-3-1)の当月「日雇1ヶ月」合計金額
+            int feeDaily = sumDailyWage1Month(yearMonth);
+            rd.feeDaily.put(key, feeDaily);
+
+            // 手数料-求職受付手数料: 手数料収入決算表(労働局用決算表)の求職受付手数料
+            int feeReception = laborData.receptionFee710.getOrDefault(key, 0);
+            rd.feeReception.put(key, feeReception);
+
+            // 手数料-常用: 労働局用決算表の紹介手数料の1行目 + サンケアネット - 手数料-臨時
+            int introFee = laborData.introFee.getOrDefault(key, 0);
+            int sancare  = laborData.sancareNet.getOrDefault(key, 0);
+            int feeRegular = introFee + sancare - feeTemp;
+            rd.feeRegular.put(key, feeRegular);
+        }
+
+        rd.jobTempTotal     = rd.jobTemp.values().stream().mapToInt(Integer::intValue).sum();
+        rd.seekerValidTotal = rd.seekerValid.values().stream().mapToInt(Integer::intValue).sum();
+        rd.feeRegularTotal  = rd.feeRegular.values().stream().mapToInt(Integer::intValue).sum();
+        rd.feeTempTotal     = rd.feeTemp.values().stream().mapToInt(Integer::intValue).sum();
+        rd.feeDailyTotal    = rd.feeDaily.values().stream().mapToInt(Integer::intValue).sum();
+        rd.feeReceptionTotal = rd.feeReception.values().stream().mapToInt(Integer::intValue).sum();
+
+        return rd;
+    }
+
+    /** その月の「臨時3ヶ月」に金額が入っている(0でない)明細の件数 */
+    private int countTemp3MonthRecords(YearMonth ym) {
+        String sql =
+            "SELECT COUNT(*) FROM sales_details " +
+            "WHERE receipt_no IS NOT NULL AND receipt_no <> '' " +
+            "AND temp_3month IS NOT NULL AND temp_3month <> 0 " +
+            "AND EXTRACT(YEAR  FROM COALESCE(issued_at::date, work_end_date, work_start_date, introduction_date)) = ? " +
+            "AND EXTRACT(MONTH FROM COALESCE(issued_at::date, work_end_date, work_start_date, introduction_date)) = ?";
+        Integer v = jdbcTemplate.queryForObject(sql, Integer.class, ym.getYear(), ym.getMonthValue());
+        return v != null ? v : 0;
+    }
+
+    /** その月の「臨時3ヶ月」の合計金額 */
+    private int sumTemp3Month(YearMonth ym) {
+        String sql =
+            "SELECT COALESCE(SUM(temp_3month),0) FROM sales_details " +
+            "WHERE receipt_no IS NOT NULL AND receipt_no <> '' " +
+            "AND EXTRACT(YEAR  FROM COALESCE(issued_at::date, work_end_date, work_start_date, introduction_date)) = ? " +
+            "AND EXTRACT(MONTH FROM COALESCE(issued_at::date, work_end_date, work_start_date, introduction_date)) = ?";
+        Integer v = jdbcTemplate.queryForObject(sql, Integer.class, ym.getYear(), ym.getMonthValue());
+        return v != null ? v : 0;
+    }
+
+    /** その月の「日雇1ヶ月」の合計金額 */
+    private int sumDailyWage1Month(YearMonth ym) {
+        String sql =
+            "SELECT COALESCE(SUM(daily_wage_1month),0) FROM sales_details " +
+            "WHERE receipt_no IS NOT NULL AND receipt_no <> '' " +
+            "AND EXTRACT(YEAR  FROM COALESCE(issued_at::date, work_end_date, work_start_date, introduction_date)) = ? " +
+            "AND EXTRACT(MONTH FROM COALESCE(issued_at::date, work_end_date, work_start_date, introduction_date)) = ?";
+        Integer v = jdbcTemplate.queryForObject(sql, Integer.class, ym.getYear(), ym.getMonthValue());
+        return v != null ? v : 0;
+    }
+
+    /** その月の 受付料=710円 の明細件数（求職-有効） */
+    private int countReceptionFee710Records(YearMonth ym) {
+        String sql =
+            "SELECT COUNT(*) FROM sales_details " +
+            "WHERE receipt_no IS NOT NULL AND receipt_no <> '' " +
+            "AND reception_fee = 710 " +
+            "AND EXTRACT(YEAR  FROM COALESCE(issued_at::date, work_end_date, work_start_date, introduction_date)) = ? " +
+            "AND EXTRACT(MONTH FROM COALESCE(issued_at::date, work_end_date, work_start_date, introduction_date)) = ?";
+        Integer v = jdbcTemplate.queryForObject(sql, Integer.class, ym.getYear(), ym.getMonthValue());
+        return v != null ? v : 0;
     }
 
     private int calcReceptionFee710(YearMonth ym) {
@@ -897,5 +1003,28 @@ public class ReportMenuController {
         public int getIntroFeeTotal()         { return introFeeTotal; }
         public int getSancareNetTotal()       { return sancareNetTotal; }
         public int getGrandTotal()            { return grandTotal; }
+    }
+
+    public static class ReportData {
+        public Map<String,Integer> jobTemp       = new LinkedHashMap<>(); // 求人-臨時(件数)
+        public Map<String,Integer> seekerValid   = new LinkedHashMap<>(); // 求職-有効(件数)
+        public Map<String,Integer> feeRegular    = new LinkedHashMap<>(); // 手数料-常用
+        public Map<String,Integer> feeTemp       = new LinkedHashMap<>(); // 手数料-臨時
+        public Map<String,Integer> feeDaily      = new LinkedHashMap<>(); // 手数料-日雇
+        public Map<String,Integer> feeReception  = new LinkedHashMap<>(); // 手数料-求職受付手数料
+        public int jobTempTotal, seekerValidTotal, feeRegularTotal, feeTempTotal, feeDailyTotal, feeReceptionTotal;
+
+        public Map<String,Integer> getJobTemp()      { return jobTemp; }
+        public Map<String,Integer> getSeekerValid()  { return seekerValid; }
+        public Map<String,Integer> getFeeRegular()   { return feeRegular; }
+        public Map<String,Integer> getFeeTemp()      { return feeTemp; }
+        public Map<String,Integer> getFeeDaily()     { return feeDaily; }
+        public Map<String,Integer> getFeeReception() { return feeReception; }
+        public int getJobTempTotal()      { return jobTempTotal; }
+        public int getSeekerValidTotal()  { return seekerValidTotal; }
+        public int getFeeRegularTotal()   { return feeRegularTotal; }
+        public int getFeeTempTotal()      { return feeTempTotal; }
+        public int getFeeDailyTotal()     { return feeDailyTotal; }
+        public int getFeeReceptionTotal() { return feeReceptionTotal; }
     }
 }

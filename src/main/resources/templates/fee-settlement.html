@@ -268,7 +268,9 @@
                     </tr>
                     <tr>
                         <td class="rsub">臨時</td>
-                        <td th:each="m : ${laborMonths}">-</td><td class="rtot">0</td>
+                        <td th:each="m : ${laborMonths}"
+                            th:text="${reportData.jobTemp[#strings.toString(m)] != null ? reportData.jobTemp[#strings.toString(m)] : 0}"></td>
+                        <td class="rtot" th:text="${reportData.jobTempTotal}"></td>
                     </tr>
                     <tr>
                         <td class="rsub">日雇</td>
@@ -277,7 +279,9 @@
                     <tr>
                         <td class="rlbl" rowspan="2">求<br>職</td>
                         <td class="rsub">有効</td>
-                        <td th:each="m : ${laborMonths}">-</td><td class="rtot">0</td>
+                        <td th:each="m : ${laborMonths}"
+                            th:text="${reportData.seekerValid[#strings.toString(m)] != null ? reportData.seekerValid[#strings.toString(m)] : 0}"></td>
+                        <td class="rtot" th:text="${reportData.seekerValidTotal}"></td>
                     </tr>
                     <tr>
                         <td class="rsub">新規申込み</td>
@@ -299,23 +303,34 @@
                     <tr>
                         <td class="rlbl" rowspan="4">手<br>数<br>料</td>
                         <td class="rsub">常用</td>
-                        <td th:each="m : ${laborMonths}">-</td><td class="rtot">0</td>
+                        <td th:each="m : ${laborMonths}"
+                            th:text="${reportData.feeRegular[#strings.toString(m)] != null ? #numbers.formatInteger(reportData.feeRegular[#strings.toString(m)],1,'COMMA') : '0'}"></td>
+                        <td class="rtot" th:text="${#numbers.formatInteger(reportData.feeRegularTotal,1,'COMMA')}"></td>
                     </tr>
                     <tr>
                         <td class="rsub">臨時</td>
-                        <td th:each="m : ${laborMonths}">-</td><td class="rtot">0</td>
+                        <td th:each="m : ${laborMonths}"
+                            th:text="${reportData.feeTemp[#strings.toString(m)] != null ? #numbers.formatInteger(reportData.feeTemp[#strings.toString(m)],1,'COMMA') : '0'}"></td>
+                        <td class="rtot" th:text="${#numbers.formatInteger(reportData.feeTempTotal,1,'COMMA')}"></td>
                     </tr>
                     <tr>
                         <td class="rsub">日雇</td>
-                        <td th:each="m : ${laborMonths}">-</td><td class="rtot">0</td>
+                        <td th:each="m : ${laborMonths}"
+                            th:text="${reportData.feeDaily[#strings.toString(m)] != null ? #numbers.formatInteger(reportData.feeDaily[#strings.toString(m)],1,'COMMA') : '0'}"></td>
+                        <td class="rtot" th:text="${#numbers.formatInteger(reportData.feeDailyTotal,1,'COMMA')}"></td>
                     </tr>
                     <tr>
                         <td class="rsub">求職受付料</td>
-                        <td th:each="m : ${laborMonths}">-</td><td class="rtot">0</td>
+                        <td th:each="m : ${laborMonths}"
+                            th:text="${reportData.feeReception[#strings.toString(m)] != null ? #numbers.formatInteger(reportData.feeReception[#strings.toString(m)],1,'COMMA') : '0'}"></td>
+                        <td class="rtot" th:text="${#numbers.formatInteger(reportData.feeReceptionTotal,1,'COMMA')}"></td>
                     </tr>
                 </tbody>
             </table>
-            <p style="color:#888;font-size:12px;margin-top:10px;">※ 中身は現在準備中です。</p>
+            <p style="color:#888;font-size:12px;margin-top:10px;">
+                ※ 「求人-臨時」「求職-有効」「手数料」欄は実データに対応済みです。
+                それ以外（求人-常用/日雇、求職-新規申込み、就職-常用/臨時/日雇）は準備中です。
+            </p>
         </th:block>
         <div class="no-year" th:if="${selectedLaborYear == null}">
             &#9757; 上部で「労働局年度」を選択してください
