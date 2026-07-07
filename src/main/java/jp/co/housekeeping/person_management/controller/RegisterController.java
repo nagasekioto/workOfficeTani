@@ -135,8 +135,14 @@ public class RegisterController {
             if (p != null) personName = p.getLastNameKanji() + " " + p.getFirstNameKanji();
         }
 
+        // 元の振込額を復元(振込額 = 手数料(16.5%換算前の給料) + 会費)
+        int currentSalary = record.getSalary() != null ? record.getSalary() : 0;
+        int currentFee     = record.getMembershipFee() != null ? record.getMembershipFee() : 0;
+        int transferAmount = currentSalary + currentFee;
+
         model.addAttribute("record", record);
         model.addAttribute("personName", personName);
+        model.addAttribute("transferAmount", transferAmount);
         model.addAttribute("selectedMonth", month);
         model.addAttribute("persons", personRepository.findAll());
         return "register-edit";

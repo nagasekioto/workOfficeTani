@@ -24,6 +24,13 @@
         .btn-row { display: flex; align-items: center; margin-top: 24px; }
     </style>
     <script>
+        function recalc() {
+            var transfer = parseInt(document.getElementById('transferAmount').value) || 0;
+            var fee      = parseInt(document.getElementById('membershipFeeSelect').value) || 0;
+            var salary   = Math.max(0, transfer - fee);
+            document.getElementById('salary').value = salary;
+            calcFee();
+        }
         function calcFee() {
             var salary = parseInt(document.getElementById('salary').value) || 0;
             var fee = Math.round(salary * 0.165);
@@ -52,18 +59,25 @@
         </div>
 
         <div class="form-group">
-            <label>手数料（16.5%、円）</label>
-            <input type="number" id="salary" name="salary" th:value="${record.salary}"
-                   min="0" step="1" oninput="calcFee()" required>
+            <label>振込額（円）</label>
+            <input type="number" id="transferAmount" th:value="${transferAmount}"
+                   min="0" step="1" oninput="recalc()">
         </div>
 
         <div class="form-group">
             <label>会費</label>
-            <select name="membershipFee">
+            <select id="membershipFeeSelect" name="membershipFee" onchange="recalc()">
                 <option value="0"    th:selected="${record.membershipFee == null or record.membershipFee == 0}">なし</option>
                 <option value="1550" th:selected="${record.membershipFee != null and record.membershipFee == 1550}">1,550円</option>
                 <option value="350"  th:selected="${record.membershipFee != null and record.membershipFee == 350}">350円</option>
             </select>
+        </div>
+
+        <div class="form-group">
+            <label>手数料（16.5%、円）</label>
+            <input type="number" id="salary" name="salary" th:value="${record.salary}"
+                   min="0" step="1" oninput="calcFee()" required>
+            <div class="fee-hint">※ 振込額 − 会費 で自動計算されます（直接の手動変更も可）</div>
         </div>
 
         <input type="hidden" id="fee" name="fee" th:value="${record.fee}">
