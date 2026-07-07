@@ -1,8 +1,5 @@
 package jp.co.housekeeping.person_management;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.event.ApplicationEnvironmentPreparedEvent;
@@ -19,17 +16,22 @@ public class PersonManagementApplication {
 		// 原因調査のためだけの一時コード。原因判明後に必ず削除すること。
 		app.addListeners((ApplicationListener<ApplicationEnvironmentPreparedEvent>) event -> {
 			Environment env = event.getEnvironment();
-			String url = env.getProperty("spring.datasource.url");
-			String username = env.getProperty("spring.datasource.username");
-			String password = env.getProperty("spring.datasource.password");
 
-			System.out.println("========== [DEBUG] DataSource設定の実測値 ==========");
-			System.out.println("[DEBUG] url      = " + url);
-			System.out.println("[DEBUG] username = " + username);
-			System.out.println("[DEBUG] password.length = " + (password == null ? "null" : password.length()));
-			System.out.println("[DEBUG] password.bytes  = "
-					+ (password == null ? "null" : Arrays.toString(password.getBytes(StandardCharsets.UTF_8))));
-			System.out.println("====================================================");
+			System.out.println("========== [DEBUG] spring.datasource.* の出どころ調査 ==========");
+			if (env instanceof org.springframework.core.env.ConfigurableEnvironment cEnv) {
+				for (org.springframework.core.env.PropertySource<?> ps : cEnv.getPropertySources()) {
+					for (String key : new String[] {
+							"spring.datasource.url",
+							"spring.datasource.username",
+							"spring.datasource.password" }) {
+						Object raw = ps.getProperty(key);
+						if (raw != null) {
+							System.out.println("[DEBUG] source=[" + ps.getName() + "] " + key + " = " + raw);
+						}
+					}
+				}
+			}
+			System.out.println("==================================================================");
 		});
 
 		app.run(args);
