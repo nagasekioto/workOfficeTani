@@ -92,11 +92,14 @@
                     <td th:text="${r.memo}"></td>
                     <td th:text="${#temporals.format(r.createdAt, 'MM/dd HH:mm')}"></td>
                     <td style="text-align:center;">
-                        <input type="checkbox" class="pay-check" th:data-salary="${r.salary}"
+                        <input type="checkbox" class="pay-check"
                                th:checked="${r.transferred}"
                                th:attr="onchange='toggleTransferred(' + ${r.id} + ', this.checked)'">
                     </td>
-                    <td></td>
+                    <td style="text-align:center;">
+                        <input type="checkbox" class="calc-check" th:data-salary="${r.salary}"
+                               onchange="updateCheckedTotal()">
+                    </td>
                     <td style="white-space:nowrap;">
                         <!-- 修正ボタン -->
                         <a th:href="@{/register/calc/edit(id=${r.id},month=${selectedMonth})}" class="edit-btn">修正</a>
@@ -137,7 +140,7 @@ function fmtYen(n) {
     return '\u00a5' + n.toLocaleString('ja-JP');
 }
 function updateCheckedTotal() {
-    var boxes = document.querySelectorAll('.pay-check');
+    var boxes = document.querySelectorAll('.calc-check');
     var total = 0;
     boxes.forEach(function(b) {
         if (b.checked) total += parseInt(b.getAttribute('data-salary'), 10) || 0;
@@ -148,14 +151,13 @@ function updateCheckedTotal() {
 document.addEventListener('DOMContentLoaded', updateCheckedTotal);
 
 function toggleTransferred(id, checked) {
-    updateCheckedTotal(); // チェックした瞬間に即時反映
     fetch('/register/calc/toggle-transferred', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({ id, transferred: checked })
     }).then(r => {
         if (r.ok) location.reload();
-        else { alert('更新に失敗しました'); updateCheckedTotal(); }
+        else alert('更新に失敗しました');
     });
 }
 </script>
