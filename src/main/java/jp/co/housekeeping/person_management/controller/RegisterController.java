@@ -128,7 +128,15 @@ public class RegisterController {
         if (!checkAuth(session)) return "redirect:/login";
         RegisterRecord record = registerRecordRepository.findById(id).orElse(null);
         if (record == null) return "redirect:/register/list";
+
+        String personName = "不明";
+        if (record.getPersonId() != null) {
+            Person p = personRepository.findById(record.getPersonId()).orElse(null);
+            if (p != null) personName = p.getLastNameKanji() + " " + p.getFirstNameKanji();
+        }
+
         model.addAttribute("record", record);
+        model.addAttribute("personName", personName);
         model.addAttribute("selectedMonth", month);
         model.addAttribute("persons", personRepository.findAll());
         return "register-edit";
@@ -186,6 +194,8 @@ public class RegisterController {
             row.fee = r.getFee() != null ? r.getFee() : 0;
             row.salaryStr = fmtYen(row.salary);
             row.feeStr    = fmtYen(row.fee);
+            row.membershipFee = r.getMembershipFee() != null ? r.getMembershipFee() : 0;
+            row.membershipFeeStr = row.membershipFee > 0 ? fmtYen(row.membershipFee) : "-";
             row.transferred = r.getTransferred() != null && r.getTransferred();
             row.memo = r.getMemo();
             row.createdAt = r.getCreatedAt();
@@ -554,6 +564,8 @@ public class RegisterController {
         public long fee;
         public String salaryStr;
         public String feeStr;
+        public long membershipFee;
+        public String membershipFeeStr;
         public boolean transferred;
         public String memo;
         public LocalDateTime createdAt;

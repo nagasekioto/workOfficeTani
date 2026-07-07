@@ -64,6 +64,7 @@
                     <th>求職者</th>
                     <th>対象月</th>
                     <th>手数料（16.5%）</th>
+                    <th>会費</th>
                     <th>照合（稼働台帳）</th>
                     <th>備考</th>
                     <th>登録日</th>
@@ -78,6 +79,7 @@
                     <td th:text="${r.personName}"></td>
                     <td th:text="${r.workMonth}"></td>
                     <td th:text="${r.salaryStr}"></td>
+                    <td th:text="${r.membershipFeeStr}"></td>
                     <td>
                         <!-- 照合結果バッジ -->
                         <span th:if="${r.matchStatus == 'ok'}" class="match-ok">✓ 一致</span>
@@ -115,16 +117,19 @@
                 <tr class="total-row">
                     <td colspan="3">合計</td>
                     <td th:text="${totalSalaryStr}"></td>
+                    <td></td>
                     <td colspan="6"></td>
                 </tr>
                 <tr class="total-row paid-total">
                     <td colspan="3">振込済合計額</td>
                     <td th:text="${totalTransferredStr}"></td>
+                    <td></td>
                     <td colspan="6"></td>
                 </tr>
                 <tr class="total-row unpaid-total">
                     <td colspan="3">未入金合計額</td>
                     <td th:text="${totalUnpaidStr}"></td>
+                    <td></td>
                     <td colspan="6"></td>
                 </tr>
             </tbody>

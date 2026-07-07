@@ -33,13 +33,18 @@
 </head>
 <body>
 <div class="header">
-    <h1>&#9998; レジ修正</h1>
+    <h1>&#9998; レジ修正<span th:text="'（' + ${personName} + '）'" style="font-size:16px;color:#777;margin-left:10px;"></span></h1>
     <a th:href="@{/register/list(month=${selectedMonth})}" class="back-btn">&#8592; 一覧に戻る</a>
 </div>
 <div class="container">
     <form method="post" action="/register/calc/edit">
         <input type="hidden" name="id" th:value="${record.id}">
         <input type="hidden" name="month" th:value="${selectedMonth}">
+
+        <div class="form-group">
+            <label>求職者</label>
+            <div class="readonly-val" th:text="${personName}"></div>
+        </div>
 
         <div class="form-group">
             <label>対象月</label>
