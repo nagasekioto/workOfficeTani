@@ -120,13 +120,16 @@
                 <div class="cbg">
                     <label><input type="radio" name="empPeriod" value="無期" checked onchange="toggleEmpPeriod()"> 無期</label>
                     <label><input type="radio" name="empPeriod" value="有期" onchange="toggleEmpPeriod()"> 有期</label>
-                    <label><input type="radio" name="empPeriod" value="臨時" onchange="toggleEmpPeriod()"> 臨時</label>
-                    <label><input type="radio" name="empPeriod" value="日雇い" onchange="toggleEmpPeriod()"> 日雇い</label>
                 </div>
                 <div id="empPeriodArea" style="display:none;margin-top:6px;">
                     <div id="empFromSel" style="display:flex;gap:4px;align-items:center;"></div><input type="hidden" id="empFrom">
                     <div style="margin:3px 0;">〜</div>
                     <div id="empToSel" style="display:flex;gap:4px;align-items:center;"></div><input type="hidden" id="empTo">
+                    <div class="cbg" style="margin-top:8px;">
+                        <label><input type="radio" name="empSubType" value="" checked onchange="update()"> 該当なし</label>
+                        <label><input type="radio" name="empSubType" value="臨時" onchange="update()"> 臨時</label>
+                        <label><input type="radio" name="empSubType" value="日雇い" onchange="update()"> 日雇い</label>
+                    </div>
                 </div>
             </div>
             <div class="fg"><label>試用期間</label>
@@ -499,7 +502,14 @@ function updateJobContent(){
 
 function toggleEmpPeriod(){
     var v=document.querySelector('input[name=empPeriod]:checked');
-    g('empPeriodArea').style.display=(v&&v.value==='有期')?'block':'none';update();
+    var isKikan=v&&v.value==='有期';
+    g('empPeriodArea').style.display=isKikan?'block':'none';
+    if(!isKikan){
+        // 無期を選んだ場合は「臨時/日雇い」の選択を「該当なし」にリセット
+        var noneSub=document.querySelector('input[name=empSubType][value=""]');
+        if(noneSub) noneSub.checked=true;
+    }
+    update();
 }
 function toggleTrialPeriod(){
     var v=document.querySelector('input[name=trialPeriod]:checked');
@@ -611,6 +621,8 @@ function update(){
     var jobLine = (g('jobKaji').checked?'☑':'□')+'家事サービス　'+(g('jobKaigo').checked?'☑':'□')+'介護サービス　'+(g('jobOther').checked?'☑':'□')+'その他〔'+joTxt+'〕';
 
     var eType=gc('empPeriod');
+    var eSub=gc('empSubType');
+    var eTypeDisp=eType+((eType==='有期'&&eSub)?'（'+eSub+'）':'');
     var ePeriod='';if(eType==='有期') ePeriod=(g('empFrom').value||'')+' 〜 '+(g('empTo').value||'');
 
     var tType=gc('trialPeriod');
@@ -658,7 +670,7 @@ function update(){
     setAll('d-line',        g('workLine').value);
     setAll('d-access',      g('workAccess').value);
     setAll('d-smoking',     g('smoking').value);
-    setAll('d-emp-type',    eType);
+    setAll('d-emp-type',    eTypeDisp);
     setAll('d-emp-period',  ePeriod);
     setAll('d-trial',       tStr);
     setAll('d-work-style',  gc('workStyle'));
@@ -694,6 +706,7 @@ function collectFormData(){
         workAccess:     g('workAccess').value,
         smoking:        g('smoking').value,
         empPeriod:      gc('empPeriod'),
+        empSubType:     gc('empSubType'),
         empFrom:        g('empFrom').value,
         empTo:          g('empTo').value,
         trialPeriod:    gc('trialPeriod'),
@@ -794,6 +807,9 @@ function restoreFormData(fd){
     if(data.empPeriod){
         document.querySelectorAll('input[name=empPeriod]').forEach(function(r){if(r.value===data.empPeriod)r.checked=true;});
         if(data.empPeriod==='有期') g('empPeriodArea').style.display='block';
+    }
+    if(data.empSubType){
+        document.querySelectorAll('input[name=empSubType]').forEach(function(r){if(r.value===data.empSubType)r.checked=true;});
     }
     if(data.trialPeriod){
         document.querySelectorAll('input[name=trialPeriod]').forEach(function(r){if(r.value===data.trialPeriod)r.checked=true;});

@@ -113,16 +113,17 @@ public class IntroductionController {
         try { if (startDate != null && !startDate.isBlank()) intro.setStartDate(LocalDate.parse(startDate)); } catch (Exception ignored) {}
         intro.setFormData(formData);
 
-        // formData(JSON)からempPeriod(雇用期間区分: 無期/有期/臨時/日雇い)を抽出して
-        // 専用カラムに保存する。紹介手数料管理簿(1-3-1)の日雇1ヶ月・臨時3ヶ月の
-        // 自動計算で使うため、JSON文字列のままではなく列として持たせる。
+        // formData(JSON)からempPeriod(無期/有期)とempSubType(臨時/日雇い)を抽出し、
+        // 「有期」かつサブ選択がある場合はサブ選択の値(臨時/日雇い)を、
+        // それ以外は主選択(無期/有期)をそのままemp_periodに保存する。
+        // 例: 有期+臨時 → emp_period="臨時"、有期+該当なし → emp_period="有期"
         try {
             if (formData != null && !formData.isBlank()) {
                 JsonNode node = new ObjectMapper().readTree(formData);
-                if (node.has("empPeriod")) {
-                    String ep = node.get("empPeriod").asText(null);
-                    intro.setEmpPeriod((ep == null || ep.isBlank()) ? null : ep);
-                }
+                String ep  = node.has("empPeriod")  ? node.get("empPeriod").asText(null)  : null;
+                String sub = node.has("empSubType") ? node.get("empSubType").asText(null) : null;
+                String finalEp = ("有期".equals(ep) && sub != null && !sub.isBlank()) ? sub : ep;
+                intro.setEmpPeriod((finalEp == null || finalEp.isBlank()) ? null : finalEp);
             }
         } catch (Exception ignored) {}
 
