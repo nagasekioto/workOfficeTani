@@ -35,6 +35,7 @@
         .paid-row { background: #e8f5e9; }
         .paid-total td { background: #e8f5e9 !important; color: #2e7d32; }
         .unpaid-total td { background: #ffebee !important; color: #c62828; }
+        .calc-badge { display: inline-block; background: #2196F3; color: white; border-radius: 10px; padding: 2px 10px; font-size: 11px; font-weight: normal; margin-left: 6px; white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -66,7 +67,7 @@
                     <th>照合（稼働台帳）</th>
                     <th>備考</th>
                     <th>登録日</th>
-                    <th>振込済み</th>
+                    <th>振込済み <span id="checkedTotal" class="calc-badge">計算: ¥0</span></th>
                     <th>操作</th>
                 </tr>
             </thead>
@@ -90,7 +91,8 @@
                     <td th:text="${r.memo}"></td>
                     <td th:text="${#temporals.format(r.createdAt, 'MM/dd HH:mm')}"></td>
                     <td style="text-align:center;">
-                        <input type="checkbox" th:checked="${r.transferred}"
+                        <input type="checkbox" class="pay-check" th:data-salary="${r.salary}"
+                               th:checked="${r.transferred}"
                                th:attr="onchange='toggleTransferred(' + ${r.id} + ', this.checked)'">
                     </td>
                     <td style="white-space:nowrap;">
@@ -129,14 +131,29 @@
     </div>
 </div>
 <script>
+function fmtYen(n) {
+    return '\u00a5' + n.toLocaleString('ja-JP');
+}
+function updateCheckedTotal() {
+    var boxes = document.querySelectorAll('.pay-check');
+    var total = 0;
+    boxes.forEach(function(b) {
+        if (b.checked) total += parseInt(b.getAttribute('data-salary'), 10) || 0;
+    });
+    var el = document.getElementById('checkedTotal');
+    if (el) el.textContent = '計算: ' + fmtYen(total);
+}
+document.addEventListener('DOMContentLoaded', updateCheckedTotal);
+
 function toggleTransferred(id, checked) {
+    updateCheckedTotal(); // チェックした瞬間に即時反映
     fetch('/register/calc/toggle-transferred', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({ id, transferred: checked })
     }).then(r => {
         if (r.ok) location.reload();
-        else alert('更新に失敗しました');
+        else { alert('更新に失敗しました'); updateCheckedTotal(); }
     });
 }
 </script>
