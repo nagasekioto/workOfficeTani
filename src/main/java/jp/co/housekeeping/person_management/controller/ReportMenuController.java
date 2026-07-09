@@ -389,11 +389,13 @@ public class ReportMenuController {
             int fee1000 = calcCustomerFee1000(yearMonth);
             d.receptionFee1000.put(key, fee1000);
 
-            // ④紹介手数料 = 手数料※1累計 + 手数料※2累計 - サンケアネット
+            // ④紹介手数料 = 手数料※1累計 + 手数料※2累計 （－ サンケアネット）
+            // 会社決算表（type=comp）ではサンケアネットの金額を引かない。
+            // 労働局用決算表（type=labor）では従来通り差し引く。
             int comm1 = calcCommission(yearMonth);   // 手数料※1
             int comm2 = calcTax(yearMonth);           // 手数料※2
             int sancare = getSancareNet(ym);
-            int introFee = comm1 + comm2 - sancare;
+            int introFee = "comp".equals(type) ? comm1 + comm2 : comm1 + comm2 - sancare;
             d.introFee.put(key, introFee);
 
             // ①サンケアネット

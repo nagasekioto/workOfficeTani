@@ -89,6 +89,7 @@ public class SalesController {
             @RequestParam(required = false) String[] hourlyWages,
             @RequestParam(required = false) String[] hourlyWageOvertimes,
             @RequestParam(required = false) String[] dailyWagesList,
+            @RequestParam(required = false) String[] dailyWageRates,
             @RequestParam(required = false) String[] workStartDates,
             @RequestParam(required = false) String[] workEndDates,
             @RequestParam(required = false) String[] workDaysList,
@@ -164,13 +165,21 @@ public class SalesController {
                     && introductionDates[i] != null && !introductionDates[i].isBlank()) {
                 try { detail.setIntroductionDate(LocalDate.parse(introductionDates[i])); } catch (Exception ignored) {}
             }
-            if (receptionFees != null && i < receptionFees.length
-                    && receptionFees[i] != null && !receptionFees[i].isBlank()) {
-                try { detail.setReceptionFee(Integer.parseInt(receptionFees[i])); } catch (NumberFormatException ignored) {}
+            // 求職受付手数料（710円）チェックボックス：チェックを外した場合は明示的にクリアする
+            if (receptionFees != null && i < receptionFees.length) {
+                if (receptionFees[i] != null && !receptionFees[i].isBlank()) {
+                    try { detail.setReceptionFee(Integer.parseInt(receptionFees[i])); } catch (NumberFormatException ignored) {}
+                } else {
+                    detail.setReceptionFee(null);
+                }
             }
-            if (customerFees != null && i < customerFees.length
-                    && customerFees[i] != null && !customerFees[i].isBlank()) {
-                try { detail.setCustomerFee(Integer.parseInt(customerFees[i])); } catch (NumberFormatException ignored) {}
+            // 求人受付手数料（1,000円）チェックボックス：チェックを外した場合は明示的にクリアする
+            if (customerFees != null && i < customerFees.length) {
+                if (customerFees[i] != null && !customerFees[i].isBlank()) {
+                    try { detail.setCustomerFee(Integer.parseInt(customerFees[i])); } catch (NumberFormatException ignored) {}
+                } else {
+                    detail.setCustomerFee(null);
+                }
             }
             if (hourlyWages != null && i < hourlyWages.length
                     && hourlyWages[i] != null && !hourlyWages[i].isBlank()) {
@@ -183,6 +192,13 @@ public class SalesController {
             if (dailyWagesList != null && i < dailyWagesList.length && dailyWagesList[i] != null) {
                 detail.setDailyWages(dailyWagesList[i]);
             }
+            // 日給への掛け率（%）。未入力時は16.5をデフォルトとして保存する。
+            Double rate = 16.5;
+            if (dailyWageRates != null && i < dailyWageRates.length
+                    && dailyWageRates[i] != null && !dailyWageRates[i].isBlank()) {
+                try { rate = Double.parseDouble(dailyWageRates[i]); } catch (NumberFormatException ignored) {}
+            }
+            detail.setDailyWageRate(rate);
             if (workStartDates != null && i < workStartDates.length
                     && workStartDates[i] != null && !workStartDates[i].isBlank()) {
                 try { detail.setWorkStartDate(LocalDate.parse(workStartDates[i])); } catch (Exception ignored) {}
@@ -209,6 +225,7 @@ public class SalesController {
             }
 
             detail.calculateAmounts();
+            detail.calculateSalesAmount();
             SalesDetail saved = salesDetailRepository.save(detail);
             if (saved.getId() != null) newDetailIds.add(saved.getId());
         }

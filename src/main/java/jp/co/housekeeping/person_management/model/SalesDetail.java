@@ -35,6 +35,12 @@ public class SalesDetail {
     // 日給（JSON文字列: ["8000","8500"] 最大5枠）
     private String dailyWages;
 
+    // 日給への掛け率（%）。未指定時は16.5（=16.5%）をデフォルトとする。
+    private Double dailyWageRate;
+
+    // 売上（時給×勤務時間 + 日給×掛け率(%) + チェック済み手数料）
+    private Integer salesAmount;
+
     // 紹介年月日
     private LocalDate introductionDate;
 
@@ -64,6 +70,38 @@ public class SalesDetail {
         this.monthlyTotal = total;
         this.commission = (int)(total * 0.165);
         this.tax = (int)(commission * 0.10);
+    }
+
+    /**
+     * 売上（1-1-3画面専用の値）を計算する。
+     * 売上 = 時給×勤務時間 + 日給×掛け率(%) + （チェックされた）求人受付手数料 + 求職受付手数料
+     *
+     * ※monthlyTotal（賃金総額）とは別の値として保持する。
+     *   monthlyTotalは決算表（1-3-1・1-3-3）の紹介手数料計算（monthlyTotal×15%）で
+     *   使用されているため、ここを変更すると日給を含む取引の紹介手数料が
+     *   二重に圧縮されてしまう（掛け率×15%）。そのため売上入力画面表示用の
+     *   salesAmountを新設し、monthlyTotalには一切手を加えない。
+     */
+    public void calculateSalesAmount() {
+        double rate = (dailyWageRate != null) ? dailyWageRate : 16.5;
+
+        int hourlyPart = 0;
+        if (hourlyWage != null && workingHours != null) {
+            hourlyPart = (int)(hourlyWage * workingHours.doubleValue());
+        }
+
+        int dailySum = 0;
+        if (dailyWages != null && !dailyWages.isBlank()) {
+            String[] wages = dailyWages.split(",");
+            for (String w : wages) {
+                try { dailySum += Integer.parseInt(w.trim()); } catch (NumberFormatException ignored) {}
+            }
+        }
+        int dailyPart = (int)(dailySum * (rate / 100.0));
+
+        int fees = (receptionFee != null ? receptionFee : 0) + (customerFee != null ? customerFee : 0);
+
+        this.salesAmount = hourlyPart + dailyPart + fees;
     }
 
     // ---- getters / setters ----
@@ -97,6 +135,10 @@ public class SalesDetail {
     public void setCustomerFee(Integer customerFee) { this.customerFee = customerFee; }
     public String getDailyWages() { return dailyWages; }
     public void setDailyWages(String dailyWages) { this.dailyWages = dailyWages; }
+    public Double getDailyWageRate() { return dailyWageRate; }
+    public void setDailyWageRate(Double dailyWageRate) { this.dailyWageRate = dailyWageRate; }
+    public Integer getSalesAmount() { return salesAmount; }
+    public void setSalesAmount(Integer salesAmount) { this.salesAmount = salesAmount; }
     public LocalDate getIntroductionDate() { return introductionDate; }
     public void setIntroductionDate(LocalDate introductionDate) { this.introductionDate = introductionDate; }
     public String getReceiptNo() { return receiptNo; }

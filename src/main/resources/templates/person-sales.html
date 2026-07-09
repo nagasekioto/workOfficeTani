@@ -110,10 +110,22 @@
                         <input type="hidden" name="dailyWagesList" id="dailyWagesHidden1" th:value="${d?.dailyWages}">
                         <button type="button" class="add-daily-btn" onclick="addDailyWage(1)">＋ 日給を追加</button>
                     </div>
+                    <div class="form-group"><label>日給への掛け率（%）<small style="font-weight:normal;color:#888;">（未入力の場合16.5%）</small></label>
+                        <input type="number" step="0.1" name="dailyWageRates" id="dailyRate1" min="0"
+                               th:value="${d?.dailyWageRate != null ? d.dailyWageRate : 16.5}" oninput="calcTotal(1)"></div>
+                    <div class="fee-fixed" style="margin-top:8px;">
+                        <label style="font-weight:normal;margin:0;"><input type="checkbox" id="customerFeeCheck1" onchange="toggleFee(1,'customer')" th:checked="${d?.customerFee != null and d.customerFee > 0}"> 求人受付手数料（1,000円）</label>
+                    </div>
+                    <input type="hidden" name="customerFees" id="customerFeeHidden1" th:value="${d?.customerFee}">
+                    <div class="fee-fixed" style="margin-top:6px;">
+                        <label style="font-weight:normal;margin:0;"><input type="checkbox" id="receptionFeeCheck1" onchange="toggleFee(1,'reception')" th:checked="${d?.receptionFee != null and d.receptionFee > 0}"> 求職受付手数料（710円）</label>
+                    </div>
+                    <input type="hidden" name="receptionFees" id="receptionFeeHidden1" th:value="${d?.receptionFee}">
                     <div class="calc-box" id="calcBox1" style="display:none;">
                         <div class="calc-row"><span>賃金総額:</span><span id="totalWage1">¥0</span></div>
-                        <div class="calc-row"><span>手数料（15%）:</span><span id="commission1">¥0</span></div>
+                        <div class="calc-row"><span>手数料（16.5%）:</span><span id="commission1">¥0</span></div>
                         <div class="calc-row total"><span>合計:</span><span id="grandTotal1">¥0</span></div>
+                        <div class="calc-row total" style="color:#2e7d32;"><span>売上:</span><span id="salesAmount1">¥0</span></div>
                     </div>
                     <div class="form-group" style="margin-top:12px;"><label>備考</label>
                         <textarea name="remarksList" id="remarks1" th:text="${d?.remarks}"></textarea></div>
@@ -156,10 +168,22 @@
                         <input type="hidden" name="dailyWagesList" id="dailyWagesHidden2" th:value="${d?.dailyWages}">
                         <button type="button" class="add-daily-btn" onclick="addDailyWage(2)">＋ 日給を追加</button>
                     </div>
+                    <div class="form-group"><label>日給への掛け率（%）<small style="font-weight:normal;color:#888;">（未入力の場合16.5%）</small></label>
+                        <input type="number" step="0.1" name="dailyWageRates" id="dailyRate2" min="0"
+                               th:value="${d?.dailyWageRate != null ? d.dailyWageRate : 16.5}" oninput="calcTotal(2)"></div>
+                    <div class="fee-fixed" style="margin-top:8px;">
+                        <label style="font-weight:normal;margin:0;"><input type="checkbox" id="customerFeeCheck2" onchange="toggleFee(2,'customer')" th:checked="${d?.customerFee != null and d.customerFee > 0}"> 求人受付手数料（1,000円）</label>
+                    </div>
+                    <input type="hidden" name="customerFees" id="customerFeeHidden2" th:value="${d?.customerFee}">
+                    <div class="fee-fixed" style="margin-top:6px;">
+                        <label style="font-weight:normal;margin:0;"><input type="checkbox" id="receptionFeeCheck2" onchange="toggleFee(2,'reception')" th:checked="${d?.receptionFee != null and d.receptionFee > 0}"> 求職受付手数料（710円）</label>
+                    </div>
+                    <input type="hidden" name="receptionFees" id="receptionFeeHidden2" th:value="${d?.receptionFee}">
                     <div class="calc-box" id="calcBox2" style="display:none;">
                         <div class="calc-row"><span>賃金総額:</span><span id="totalWage2">¥0</span></div>
-                        <div class="calc-row"><span>手数料（15%）:</span><span id="commission2">¥0</span></div>
+                        <div class="calc-row"><span>手数料（16.5%）:</span><span id="commission2">¥0</span></div>
                         <div class="calc-row total"><span>合計:</span><span id="grandTotal2">¥0</span></div>
+                        <div class="calc-row total" style="color:#2e7d32;"><span>売上:</span><span id="salesAmount2">¥0</span></div>
                     </div>
                     <div class="form-group" style="margin-top:12px;"><label>備考</label>
                         <textarea name="remarksList" id="remarks2" th:text="${d?.remarks}"></textarea></div>
@@ -202,10 +226,22 @@
                         <input type="hidden" name="dailyWagesList" id="dailyWagesHidden3" th:value="${d?.dailyWages}">
                         <button type="button" class="add-daily-btn" onclick="addDailyWage(3)">＋ 日給を追加</button>
                     </div>
+                    <div class="form-group"><label>日給への掛け率（%）<small style="font-weight:normal;color:#888;">（未入力の場合16.5%）</small></label>
+                        <input type="number" step="0.1" name="dailyWageRates" id="dailyRate3" min="0"
+                               th:value="${d?.dailyWageRate != null ? d.dailyWageRate : 16.5}" oninput="calcTotal(3)"></div>
+                    <div class="fee-fixed" style="margin-top:8px;">
+                        <label style="font-weight:normal;margin:0;"><input type="checkbox" id="customerFeeCheck3" onchange="toggleFee(3,'customer')" th:checked="${d?.customerFee != null and d.customerFee > 0}"> 求人受付手数料（1,000円）</label>
+                    </div>
+                    <input type="hidden" name="customerFees" id="customerFeeHidden3" th:value="${d?.customerFee}">
+                    <div class="fee-fixed" style="margin-top:6px;">
+                        <label style="font-weight:normal;margin:0;"><input type="checkbox" id="receptionFeeCheck3" onchange="toggleFee(3,'reception')" th:checked="${d?.receptionFee != null and d.receptionFee > 0}"> 求職受付手数料（710円）</label>
+                    </div>
+                    <input type="hidden" name="receptionFees" id="receptionFeeHidden3" th:value="${d?.receptionFee}">
                     <div class="calc-box" id="calcBox3" style="display:none;">
                         <div class="calc-row"><span>賃金総額:</span><span id="totalWage3">¥0</span></div>
-                        <div class="calc-row"><span>手数料（15%）:</span><span id="commission3">¥0</span></div>
+                        <div class="calc-row"><span>手数料（16.5%）:</span><span id="commission3">¥0</span></div>
                         <div class="calc-row total"><span>合計:</span><span id="grandTotal3">¥0</span></div>
+                        <div class="calc-row total" style="color:#2e7d32;"><span>売上:</span><span id="salesAmount3">¥0</span></div>
                     </div>
                     <div class="form-group" style="margin-top:12px;"><label>備考</label>
                         <textarea name="remarksList" id="remarks3" th:text="${d?.remarks}"></textarea></div>
@@ -248,10 +284,22 @@
                         <input type="hidden" name="dailyWagesList" id="dailyWagesHidden4" th:value="${d?.dailyWages}">
                         <button type="button" class="add-daily-btn" onclick="addDailyWage(4)">＋ 日給を追加</button>
                     </div>
+                    <div class="form-group"><label>日給への掛け率（%）<small style="font-weight:normal;color:#888;">（未入力の場合16.5%）</small></label>
+                        <input type="number" step="0.1" name="dailyWageRates" id="dailyRate4" min="0"
+                               th:value="${d?.dailyWageRate != null ? d.dailyWageRate : 16.5}" oninput="calcTotal(4)"></div>
+                    <div class="fee-fixed" style="margin-top:8px;">
+                        <label style="font-weight:normal;margin:0;"><input type="checkbox" id="customerFeeCheck4" onchange="toggleFee(4,'customer')" th:checked="${d?.customerFee != null and d.customerFee > 0}"> 求人受付手数料（1,000円）</label>
+                    </div>
+                    <input type="hidden" name="customerFees" id="customerFeeHidden4" th:value="${d?.customerFee}">
+                    <div class="fee-fixed" style="margin-top:6px;">
+                        <label style="font-weight:normal;margin:0;"><input type="checkbox" id="receptionFeeCheck4" onchange="toggleFee(4,'reception')" th:checked="${d?.receptionFee != null and d.receptionFee > 0}"> 求職受付手数料（710円）</label>
+                    </div>
+                    <input type="hidden" name="receptionFees" id="receptionFeeHidden4" th:value="${d?.receptionFee}">
                     <div class="calc-box" id="calcBox4" style="display:none;">
                         <div class="calc-row"><span>賃金総額:</span><span id="totalWage4">¥0</span></div>
-                        <div class="calc-row"><span>手数料（15%）:</span><span id="commission4">¥0</span></div>
+                        <div class="calc-row"><span>手数料（16.5%）:</span><span id="commission4">¥0</span></div>
                         <div class="calc-row total"><span>合計:</span><span id="grandTotal4">¥0</span></div>
+                        <div class="calc-row total" style="color:#2e7d32;"><span>売上:</span><span id="salesAmount4">¥0</span></div>
                     </div>
                     <div class="form-group" style="margin-top:12px;"><label>備考</label>
                         <textarea name="remarksList" id="remarks4" th:text="${d?.remarks}"></textarea></div>
@@ -294,10 +342,22 @@
                         <input type="hidden" name="dailyWagesList" id="dailyWagesHidden5" th:value="${d?.dailyWages}">
                         <button type="button" class="add-daily-btn" onclick="addDailyWage(5)">＋ 日給を追加</button>
                     </div>
+                    <div class="form-group"><label>日給への掛け率（%）<small style="font-weight:normal;color:#888;">（未入力の場合16.5%）</small></label>
+                        <input type="number" step="0.1" name="dailyWageRates" id="dailyRate5" min="0"
+                               th:value="${d?.dailyWageRate != null ? d.dailyWageRate : 16.5}" oninput="calcTotal(5)"></div>
+                    <div class="fee-fixed" style="margin-top:8px;">
+                        <label style="font-weight:normal;margin:0;"><input type="checkbox" id="customerFeeCheck5" onchange="toggleFee(5,'customer')" th:checked="${d?.customerFee != null and d.customerFee > 0}"> 求人受付手数料（1,000円）</label>
+                    </div>
+                    <input type="hidden" name="customerFees" id="customerFeeHidden5" th:value="${d?.customerFee}">
+                    <div class="fee-fixed" style="margin-top:6px;">
+                        <label style="font-weight:normal;margin:0;"><input type="checkbox" id="receptionFeeCheck5" onchange="toggleFee(5,'reception')" th:checked="${d?.receptionFee != null and d.receptionFee > 0}"> 求職受付手数料（710円）</label>
+                    </div>
+                    <input type="hidden" name="receptionFees" id="receptionFeeHidden5" th:value="${d?.receptionFee}">
                     <div class="calc-box" id="calcBox5" style="display:none;">
                         <div class="calc-row"><span>賃金総額:</span><span id="totalWage5">¥0</span></div>
-                        <div class="calc-row"><span>手数料（15%）:</span><span id="commission5">¥0</span></div>
+                        <div class="calc-row"><span>手数料（16.5%）:</span><span id="commission5">¥0</span></div>
                         <div class="calc-row total"><span>合計:</span><span id="grandTotal5">¥0</span></div>
+                        <div class="calc-row total" style="color:#2e7d32;"><span>売上:</span><span id="salesAmount5">¥0</span></div>
                     </div>
                     <div class="form-group" style="margin-top:12px;"><label>備考</label>
                         <textarea name="remarksList" id="remarks5" th:text="${d?.remarks}"></textarea></div>
@@ -348,19 +408,50 @@ function updateDailyHidden(idx) {
     document.getElementById('dailyWagesHidden' + idx).value = vals.join(',');
 }
 
+// 求人受付手数料（1,000円）／求職受付手数料（710円）のチェックボックス切り替え
+function toggleFee(idx, type) {
+    if (type === 'customer') {
+        const checked = document.getElementById('customerFeeCheck' + idx).checked;
+        document.getElementById('customerFeeHidden' + idx).value = checked ? '1000' : '';
+    } else {
+        const checked = document.getElementById('receptionFeeCheck' + idx).checked;
+        document.getElementById('receptionFeeHidden' + idx).value = checked ? '710' : '';
+    }
+    calcTotal(idx);
+}
+
 function calcTotal(idx) {
     const wage  = parseFloat(document.getElementById('wage' + idx).value) || 0;
     const hours = parseFloat(document.getElementById('hours' + idx).value) || 0;
-    let total = Math.floor(wage * hours);
+    const hourlyPart = Math.floor(wage * hours);
+
+    let dailySum = 0;
     document.getElementById('dailyWagesArea' + idx).querySelectorAll('input[type=number]').forEach(inp => {
-        total += parseFloat(inp.value) || 0;
+        dailySum += parseFloat(inp.value) || 0;
     });
+
+    // 賃金総額・手数料・合計（従来通り。決算表側の計算には影響しない参考表示）
+    const total = hourlyPart + dailySum;
     if (total > 0) {
         const commission = Math.floor(total * 0.165);
         document.getElementById('totalWage'  + idx).textContent = '¥' + total.toLocaleString();
         document.getElementById('commission' + idx).textContent = '¥' + commission.toLocaleString();
         document.getElementById('grandTotal' + idx).textContent = '¥' + (total + commission).toLocaleString();
         document.getElementById('calcBox'    + idx).style.display = 'block';
+    }
+
+    // 売上 = 時給×勤務時間 + 日給×掛け率(%) + チェックした手数料
+    const rateInput = document.getElementById('dailyRate' + idx);
+    const rate = rateInput && rateInput.value !== '' ? parseFloat(rateInput.value) : 16.5;
+    const dailyPart = Math.floor(dailySum * (rate / 100));
+    const customerFeeChecked  = document.getElementById('customerFeeCheck'  + idx).checked;
+    const receptionFeeChecked = document.getElementById('receptionFeeCheck' + idx).checked;
+    const fees = (customerFeeChecked ? 1000 : 0) + (receptionFeeChecked ? 710 : 0);
+    const salesAmount = hourlyPart + dailyPart + fees;
+    const salesEl = document.getElementById('salesAmount' + idx);
+    if (salesEl) salesEl.textContent = '¥' + salesAmount.toLocaleString();
+    if (total > 0 || fees > 0) {
+        document.getElementById('calcBox' + idx).style.display = 'block';
     }
 }
 

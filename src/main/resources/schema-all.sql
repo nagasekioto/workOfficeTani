@@ -142,3 +142,8 @@ CREATE TABLE IF NOT EXISTS sancare_net_monthly (
     updated_at  TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (year_month)
 );
+
+-- schema-update-9: 売上入力(1-1-3)拡張（売上・日給掛け率）
+ALTER TABLE sales_details ADD COLUMN IF NOT EXISTS daily_wage_rate NUMERIC(5,2) DEFAULT 16.5;
+ALTER TABLE sales_details ADD COLUMN IF NOT EXISTS sales_amount INTEGER DEFAULT 0;
+UPDATE sales_details SET daily_wage_rate = 16.5 WHERE daily_wage_rate IS NULL;
