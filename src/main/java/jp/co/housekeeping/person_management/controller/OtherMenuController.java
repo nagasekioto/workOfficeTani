@@ -43,6 +43,13 @@ public class OtherMenuController {
         return "system-manual";
     }
 
+    // ─── 1-7-4 データフロー・計算式ガイド ─────────────────────────
+    @GetMapping("/data-flow-guide")
+    public String dataFlowGuide(HttpSession session) {
+        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+        return "data-flow-guide";
+    }
+
     @GetMapping("/system-qa-help")
     public String systemQaHelp(HttpSession session) {
         if (session.getAttribute("authenticated") == null) return "redirect:/login";

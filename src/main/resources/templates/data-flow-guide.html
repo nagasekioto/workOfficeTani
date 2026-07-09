@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>データフロー・計算式ガイド（1-7-4）</title>
+    <style>
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; color: #333; font-size: 22px; }
+        .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; font-size: 14px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .section { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,.1); margin-bottom: 20px; overflow: hidden; }
+        .section-header { background: #1565C0; color: white; padding: 14px 20px; font-size: 16px; font-weight: bold; }
+        .section-body { padding: 20px; }
+        .intro { font-size: 13px; color: #555; margin-bottom: 16px; line-height: 1.7; }
+        .flow-item { border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 14px; overflow: hidden; }
+        .flow-title { background: #E3F2FD; color: #1565C0; padding: 10px 14px; font-weight: bold; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+        .flow-body { padding: 12px 14px; font-size: 13px; line-height: 1.7; color: #333; }
+        .arrow { color: #1565C0; font-weight: bold; }
+        .src-tag { display: inline-block; background: #FFF3E0; color: #E65100; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: bold; margin: 2px 4px 2px 0; }
+        .formula-box { background: #F5F7FA; border: 1px solid #dbe2ea; border-radius: 6px; padding: 10px 14px; font-family: 'Consolas', 'Courier New', monospace; font-size: 13.5px; color: #1a237e; margin: 8px 0; white-space: pre-wrap; }
+        .note { background: #FFF8E1; border-left: 4px solid #FFC107; padding: 10px 14px; border-radius: 0 4px 4px 0; font-size: 13px; color: #555; margin: 8px 0; }
+        .warn { background: #FFEBEE; border-left: 4px solid #E53935; padding: 10px 14px; border-radius: 0 4px 4px 0; font-size: 13px; color: #444; margin: 8px 0; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+        th { background: #E3F2FD; color: #1565C0; padding: 8px 12px; text-align: left; border: 1px solid #BBDEFB; }
+        td { padding: 8px 12px; border: 1px solid #e0e0e0; vertical-align: top; }
+        tr:nth-child(even) td { background: #fafafa; }
+        .rate-current { display: inline-block; font-weight: bold; }
+        .rate-165 { color: #1565C0; }
+        .rate-15  { color: #6A1B9A; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>🔗 データフロー・計算式ガイド（1-7-4）</h1>
+    <a href="/other-menu" class="back-btn">← その他に戻る</a>
+</div>
+<div class="container">
+
+    <div class="section">
+        <div class="section-body">
+            <div class="intro">
+                このページは、システム内の「お金に関する数字」がどの画面から来て、どこに反映されているか（①データの流れ）と、
+                各画面の金額がどのような計算式で算出されているか（②計算式）をまとめたものです。
+                「この決算表の数字はどこから来ているのか分からない」というときの確認用に使ってください。
+            </div>
+        </div>
+    </div>
+
+    <!-- ① データの流れ -->
+    <div class="section">
+        <div class="section-header">① データの流れ（どこからどこへ反映されているか）</div>
+        <div class="section-body">
+
+            <div class="flow-item">
+                <div class="flow-title">📋 稼働管理簿（1-1-5）</div>
+                <div class="flow-body">
+                    <span class="src-tag">売上入力（1-1-3）</span>
+                    <span class="arrow">→</span> そのまま表示<br>
+                    売上入力で保存した明細（求人者・時給・日給・就労月日など）を、求職者ごとに紹介年月日順で一覧表示しているだけです。
+                    「賃金総額」「手数料（16.5%）」は売上入力を保存した時点で計算・保存された値をそのまま表示しています。
+                </div>
+            </div>
+
+            <div class="flow-item">
+                <div class="flow-title">📄 紹介手数料管理簿（1-3-1）</div>
+                <div class="flow-body">
+                    <span class="src-tag">売上入力（1-1-3）</span>
+                    <span class="src-tag">紹介状（1-4-1）</span>
+                    <span class="arrow">→</span> 集計・自動転記<br>
+                    売上入力の明細のうち「領収書No」が発行されているもの（＝レジで領収書を出したもの）を対象に、
+                    領収書発行月（無ければ就労終了日→就労開始日→紹介年月日の順）でその月に該当するものを集計します。<br>
+                    さらに、紹介状（1-4-1）に登録された雇用期間区分が「日雇い」「臨時」の場合は、
+                    手数料※1・※2の合計額を「届出手数料（日雇1ヶ月／臨時3ヶ月）」欄へ自動的に転記します（常用の場合は転記なし）。
+                </div>
+            </div>
+
+            <div class="flow-item">
+                <div class="flow-title">📄 求職受付手数料管理簿（1-3-2）</div>
+                <div class="flow-body">
+                    <span class="src-tag">売上入力（1-1-3）</span>
+                    <span class="arrow">→</span> 集計<br>
+                    売上入力で「求職受付手数料（710円）」にチェックを入れて保存した明細（＝receptionFeeに710円が入っているもの）を、
+                    領収書発行済みのものに限って月別に集計します。
+                </div>
+            </div>
+
+            <div class="flow-item">
+                <div class="flow-title">🧾 手数料収入決算表（1-3-3）</div>
+                <div class="flow-body">
+                    <span class="src-tag">紹介手数料管理簿（1-3-1）の月別集計</span>
+                    <span class="src-tag">求職受付手数料管理簿（1-3-2）の月別集計</span>
+                    <span class="src-tag">サンケアネット月別入力（1-3-3画面内で直接入力）</span>
+                    <span class="arrow">→</span> 合算<br>
+                    1-3-1・1-3-2で計算された月ごとの手数料を再集計し、①サンケアネット（画面から直接入力）、
+                    ②求職受付手数料、③求人受付手数料、④紹介手数料　の4行として表示し、その合計を「月別合計」としています。
+                    会社決算表・労働局用決算表のどちらも同じ元データ（1-3-1／1-3-2の計算結果）を使いますが、
+                    サンケアネットの扱い（差し引くかどうか）だけが異なります（詳しくは②参照）。
+                </div>
+            </div>
+
+            <div class="flow-item">
+                <div class="flow-title">💰 レジ一覧（1-6-2）</div>
+                <div class="flow-body">
+                    <span class="src-tag">振込金入力（1-6-1）</span>
+                    <span class="src-tag">稼働管理簿（1-1-3の賃金総額）</span>
+                    <span class="arrow">→</span> 突合（照合）<br>
+                    振込金入力（1-6-1）で入力された「同一人物・同一月」の振込金合計と、
+                    稼働台帳（sales_detailsの賃金総額＝1-1-3で保存されたmonthlyTotal）の同月合計を比較し、
+                    一致していれば「一致」、金額が違えば「不一致」と表示します（詳しい計算式は②参照）。
+                </div>
+            </div>
+
+            <div class="flow-item">
+                <div class="flow-title">🧾 領収書一覧（求人者向け・求職者向け）</div>
+                <div class="flow-body">
+                    <span class="src-tag">売上入力（1-1-3）</span>
+                    <span class="arrow">→</span> チェック済み手数料の集計<br>
+                    売上入力で「求人受付手数料（1,000円）」「求職受付手数料（710円）」にチェックを入れて保存した明細を、
+                    領収書一覧としてそのまま表示・集計します。
+                </div>
+            </div>
+
+            <div class="note">
+                <b>💡見方のコツ：</b>決算書系のページ（1-3-1〜1-3-3）は、基本的にすべて「売上入力（1-1-3）」で保存した
+                <b>賃金総額</b>を出発点として、その先で率（15%や16.5%など）を掛けて手数料を計算しています。
+                「この数字がおかしい」と思ったら、まず1-1-3の該当明細の入力値（時給・勤務時間・日給・領収書No）を確認してください。
+            </div>
+        </div>
+    </div>
+
+    <!-- ② 計算式 -->
+    <div class="section">
+        <div class="section-header">② 計算式（どうやって算出されているか）</div>
+        <div class="section-body">
+
+            <table>
+                <thead>
+                    <tr><th style="width:22%;">画面</th><th style="width:38%;">項目</th><th>計算式</th></tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>売上入力（1-1-3）</td>
+                        <td>売上</td>
+                        <td class="formula-box">時給 × 勤務時間 ＋ 日給合計 × 掛け率(%)
+＋（チェック時）求人受付手数料1,000円
+＋（チェック時）求職受付手数料710円</td>
+                    </tr>
+                    <tr>
+                        <td>売上入力（1-1-3）</td>
+                        <td>賃金総額（monthlyTotal）</td>
+                        <td class="formula-box">時給 × 勤務時間 ＋ 日給合計
+（掛け率は掛けない。この値が1-1-5・1-3-1・1-6-2で使われる）</td>
+                    </tr>
+                    <tr>
+                        <td>稼働管理簿（1-1-5）</td>
+                        <td>手数料（16.5%）</td>
+                        <td class="formula-box">賃金総額（monthlyTotal） × <span class="rate-current rate-165">16.5%</span>
+（1-1-3保存時に計算済みの値をそのまま表示）</td>
+                    </tr>
+                    <tr>
+                        <td>紹介手数料管理簿（1-3-1）</td>
+                        <td>手数料※1</td>
+                        <td class="formula-box">賃金総額（monthlyTotal） × <span class="rate-current rate-15">15%</span></td>
+                    </tr>
+                    <tr>
+                        <td>紹介手数料管理簿（1-3-1）</td>
+                        <td>手数料※2</td>
+                        <td class="formula-box">手数料※1 × 10%</td>
+                    </tr>
+                    <tr>
+                        <td>紹介手数料管理簿（1-3-1）</td>
+                        <td>届出手数料（日雇1ヶ月／臨時3ヶ月）</td>
+                        <td class="formula-box">手数料※1 ＋ 手数料※2
+（紹介状の雇用期間区分が「日雇い」「臨時」の場合のみ自動転記）</td>
+                    </tr>
+                    <tr>
+                        <td>手数料収入決算表（1-3-3・会社決算表）</td>
+                        <td>紹介手数料</td>
+                        <td class="formula-box">手数料※1累計 ＋ 手数料※2累計
+（サンケアネットは差し引かない）</td>
+                    </tr>
+                    <tr>
+                        <td>手数料収入決算表（1-3-3・労働局用決算表）</td>
+                        <td>紹介手数料</td>
+                        <td class="formula-box">手数料※1累計 ＋ 手数料※2累計 － サンケアネット</td>
+                    </tr>
+                    <tr>
+                        <td>レジ一覧（1-6-2）</td>
+                        <td>照合用の手数料参考値</td>
+                        <td class="formula-box">稼働台帳の賃金総額（monthlyTotal） × <span class="rate-current rate-165">16.5%</span>
+（振込金入力の手数料と、この値がほぼ一致しているかを照合）</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="warn">
+                <b>⚠️ ご確認ください：</b>現在、システム内で手数料の率が
+                <span class="rate-current rate-165">16.5%</span>（稼働管理簿1-1-5・レジ一覧1-6-2で使用）と
+                <span class="rate-current rate-15">15%</span>（紹介手数料管理簿1-3-1・手数料収入決算表1-3-3で使用）
+                の<b>2種類</b>混在しています。それぞれ別の目的（参考表示用／正式な決算数値用）で使われていますが、
+                どちらが正しい料率か分からない場合は、統一するかどうかも含めてご相談ください。
+            </div>
+
+            <div class="note">
+                <b>💡補足：</b>このページの内容はコードの現状をもとに作成しています。
+                今後、計算式や参照元を変更した場合は、このページの内容も併せて更新が必要です
+                （自動的には更新されません）。
+            </div>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>
