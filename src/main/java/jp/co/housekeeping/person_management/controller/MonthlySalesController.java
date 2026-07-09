@@ -74,9 +74,8 @@ public class MonthlySalesController {
             long totalWage = 0, totalCommission = 0, totalFees = 0;
 
             for (SalesDetail d : salesDetailRepository.findAll()) {
-                boolean match = isInMonth(d.getIntroductionDate(), startDate, endDate)
-                             || isInMonth(d.getWorkStartDate(),    startDate, endDate)
-                             || isInMonth(d.getWorkEndDate(),      startDate, endDate);
+                LocalDate refDate = getRefDate(d);
+                boolean match = isInMonth(refDate, startDate, endDate);
                 if (!match) continue;
 
                 MonthlyRow row   = new MonthlyRow();
@@ -143,6 +142,18 @@ public class MonthlySalesController {
 
     private boolean isInMonth(LocalDate date, LocalDate start, LocalDate end) {
         return date != null && !date.isBefore(start) && !date.isAfter(end);
+    }
+
+    // 紹介手数料管理簿(1-3-1)と同じ優先順位で基準日を1つだけ決める
+    // （領収書発行日→就労終了日→就労開始日→紹介年月日）。
+    // 以前は3つの日付いずれかで判定するOR方式だったため、月をまたぐ
+    // 取引が複数月の一覧に重複して表示・集計されるバグがあった。
+    private LocalDate getRefDate(SalesDetail d) {
+        if (d.getIssuedAt()         != null) return d.getIssuedAt().toLocalDate();
+        if (d.getWorkEndDate()      != null) return d.getWorkEndDate();
+        if (d.getWorkStartDate()    != null) return d.getWorkStartDate();
+        if (d.getIntroductionDate() != null) return d.getIntroductionDate();
+        return null;
     }
 
     private LocalDate firstNonNull(LocalDate... dates) {
