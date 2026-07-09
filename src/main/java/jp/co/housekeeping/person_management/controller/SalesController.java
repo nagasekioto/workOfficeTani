@@ -301,7 +301,13 @@ public class SalesController {
             @RequestParam(required = false) String[] workEndDates,
             @RequestParam(required = false) String[] workingHoursList,
             @RequestParam(required = false) String[] remarksList,
+            HttpSession session,
             HttpServletResponse response) throws IOException, DocumentException {
+
+        if (session.getAttribute("authenticated") == null) {
+            response.sendError(401);
+            return;
+        }
 
         Person person = personRepository.findById(personId).orElse(null);
 
