@@ -17,7 +17,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 import jp.co.housekeeping.person_management.model.SalesDetail;
 import jp.co.housekeeping.person_management.repository.CustomerRepository;
@@ -32,10 +31,6 @@ public class MonthlySalesController {
     @Autowired private CustomerRepository customerRepository;
     @Autowired private SalesRepository salesRepository;
     @Autowired private SalesDetailRepository salesDetailRepository;
-
-    @GetMapping("/sales-monthly-test")
-    @ResponseBody
-    public String test() { return "OK"; }
 
     @GetMapping("/sales-monthly")
     public String monthly(@RequestParam(required = false) String month,

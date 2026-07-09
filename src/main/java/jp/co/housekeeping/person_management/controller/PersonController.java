@@ -764,11 +764,4 @@ public class PersonController {
     }
 
     // ─── 1-1-6 紹介状 ──────────────────────────────────
-    @GetMapping("/introduction")
-    public String introduction(HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
-        model.addAttribute("persons", personRepository.findAll());
-        model.addAttribute("customers", customerRepository.findAll());
-        return "person-introduction";
-    }
 }

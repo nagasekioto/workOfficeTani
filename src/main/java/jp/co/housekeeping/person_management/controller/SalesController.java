@@ -1,15 +1,12 @@
 package jp.co.housekeeping.person_management.controller;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,23 +16,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.itextpdf.text.BaseColor;
-import com.itextpdf.text.Document;
-import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.Element;
-import com.itextpdf.text.Font;
-import com.itextpdf.text.PageSize;
-import com.itextpdf.text.Paragraph;
-import com.itextpdf.text.Phrase;
-import com.itextpdf.text.pdf.BaseFont;
-import com.itextpdf.text.pdf.PdfPCell;
-import com.itextpdf.text.pdf.PdfPTable;
-import com.itextpdf.text.pdf.PdfWriter;
-
-import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import jp.co.housekeeping.person_management.model.Customer;
 import jp.co.housekeeping.person_management.model.Person;
 import jp.co.housekeeping.person_management.model.Sales;
 import jp.co.housekeeping.person_management.model.SalesDetail;
@@ -245,190 +227,4 @@ public class SalesController {
         return String.format("%04d", maxNo + 1);
     }
 
-    // ─── デバッグ：受信パラメータ確認 ──────────────────
-    @PostMapping("/person/sales/debug-params")
-    @ResponseBody
-    public String debugParams(jakarta.servlet.http.HttpServletRequest request, HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "unauthorized";
-        StringBuilder sb = new StringBuilder("<pre>");
-        request.getParameterMap().forEach((k, v) -> {
-            sb.append(k).append(" = ").append(java.util.Arrays.toString(v)).append("\n");
-        });
-        return sb.append("</pre>").toString();
-    }
-
-    // ─── デバッグ：DB内容確認 (/person/sales/debug?personId=1) ──
-    @GetMapping("/person/sales/debug")
-    @ResponseBody
-    public String debug(@RequestParam(required = false) Long personId, HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "unauthorized";
-        StringBuilder sb = new StringBuilder();
-        sb.append("=== sales table ===\n");
-        for (Sales s : salesRepository.findAll()) {
-            sb.append("sales.id=").append(s.getId())
-              .append(" person_id=").append(s.getPersonId()).append("\n");
-        }
-        sb.append("\n=== sales_details table ===\n");
-        Iterable<Sales> all = personId != null ? salesRepository.findByPersonId(personId) : salesRepository.findAll();
-        for (Sales s : all) {
-            for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {
-                sb.append("detail.id=").append(d.getId())
-                  .append(" sales_id=").append(d.getSalesId())
-                  .append(" customer_id=").append(d.getCustomerId())
-                  .append(" intro=").append(d.getIntroductionDate())
-                  .append(" wage=").append(d.getHourlyWage())
-                  .append(" hours=").append(d.getWorkingHours())
-                  .append(" daily=").append(d.getDailyWages())
-                  .append(" total=").append(d.getMonthlyTotal())
-                  .append("\n");
-            }
-        }
-        return "<pre>" + sb + "</pre>";
-    }
-
-    // ─── PDF印刷 ─────────────────────────────────────
-    @PostMapping("/person/sales/print")
-    public void printSales(
-            @RequestParam Long personId,
-            @RequestParam(required = false) Long[] customerIds,
-            @RequestParam(required = false) String[] introductionDates,
-            @RequestParam(required = false) Integer[] receptionFees,
-            @RequestParam(required = false) Integer[] customerFees,
-            @RequestParam(required = false) Integer[] hourlyWages,
-            @RequestParam(required = false) Integer[] hourlyWageOvertimes,
-            @RequestParam(required = false) String[] dailyWagesList,
-            @RequestParam(required = false) String[] workStartDates,
-            @RequestParam(required = false) String[] workEndDates,
-            @RequestParam(required = false) String[] workingHoursList,
-            @RequestParam(required = false) String[] remarksList,
-            HttpSession session,
-            HttpServletResponse response) throws IOException, DocumentException {
-
-        if (session.getAttribute("authenticated") == null) {
-            response.sendError(401);
-            return;
-        }
-
-        // 存在しない/不正なpersonIdでの生成を防止
-        Person person = personRepository.findById(personId).orElse(null);
-        if (person == null) {
-            response.sendError(404);
-            return;
-        }
-
-        response.setContentType("application/pdf");
-        response.setHeader("Content-Disposition", "inline; filename=sales_report.pdf");
-
-        Document document = new Document(PageSize.A4);
-        PdfWriter.getInstance(document, response.getOutputStream());
-        document.open();
-
-        BaseFont baseFont = BaseFont.createFont("HeiseiMin-W3", "UniJIS-UCS2-H", BaseFont.NOT_EMBEDDED);
-        Font titleFont  = new Font(baseFont, 16, Font.BOLD);
-        Font headerFont = new Font(baseFont, 11, Font.BOLD);
-        Font normalFont = new Font(baseFont, 10);
-        Font smallFont  = new Font(baseFont, 9);
-
-        // タイトル
-        Paragraph title = new Paragraph("求人受付・紹介手数料　領収証書", titleFont);
-        title.setAlignment(Element.ALIGN_CENTER);
-        title.setSpacingAfter(20);
-        document.add(title);
-
-        if (customerIds == null) { document.close(); return; }
-
-        for (int i = 0; i < customerIds.length; i++) {
-            if (customerIds[i] == null) continue;
-
-            Customer customer = customerRepository.findById(customerIds[i]).orElse(null);
-            if (customer == null) continue;
-
-            // 勤務先ブロック
-            PdfPTable block = new PdfPTable(4);
-            block.setWidthPercentage(100);
-            block.setSpacingBefore(10);
-            block.setWidths(new float[]{2f, 3f, 2f, 3f});
-
-            String customerName = customer.getLastNameKanji() + " " + customer.getFirstNameKanji();
-            String personName   = person != null ? person.getLastNameKanji() + " " + person.getFirstNameKanji() : "";
-
-            addCell2(block, "求人者", customerName, headerFont, normalFont);
-            addCell2(block, "求職者（家政婦）", personName, headerFont, normalFont);
-
-            String introDate = (introductionDates != null && i < introductionDates.length) ? introductionDates[i] : "";
-            addCell2(block, "紹介年月日", introDate, headerFont, normalFont);
-
-            String workPeriod = "";
-            if (workStartDates != null && i < workStartDates.length && workStartDates[i] != null && !workStartDates[i].isBlank()) {
-                workPeriod = workStartDates[i];
-                if (workEndDates != null && i < workEndDates.length && workEndDates[i] != null && !workEndDates[i].isBlank()) {
-                    workPeriod += " ～ " + workEndDates[i];
-                }
-            }
-            addCell2(block, "就労月日", workPeriod, headerFont, normalFont);
-
-            Integer wage = (hourlyWages != null && i < hourlyWages.length) ? hourlyWages[i] : null;
-            addCell2(block, "時給（日給）", wage != null ? "¥" + String.format("%,d", wage) : "-", headerFont, normalFont);
-
-            Integer wageOT = (hourlyWageOvertimes != null && i < hourlyWageOvertimes.length) ? hourlyWageOvertimes[i] : null;
-            addCell2(block, "時給（残業）", wageOT != null ? "¥" + String.format("%,d", wageOT) : "-", headerFont, normalFont);
-
-            // 日給
-            String dailyWages = (dailyWagesList != null && i < dailyWagesList.length) ? dailyWagesList[i] : "";
-            addCell2(block, "日給", dailyWages != null ? dailyWages.replace(",", " / ") : "-", headerFont, normalFont);
-
-            // 受付料
-            Integer recFee = (receptionFees != null && i < receptionFees.length) ? receptionFees[i] : null;
-            addCell2(block, "受付料", recFee != null ? "¥" + String.format("%,d", recFee) : "-", headerFont, normalFont);
-
-            // 求人受付手数料
-            Integer cusFee = (customerFees != null && i < customerFees.length) ? customerFees[i] : null;
-            addCell2(block, "求人受付手数料", cusFee != null ? "¥" + String.format("%,d", cusFee) : "-", headerFont, normalFont);
-
-            // 賃金計算
-            int totalWage = 0;
-            if (wage != null && workingHoursList != null && i < workingHoursList.length && workingHoursList[i] != null && !workingHoursList[i].isBlank()) {
-                try { totalWage += (int)(wage * Double.parseDouble(workingHoursList[i])); } catch (NumberFormatException ignored) {}
-            }
-            if (dailyWages != null && !dailyWages.isBlank()) {
-                for (String dw : dailyWages.split(",")) {
-                    try { totalWage += Integer.parseInt(dw.trim()); } catch (NumberFormatException ignored) {}
-                }
-            }
-            int commission = (int)(totalWage * 0.165);
-            int tax        = (int)(commission * 0.10);
-            int grandTotal = totalWage + commission + tax + (recFee != null ? recFee : 0) + (cusFee != null ? cusFee : 0);
-
-            addCell2(block, "賃金総額", "¥" + String.format("%,d", totalWage), headerFont, normalFont);
-            addCell2(block, "手数料（16.5%）", "¥" + String.format("%,d", commission), headerFont, normalFont);
-            addCell2(block, "消費税（10%）", "¥" + String.format("%,d", tax), headerFont, normalFont);
-            addCell2(block, "合計金額", "¥" + String.format("%,d", grandTotal), headerFont, headerFont);
-
-            document.add(block);
-
-            // 区切り線
-            Paragraph sep = new Paragraph("─────────────────────────────────────────", smallFont);
-            sep.setSpacingBefore(5);
-            sep.setSpacingAfter(5);
-            document.add(sep);
-        }
-
-        // 事務所情報
-        Paragraph footer = new Paragraph("\n\nワークオフィス谷　家政婦紹介事務所", normalFont);
-        footer.setAlignment(Element.ALIGN_RIGHT);
-        document.add(footer);
-
-        document.close();
-    }
-
-    private void addCell2(PdfPTable table, String key, String value, Font keyFont, Font valFont) {
-        PdfPCell kc = new PdfPCell(new Phrase(key, keyFont));
-        kc.setPadding(5);
-        kc.setBackgroundColor(new BaseColor(230, 230, 230));
-        table.addCell(kc);
-
-        PdfPCell vc = new PdfPCell(new Phrase(value != null ? value : "", valFont));
-        vc.setPadding(5);
-        table.addCell(vc);
-    }
 }
