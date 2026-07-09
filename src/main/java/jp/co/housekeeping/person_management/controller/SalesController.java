@@ -25,6 +25,7 @@ import jp.co.housekeeping.person_management.repository.CustomerRepository;
 import jp.co.housekeeping.person_management.repository.PersonRepository;
 import jp.co.housekeeping.person_management.repository.SalesDetailRepository;
 import jp.co.housekeeping.person_management.repository.SalesRepository;
+import jp.co.housekeeping.person_management.util.ValidationUtils;
 
 @Controller
 public class SalesController {
@@ -150,7 +151,7 @@ public class SalesController {
             // 求職受付手数料（710円）チェックボックス：チェックを外した場合は明示的にクリアする
             if (receptionFees != null && i < receptionFees.length) {
                 if (receptionFees[i] != null && !receptionFees[i].isBlank()) {
-                    try { detail.setReceptionFee(Integer.parseInt(receptionFees[i])); } catch (NumberFormatException ignored) {}
+                    detail.setReceptionFee(ValidationUtils.parseNonNegativeInt(receptionFees[i]));
                 } else {
                     detail.setReceptionFee(null);
                 }
@@ -158,27 +159,30 @@ public class SalesController {
             // 求人受付手数料（1,000円）チェックボックス：チェックを外した場合は明示的にクリアする
             if (customerFees != null && i < customerFees.length) {
                 if (customerFees[i] != null && !customerFees[i].isBlank()) {
-                    try { detail.setCustomerFee(Integer.parseInt(customerFees[i])); } catch (NumberFormatException ignored) {}
+                    detail.setCustomerFee(ValidationUtils.parseNonNegativeInt(customerFees[i]));
                 } else {
                     detail.setCustomerFee(null);
                 }
             }
             if (hourlyWages != null && i < hourlyWages.length
                     && hourlyWages[i] != null && !hourlyWages[i].isBlank()) {
-                try { detail.setHourlyWage(Integer.parseInt(hourlyWages[i])); } catch (NumberFormatException ignored) {}
+                Integer v = ValidationUtils.parseNonNegativeInt(hourlyWages[i]);
+                if (v != null) detail.setHourlyWage(v);
             }
             if (hourlyWageOvertimes != null && i < hourlyWageOvertimes.length
                     && hourlyWageOvertimes[i] != null && !hourlyWageOvertimes[i].isBlank()) {
-                try { detail.setHourlyWageOvertime(Integer.parseInt(hourlyWageOvertimes[i])); } catch (NumberFormatException ignored) {}
+                Integer v = ValidationUtils.parseNonNegativeInt(hourlyWageOvertimes[i]);
+                if (v != null) detail.setHourlyWageOvertime(v);
             }
             if (dailyWagesList != null && i < dailyWagesList.length && dailyWagesList[i] != null) {
-                detail.setDailyWages(dailyWagesList[i]);
+                detail.setDailyWages(ValidationUtils.sanitizeNonNegativeIntList(dailyWagesList[i]));
             }
-            // 日給への掛け率（%）。未入力時は16.5をデフォルトとして保存する。
+            // 日給への掛け率（%）。未入力時は16.5をデフォルトとして保存する。負数は無効として無視する。
             Double rate = 16.5;
             if (dailyWageRates != null && i < dailyWageRates.length
                     && dailyWageRates[i] != null && !dailyWageRates[i].isBlank()) {
-                try { rate = Double.parseDouble(dailyWageRates[i]); } catch (NumberFormatException ignored) {}
+                Double v = ValidationUtils.parseNonNegativeDouble(dailyWageRates[i]);
+                if (v != null) rate = v;
             }
             detail.setDailyWageRate(rate);
             if (workStartDates != null && i < workStartDates.length
@@ -193,14 +197,13 @@ public class SalesController {
             if (detail.getWorkStartDate() != null && detail.getWorkEndDate() == null
                     && workDaysList != null && i < workDaysList.length
                     && workDaysList[i] != null && !workDaysList[i].isBlank()) {
-                try {
-                    int days = Integer.parseInt(workDaysList[i]);
-                    if (days > 0) detail.setWorkEndDate(detail.getWorkStartDate().plusDays(days - 1));
-                } catch (NumberFormatException ignored) {}
+                Integer days = ValidationUtils.parseNonNegativeInt(workDaysList[i]);
+                if (days != null && days > 0) detail.setWorkEndDate(detail.getWorkStartDate().plusDays(days - 1));
             }
             if (workingHoursList != null && i < workingHoursList.length
                     && workingHoursList[i] != null && !workingHoursList[i].isBlank()) {
-                try { detail.setWorkingHours(new java.math.BigDecimal(workingHoursList[i])); } catch (NumberFormatException ignored) {}
+                java.math.BigDecimal v = ValidationUtils.parseNonNegativeBigDecimal(workingHoursList[i]);
+                if (v != null) detail.setWorkingHours(v);
             }
             if (remarksList != null && i < remarksList.length && remarksList[i] != null) {
                 detail.setRemarks(remarksList[i]);

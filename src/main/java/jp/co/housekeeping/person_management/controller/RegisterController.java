@@ -47,6 +47,7 @@ import jp.co.housekeeping.person_management.repository.PersonRepository;
 import jp.co.housekeeping.person_management.repository.RegisterRecordRepository;
 import jp.co.housekeeping.person_management.repository.SalesDetailRepository;
 import jp.co.housekeeping.person_management.repository.SalesRepository;
+import jp.co.housekeeping.person_management.util.ValidationUtils;
 
 @Controller
 @RequestMapping("/register")
@@ -82,6 +83,13 @@ public class RegisterController {
             HttpSession session,
             HttpServletResponse response) {
         if (!checkAuth(session)) { response.setStatus(401); return "UNAUTHORIZED"; }
+
+        if (ValidationUtils.requireNonNegative(salary) == null
+                || ValidationUtils.requireNonNegative(fee) == null
+                || ValidationUtils.requireNonNegative(membershipFee) == null) {
+            response.setStatus(400);
+            return "INVALID_AMOUNT";
+        }
 
         RegisterRecord record = new RegisterRecord();
         record.setPersonId(personId);
@@ -157,6 +165,13 @@ public class RegisterController {
                            @RequestParam(required = false) String month,
                            HttpSession session) {
         if (!checkAuth(session)) return "redirect:/login";
+        if (ValidationUtils.requireNonNegative(salary) == null
+                || ValidationUtils.requireNonNegative(fee) == null
+                || ValidationUtils.requireNonNegative(membershipFee) == null) {
+            // マイナス値は保存せず編集画面に戻す
+            String back = "redirect:/register/calc/edit?id=" + id;
+            return (month != null && !month.isBlank()) ? back + "&month=" + month : back;
+        }
         registerRecordRepository.findById(id).ifPresent(r -> {
             r.setSalary(salary);
             r.setFee(fee);

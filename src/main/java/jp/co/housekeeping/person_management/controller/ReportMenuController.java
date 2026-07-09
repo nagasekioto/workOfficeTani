@@ -43,6 +43,7 @@ import jp.co.housekeeping.person_management.model.SalesDetail;
 import jp.co.housekeeping.person_management.repository.CustomerRepository;
 import jp.co.housekeeping.person_management.repository.SalesDetailRepository;
 import jp.co.housekeeping.person_management.repository.SalesRepository;
+import jp.co.housekeeping.person_management.util.ValidationUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 @Controller
@@ -192,7 +193,9 @@ public class ReportMenuController {
                     int yr = Integer.parseInt(parts[1]);
                     int mo = Integer.parseInt(parts[2]);
                     String ym = yr + "-" + String.format("%02d", mo);
-                    int val = (value == null || value.isBlank()) ? 0 : Integer.parseInt(value.trim());
+                    Integer val = (value == null || value.isBlank())
+                            ? 0 : ValidationUtils.parseNonNegativeInt(value.trim());
+                    if (val == null) return; // マイナス値は保存しない
                     jdbcTemplate.update(
                         "INSERT INTO sancare_net_monthly (year_month, amount, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) " +
                         "ON CONFLICT (year_month) DO UPDATE SET amount = EXCLUDED.amount, updated_at = CURRENT_TIMESTAMP",

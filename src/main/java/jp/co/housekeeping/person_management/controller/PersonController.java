@@ -45,6 +45,7 @@ import jp.co.housekeeping.person_management.repository.IntroductionRepository;
 import jp.co.housekeeping.person_management.repository.PersonRepository;
 import jp.co.housekeeping.person_management.repository.SalesDetailRepository;
 import jp.co.housekeeping.person_management.repository.SalesRepository;
+import jp.co.housekeeping.person_management.util.ValidationUtils;
 
 @Controller
 @RequestMapping("/person")
@@ -395,6 +396,10 @@ public class PersonController {
                                   HttpSession session,
                                   HttpServletResponse response) {
         if (!checkAuth(session)) { response.setStatus(401); return "UNAUTHORIZED"; }
+        if (membershipFeeAmount != null && ValidationUtils.requireNonNegative(membershipFeeAmount) == null) {
+            response.setStatus(400);
+            return "INVALID_AMOUNT";
+        }
         personRepository.findById(personId).ifPresent(p -> {
             p.setMembershipFee(membershipFee);
             p.setMembershipFeeAmount("有".equals(membershipFee) ? membershipFeeAmount : null);
