@@ -389,13 +389,12 @@ public class ReportMenuController {
             int fee1000 = calcCustomerFee1000(yearMonth);
             d.receptionFee1000.put(key, fee1000);
 
-            // ④紹介手数料 = 手数料※1累計 + 手数料※2累計 （－ サンケアネット）
-            // 会社決算表（type=comp）ではサンケアネットの金額を引かない。
-            // 労働局用決算表（type=labor）では従来通り差し引く。
+            // ④紹介手数料 = 手数料※1累計 + 手数料※2累計
+            // 会社決算表・労働局用決算表のいずれもサンケアネットの金額は引かない。
             int comm1 = calcCommission(yearMonth);   // 手数料※1
             int comm2 = calcTax(yearMonth);           // 手数料※2
             int sancare = getSancareNet(ym);
-            int introFee = "comp".equals(type) ? comm1 + comm2 : comm1 + comm2 - sancare;
+            int introFee = comm1 + comm2;
             d.introFee.put(key, introFee);
 
             // ①サンケアネット
@@ -455,10 +454,11 @@ public class ReportMenuController {
             int feeReception = laborData.receptionFee710.getOrDefault(key, 0);
             rd.feeReception.put(key, feeReception);
 
-            // 手数料-常用: 労働局用決算表の紹介手数料の1行目 + サンケアネット - 手数料-臨時
+            // 手数料-常用: 労働局用決算表の紹介手数料の1行目 - 手数料-臨時
+            // （紹介手数料はサンケアネットを引かなくなったため、以前あった
+            //   「+ サンケアネット」による打ち消し加算は不要）
             int introFee = laborData.introFee.getOrDefault(key, 0);
-            int sancare  = laborData.sancareNet.getOrDefault(key, 0);
-            int feeRegular = introFee + sancare - feeTemp;
+            int feeRegular = introFee - feeTemp;
             rd.feeRegular.put(key, feeRegular);
         }
 
