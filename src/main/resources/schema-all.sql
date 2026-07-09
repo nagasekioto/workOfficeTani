@@ -151,3 +151,16 @@ UPDATE sales_details SET daily_wage_rate = 16.5 WHERE daily_wage_rate IS NULL;
 -- schema-update-10: 求職者(1-1-6)・求人者(1-2-3)の削除→退職/取引終了への変更
 ALTER TABLE persons   ADD COLUMN IF NOT EXISTS retired_at DATE;
 ALTER TABLE customers ADD COLUMN IF NOT EXISTS retired_at DATE;
+
+-- schema-update-11: 領収書番号専用の採番カウンターテーブル
+CREATE TABLE IF NOT EXISTS receipt_no_counter (
+    id      SMALLINT PRIMARY KEY DEFAULT 1,
+    next_no INTEGER NOT NULL,
+    CONSTRAINT receipt_no_counter_single_row CHECK (id = 1)
+);
+INSERT INTO receipt_no_counter (id, next_no)
+SELECT 1, GREATEST(
+    COALESCE((SELECT MAX(CAST(receipt_no AS INTEGER)) FROM sales_details WHERE receipt_no ~ '^[0-9]+$'), 0),
+    COALESCE((SELECT MAX(CAST(SUBSTRING(ledger_remarks FROM 6) AS INTEGER)) FROM introductions WHERE ledger_remarks ~ '^RCPT:[0-9]+$'), 0)
+) + 1
+ON CONFLICT (id) DO NOTHING;

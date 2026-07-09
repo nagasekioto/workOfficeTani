@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -55,10 +56,7 @@ public class ReceiptMenuController {
 
     private static final double FEE_RATE = 0.15; // 15%（PDFに合わせて変更）
 
-    // 領収書番号(receipt_no)のMAX+1採番を排他制御するためのロック
-    // （求人者宛・求職受付・紹介状経由の3つの採番箇所すべてで共有し、
-    //   同一カウンターへの同時アクセスによる番号重複を防止する）
-    private static final Object RECEIPT_NO_LOCK = new Object();
+    @Autowired private JdbcTemplate jdbcTemplate;
 
     @Autowired private CustomerRepository    customerRepository;
     @Autowired private SalesRepository       salesRepository;
@@ -123,16 +121,13 @@ public class ReceiptMenuController {
         if (sales != null && sales.getPersonId() != null)
             person = personRepository.findById(sales.getPersonId()).orElse(null);
 
-        // 領収番号：未発行なら採番してDBに保存（同時アクセスでの番号重複を防ぐため排他制御）
+        // 領収番号：未発行なら採番してDBに保存
         String receiptNo = detail.getReceiptNo();
         if (receiptNo == null || receiptNo.isEmpty()) {
-            synchronized (RECEIPT_NO_LOCK) {
-                int nextNo = salesDetailRepository.findMaxReceiptNo() + 1;
-                receiptNo  = String.format("%04d", nextNo);
-                detail.setReceiptNo(receiptNo);
-                detail.setIssuedAt(LocalDateTime.now());
-                salesDetailRepository.save(detail);
-            }
+            receiptNo = nextReceiptNo();
+            detail.setReceiptNo(receiptNo);
+            detail.setIssuedAt(LocalDateTime.now());
+            salesDetailRepository.save(detail);
         } else if (detail.getIssuedAt() == null) {
             detail.setIssuedAt(LocalDateTime.now());
             salesDetailRepository.save(detail);
@@ -227,16 +222,13 @@ public class ReceiptMenuController {
         }
         if (groupDetails.isEmpty()) groupDetails.add(detail);
 
-        // 領収番号（代表レコードに付番。同時アクセスでの番号重複を防ぐため排他制御）
+        // 領収番号（代表レコードに付番）
         String receiptNo = detail.getReceiptNo();
         if (receiptNo == null || receiptNo.isEmpty()) {
-            synchronized (RECEIPT_NO_LOCK) {
-                int nextNo = salesDetailRepository.findMaxReceiptNo() + 1;
-                receiptNo  = String.format("%04d", nextNo);
-                detail.setReceiptNo(receiptNo);
-                detail.setIssuedAt(LocalDateTime.now());
-                salesDetailRepository.save(detail);
-            }
+            receiptNo = nextReceiptNo();
+            detail.setReceiptNo(receiptNo);
+            detail.setIssuedAt(LocalDateTime.now());
+            salesDetailRepository.save(detail);
         } else if (detail.getIssuedAt() == null) {
             detail.setIssuedAt(LocalDateTime.now());
             salesDetailRepository.save(detail);
@@ -269,18 +261,15 @@ public class ReceiptMenuController {
         // introルートは1件固定（紹介状1枚＝710円）
         LocalDate introDate = intro.getIntroDate() != null ? intro.getIntroDate() : LocalDate.now();
 
-        // 領収番号はintro.ledgerRemarksに「RCPT:XXXX」形式で保存（同時アクセスでの番号重複を防ぐため排他制御）
+        // 領収番号はintro.ledgerRemarksに「RCPT:XXXX」形式で保存
         String receiptNo;
         String ledger = intro.getLedgerRemarks();
         if (ledger != null && ledger.startsWith("RCPT:")) {
             receiptNo = ledger.substring(5);
         } else {
-            synchronized (RECEIPT_NO_LOCK) {
-                int nextNo = salesDetailRepository.findMaxReceiptNo() + 1;
-                receiptNo  = String.format("%04d", nextNo);
-                intro.setLedgerRemarks("RCPT:" + receiptNo);
-                introductionRepository.save(intro);
-            }
+            receiptNo = nextReceiptNo();
+            intro.setLedgerRemarks("RCPT:" + receiptNo);
+            introductionRepository.save(intro);
         }
 
         // 既存のPDF生成ロジックを再利用するためダミーのSalesDetailを1件作成
@@ -1083,6 +1072,20 @@ public class ReceiptMenuController {
     }
 
     // ─── PDF ヘルパー ─────────────────────────────────────────
+    /**
+     * 領収書番号を1つ払い出す（receipt_no_counterテーブルからアトミックに採番）。
+     * 求人者宛領収書(1-5-1)・求職受付手数料領収書(1-5-2)・紹介状経由の領収書の
+     * 3箇所すべてがこのメソッドを通じて採番することで、番号の重複を防ぐ。
+     * UPDATE ... RETURNING はPostgreSQLの行ロックにより同時実行時も
+     * アトミックに動作するため、Java側でのsynchronized等は不要。
+     */
+    private String nextReceiptNo() {
+        Integer no = jdbcTemplate.queryForObject(
+            "UPDATE receipt_no_counter SET next_no = next_no + 1 WHERE id = 1 RETURNING next_no - 1",
+            Integer.class);
+        return String.format("%04d", no);
+    }
+
     private PdfPCell cell(String text, Font font, int border, int align) {
         PdfPCell c = new PdfPCell(new Phrase(text, font));
         c.setBorder(border);

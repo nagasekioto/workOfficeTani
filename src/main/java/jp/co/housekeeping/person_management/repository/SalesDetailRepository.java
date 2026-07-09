@@ -21,7 +21,4 @@ public interface SalesDetailRepository extends CrudRepository<SalesDetail, Long>
 
     @Query("SELECT * FROM sales_details WHERE work_start_date >= :startDate AND work_start_date <= :endDate ORDER BY work_start_date, id")
     List<SalesDetail> findByWorkStartDateBetween(@Param("startDate") java.time.LocalDate startDate, @Param("endDate") java.time.LocalDate endDate);
-
-    @Query("SELECT COALESCE(MAX(CAST(receipt_no AS INTEGER)), 0) FROM sales_details WHERE receipt_no ~ '^[0-9]+$'")
-    int findMaxReceiptNo();
 }
