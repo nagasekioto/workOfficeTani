@@ -90,14 +90,15 @@
                     <td>
                         <select th:id="'searchStart' + ${i}">
                             <option value="" th:selected="${i != 1}">-- 未選択 --</option>
-                            <option th:each="slot : ${slots}" th:value="${slot.minutes}" th:text="${slot.label}"></option>
+                            <option th:each="slot : ${slots}" th:value="${slot.minutes}" th:text="${slot.label}"
+                                    th:selected="${i == 1 and slot.minutes == 600}"></option>
                         </select>
                     </td>
                     <td>
                         <select th:id="'searchEnd' + ${i}">
                             <option value="" th:selected="${i != 1}">-- 未選択 --</option>
                             <option th:each="slot : ${slots}" th:value="${slot.minutes}" th:text="${slot.label}"
-                                    th:selected="${i == 1 and slot.minutes == 600}"></option>
+                                    th:selected="${i == 1 and slot.minutes == 960}"></option>
                         </select>
                     </td>
                 </tr>
