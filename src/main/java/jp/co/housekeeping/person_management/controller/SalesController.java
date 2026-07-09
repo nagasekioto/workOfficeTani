@@ -309,7 +309,12 @@ public class SalesController {
             return;
         }
 
+        // 存在しない/不正なpersonIdでの生成を防止
         Person person = personRepository.findById(personId).orElse(null);
+        if (person == null) {
+            response.sendError(404);
+            return;
+        }
 
         response.setContentType("application/pdf");
         response.setHeader("Content-Disposition", "inline; filename=sales_report.pdf");
