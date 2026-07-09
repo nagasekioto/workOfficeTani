@@ -83,5 +83,21 @@
     </div>
 
 </div>
+<script>
+// 二重送信防止：フォーム送信時に送信ボタンを無効化する（確認ダイアログでキャンセルされた場合は何もしない）
+document.querySelectorAll('form').forEach(function(form) {
+    form.addEventListener('submit', function(e) {
+        if (e.defaultPrevented) return;
+        var btn = form.querySelector('button[type="submit"], input[type="submit"]');
+        if (btn && !btn.disabled) {
+            btn.disabled = true;
+            if (btn.tagName === 'BUTTON') {
+                btn.dataset.origHtml = btn.innerHTML;
+                btn.innerHTML = '処理中...';
+            }
+        }
+    });
+});
+</script>
 </body>
 </html>

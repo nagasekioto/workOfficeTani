@@ -206,6 +206,8 @@ function closeAll() {
 
 // ── 実行 ──────────────────────────────────────────
 function executeDeleteAll() {
+    var btn = document.querySelector('.btn-final');
+    if (btn) { btn.disabled = true; btn.textContent = '処理中...'; }
     document.getElementById('deleteAllForm').submit();
 }
 
@@ -215,6 +217,22 @@ document.getElementById('modal1').addEventListener('click', function(e) {
 });
 document.getElementById('modal2').addEventListener('click', function(e) {
     if (e.target === this) closeAll();
+});
+</script>
+<script>
+// 二重送信防止：フォーム送信時に送信ボタンを無効化する（確認ダイアログでキャンセルされた場合は何もしない）
+document.querySelectorAll('form').forEach(function(form) {
+    form.addEventListener('submit', function(e) {
+        if (e.defaultPrevented) return;
+        var btn = form.querySelector('button[type="submit"], input[type="submit"]');
+        if (btn && !btn.disabled) {
+            btn.disabled = true;
+            if (btn.tagName === 'BUTTON') {
+                btn.dataset.origHtml = btn.innerHTML;
+                btn.innerHTML = '処理中...';
+            }
+        }
+    });
 });
 </script>
 </body>
