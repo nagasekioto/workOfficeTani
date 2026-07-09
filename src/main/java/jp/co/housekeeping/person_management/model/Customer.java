@@ -68,6 +68,7 @@ public class Customer {
     private String interviewDate2;
 
     private LocalDate registeredDate;
+    private LocalDate retiredAt; // null=取引中, 値あり=取引終了日（1-2-4元求人先へ）
     private String notes;           // 備考
 
     public Customer() {}
@@ -147,4 +148,6 @@ public class Customer {
     public void setRegisteredDate(LocalDate v) { this.registeredDate = v; }
     public String getNotes() { return notes; }
     public void setNotes(String v) { this.notes = v; }
+    public LocalDate getRetiredAt() { return retiredAt; }
+    public void setRetiredAt(LocalDate v) { this.retiredAt = v; }
 }

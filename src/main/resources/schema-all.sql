@@ -147,3 +147,7 @@ CREATE TABLE IF NOT EXISTS sancare_net_monthly (
 ALTER TABLE sales_details ADD COLUMN IF NOT EXISTS daily_wage_rate NUMERIC(5,2) DEFAULT 16.5;
 ALTER TABLE sales_details ADD COLUMN IF NOT EXISTS sales_amount INTEGER DEFAULT 0;
 UPDATE sales_details SET daily_wage_rate = 16.5 WHERE daily_wage_rate IS NULL;
+
+-- schema-update-10: 求職者(1-1-6)・求人者(1-2-3)の削除→退職/取引終了への変更
+ALTER TABLE persons   ADD COLUMN IF NOT EXISTS retired_at DATE;
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS retired_at DATE;

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>退職者リスト（1-1-8） - 家政婦紹介事務所</title>
+    <style>
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; color: #333; }
+        .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
+        .container { max-width: 1100px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .note { background: #FFF8E1; border-left: 4px solid #FFC107; padding: 10px 14px; border-radius: 0 4px 4px 0; font-size: 13px; color: #555; margin-bottom: 16px; line-height: 1.6; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #757575; color: white; padding: 10px; text-align: left; white-space: nowrap; }
+        td { padding: 9px 10px; border-bottom: 1px solid #e0e0e0; }
+        tr:hover { background: #fafafa; }
+        td.ops { white-space: nowrap; }
+        .reinstate-link { color: #2e7d32; text-decoration: none; font-weight: bold; padding: 3px 10px; border: 1px solid #2e7d32; border-radius: 3px; font-size: 12px; display: inline-block; cursor: pointer; }
+        .reinstate-link:hover { background: #2e7d32; color: white; }
+        .delete-link { color: #f44336; text-decoration: none; font-weight: bold; padding: 3px 10px; border: 1px solid #f44336; border-radius: 3px; font-size: 12px; display: inline-block; margin-left: 6px; cursor: pointer; }
+        .delete-link:hover { background: #f44336; color: white; }
+        .empty { text-align: center; padding: 30px; color: #999; }
+        .count-label { font-size: 13px; color: #777; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>&#128100; 退職者リスト（1-1-8）</h1>
+    <a href="/person/list" class="back-btn">&#8592; 求職者情報（1-1-6）に戻る</a>
+</div>
+<div class="container">
+    <div class="note">
+        ここに表示されるのは、求職者情報（1-1-6）で「退職」処理を行った求職者です。
+        過去の売上・手数料の記録は削除されておらず、月別売上一覧・紹介手数料管理簿・手数料収入決算表などの集計には引き続き含まれます。<br>
+        「復職」で在職中に戻せます。「完全に削除」は<b>元に戻せません</b>（過去の売上明細等はデータとして残りますが、この求職者の氏名情報自体は失われます）。
+    </div>
+    <div class="count-label" th:text="${#lists.size(persons)} + '件'"></div>
+    <table>
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>氏名</th>
+                <th>携帯電話</th>
+                <th>登録日</th>
+                <th>退職日</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="p : ${persons}">
+                <td th:text="${p.no}">-</td>
+                <td th:text="${p.lastNameKanji + ' ' + p.firstNameKanji}"></td>
+                <td th:text="${p.mobilePhone != null ? p.mobilePhone : '-'}"></td>
+                <td th:text="${p.registeredDate}"></td>
+                <td th:text="${p.retiredAt}"></td>
+                <td class="ops">
+                    <a href="#" class="reinstate-link"
+                       th:attr="onclick='confirmReinstate(' + ${p.id} + ', this)'">復職</a>
+                    <a href="#" class="delete-link"
+                       th:attr="onclick='confirmHardDelete(' + ${p.id} + ', this)'">完全に削除</a>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="empty" th:if="${#lists.isEmpty(persons)}">退職者はいません</div>
+</div>
+
+<script>
+function confirmReinstate(id, el) {
+    var name = el.closest('tr').cells[1].textContent.trim();
+    if (!confirm('「' + name + '」を在職中に戻しますか？\n求職者情報（1-1-6）の一覧に再度表示されるようになります。')) return;
+    var form = document.createElement('form');
+    form.method = 'post';
+    form.action = '/person/retired-list/reinstate/' + id;
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function confirmHardDelete(id, el) {
+    var name = el.closest('tr').cells[1].textContent.trim();
+    if (!confirm('「' + name + '」を完全に削除しますか？\nこの操作は元に戻せません。氏名などの求職者情報は完全に失われます。\n（売上明細などの過去データは残りますが、以後「不明」と表示されます）')) return;
+    if (!confirm('本当によろしいですか？もう一度確認します。')) return;
+    var form = document.createElement('form');
+    form.method = 'post';
+    form.action = '/person/retired-list/delete/' + id;
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
+</body>
+</html>

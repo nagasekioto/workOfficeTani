@@ -34,7 +34,10 @@
 <body>
 <div class="header">
     <h1>&#128101; 求人者情報（1-2-3）</h1>
-    <a href="/customer-menu" class="back-btn">&#8592; 求人者管理に戻る</a>
+    <div style="display:flex; gap:10px;">
+        <a href="/customer/retired-list" class="back-btn" style="background:#757575;">&#127970; 元求人先（1-2-4）</a>
+        <a href="/customer-menu" class="back-btn">&#8592; 求人者管理に戻る</a>
+    </div>
 </div>
 <div class="container">
     <!-- 検索・ソートツールバー -->
@@ -79,9 +82,9 @@
                 <td th:text="${c.registeredDate}"></td>
                 <td>
                     <a th:href="@{/customer/edit/{id}(id=${c.id})}" class="edit-link">修正</a>
-                    <form th:action="@{/customer/delete/{id}(id=${c.id})}" method="post"
-                          style="display:inline;" onsubmit="return confirmDelete(this)">
-                        <button type="submit" class="delete-btn">削除</button>
+                    <form th:action="@{/customer/retire/{id}(id=${c.id})}" method="post"
+                          style="display:inline;" onsubmit="return confirmRetire(this)">
+                        <button type="submit" class="delete-btn">退職</button>
                     </form>
                 </td>
             </tr>
@@ -168,10 +171,10 @@ function sortTable(col, dir) {
     });
 }
 
-function confirmDelete(form) {
+function confirmRetire(form) {
     var row = form.closest('tr');
     var name = row.cells[1].textContent.trim();
-    return confirm('「' + name + '」を削除してもいいですか？\nこの操作は元に戻せません。');
+    return confirm('「' + name + '」を取引終了扱いにしてもいいですか？\n過去の売上・手数料の記録は削除されず残ります。\n一覧からは元求人先（1-2-4）に移動します。');
 }
 
 // 初期カウント表示

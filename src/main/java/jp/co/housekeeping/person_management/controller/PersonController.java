@@ -66,7 +66,11 @@ public class PersonController {
     @GetMapping("/register")
     public String registerForm(HttpSession session, Model model) {
         if (!checkAuth(session)) return "redirect:/login";
-        model.addAttribute("persons", personRepository.findAll());
+        List<Person> active = new ArrayList<>();
+        for (Person p : personRepository.findAll()) {
+            if (p.getRetiredAt() == null) active.add(p);
+        }
+        model.addAttribute("persons", active);
         model.addAttribute("person", new Person());
         model.addAttribute("editMode", false);
         return "person-register";
@@ -176,6 +180,7 @@ public class PersonController {
             if (person.getMobilePhone() == null) person.setMobilePhone(existing.getMobilePhone());
             if (person.getFaxPhone() == null) person.setFaxPhone(existing.getFaxPhone());
             if (person.getNo() == null) person.setNo(existing.getNo());
+            if (person.getRetiredAt() == null) person.setRetiredAt(existing.getRetiredAt());
         });
 
         personRepository.save(person);
@@ -263,16 +268,57 @@ public class PersonController {
     @GetMapping("/list")
     public String list(HttpSession session, Model model) {
         if (!checkAuth(session)) return "redirect:/login";
-        model.addAttribute("persons", personRepository.findAll());
+        List<Person> active = new ArrayList<>();
+        for (Person p : personRepository.findAll()) {
+            if (p.getRetiredAt() == null) active.add(p);
+        }
+        model.addAttribute("persons", active);
         return "person-list";
     }
 
-    // ─── 求職者削除 ────────────────────────────────────
-    @PostMapping("/delete/{id}")
-    public String delete(@PathVariable Long id, HttpSession session) {
+    // ─── 求職者を退職扱いにする（1-1-6の「削除」ボタン→「退職」ボタン）───
+    @PostMapping("/retire/{id}")
+    public String retire(@PathVariable Long id, HttpSession session) {
+        if (!checkAuth(session)) return "redirect:/login";
+        Person p = personRepository.findById(id).orElse(null);
+        if (p != null) {
+            p.setRetiredAt(LocalDate.now());
+            personRepository.save(p);
+        }
+        return "redirect:/person/list";
+    }
+
+    // ─── 1-1-8 退職者リスト ────────────────────────────
+    @GetMapping("/retired-list")
+    public String retiredList(HttpSession session, Model model) {
+        if (!checkAuth(session)) return "redirect:/login";
+        List<Person> retired = new ArrayList<>();
+        for (Person p : personRepository.findAll()) {
+            if (p.getRetiredAt() != null) retired.add(p);
+        }
+        retired.sort((a, b) -> b.getRetiredAt().compareTo(a.getRetiredAt()));
+        model.addAttribute("persons", retired);
+        return "person-retired-list";
+    }
+
+    // ─── 退職を取り消して在職中に戻す ──────────────────────
+    @PostMapping("/retired-list/reinstate/{id}")
+    public String reinstate(@PathVariable Long id, HttpSession session) {
+        if (!checkAuth(session)) return "redirect:/login";
+        Person p = personRepository.findById(id).orElse(null);
+        if (p != null) {
+            p.setRetiredAt(null);
+            personRepository.save(p);
+        }
+        return "redirect:/person/retired-list";
+    }
+
+    // ─── 求職者削除（退職者リストからの完全削除。元に戻せません）─────
+    @PostMapping("/retired-list/delete/{id}")
+    public String deleteRetired(@PathVariable Long id, HttpSession session) {
         if (!checkAuth(session)) return "redirect:/login";
         personRepository.deleteById(id);
-        return "redirect:/person/register";
+        return "redirect:/person/retired-list";
     }
 
     // ─── 1-1-7 会費 ────────────────────────────────────

@@ -41,6 +41,7 @@ public class Person {
     private String childcareExp;
     private LocalDate birthDate;
     private LocalDate registeredDate;
+    private LocalDate retiredAt; // null=在職中, 値あり=退職日（1-1-8退職者リストへ）
     private Boolean lineWorks;
 
     // ─── 就職希望条件（新規追加） ───────────────────────
@@ -175,4 +176,6 @@ public class Person {
     public void setMembershipFee(String membershipFee) { this.membershipFee = membershipFee; }
     public Integer getMembershipFeeAmount() { return membershipFeeAmount; }
     public void setMembershipFeeAmount(Integer membershipFeeAmount) { this.membershipFeeAmount = membershipFeeAmount; }
+    public LocalDate getRetiredAt() { return retiredAt; }
+    public void setRetiredAt(LocalDate retiredAt) { this.retiredAt = retiredAt; }
 }

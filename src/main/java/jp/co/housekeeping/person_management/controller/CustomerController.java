@@ -104,7 +104,11 @@ public class CustomerController {
     @GetMapping("/register")
     public String registerForm(HttpSession session, Model model) {
         if (!checkAuth(session)) return "redirect:/login";
-        model.addAttribute("customers", customerRepository.findAll());
+        List<Customer> active = new ArrayList<>();
+        for (Customer c : customerRepository.findAll()) {
+            if (c.getRetiredAt() == null) active.add(c);
+        }
+        model.addAttribute("customers", active);
         model.addAttribute("persons", personRepository.findAll());
         model.addAttribute("customer", new Customer());
         model.addAttribute("editMode", false);
@@ -133,7 +137,11 @@ public class CustomerController {
         if (!checkAuth(session)) return "redirect:/login";
         Customer c = customerRepository.findById(id).orElse(null);
         if (c == null) return "redirect:/customer/list";
-        model.addAttribute("customers", customerRepository.findAll());
+        List<Customer> active = new ArrayList<>();
+        for (Customer cu : customerRepository.findAll()) {
+            if (cu.getRetiredAt() == null) active.add(cu);
+        }
+        model.addAttribute("customers", active);
         model.addAttribute("persons", personRepository.findAll());
         model.addAttribute("customer", c);
         model.addAttribute("editMode", true);
@@ -179,17 +187,56 @@ public class CustomerController {
                 customer.setNotes(existing.getNotes());
             if (customer.getAccessTime() == null)
                 customer.setAccessTime(existing.getAccessTime());
+            if (customer.getRetiredAt() == null)
+                customer.setRetiredAt(existing.getRetiredAt());
         });
         customerRepository.save(customer);
         return "redirect:/customer/list";
     }
 
-    // ─── 求人者削除 ────────────────────────────────────
-    @PostMapping("/delete/{id}")
-    public String delete(@PathVariable Long id, HttpSession session) {
+    // ─── 求人者を取引終了扱いにする（1-2-3の「削除」ボタン→「退職」ボタン）───
+    @PostMapping("/retire/{id}")
+    public String retire(@PathVariable Long id, HttpSession session) {
+        if (!checkAuth(session)) return "redirect:/login";
+        Customer c = customerRepository.findById(id).orElse(null);
+        if (c != null) {
+            c.setRetiredAt(LocalDate.now());
+            customerRepository.save(c);
+        }
+        return "redirect:/customer/list";
+    }
+
+    // ─── 1-2-4 元求人先 ────────────────────────────────
+    @GetMapping("/retired-list")
+    public String retiredList(HttpSession session, Model model) {
+        if (!checkAuth(session)) return "redirect:/login";
+        List<Customer> retired = new ArrayList<>();
+        for (Customer c : customerRepository.findAll()) {
+            if (c.getRetiredAt() != null) retired.add(c);
+        }
+        retired.sort((a, b) -> b.getRetiredAt().compareTo(a.getRetiredAt()));
+        model.addAttribute("customers", retired);
+        return "customer-retired-list";
+    }
+
+    // ─── 取引終了を取り消して取引中に戻す ────────────────────
+    @PostMapping("/retired-list/reinstate/{id}")
+    public String reinstate(@PathVariable Long id, HttpSession session) {
+        if (!checkAuth(session)) return "redirect:/login";
+        Customer c = customerRepository.findById(id).orElse(null);
+        if (c != null) {
+            c.setRetiredAt(null);
+            customerRepository.save(c);
+        }
+        return "redirect:/customer/retired-list";
+    }
+
+    // ─── 求人者削除（元求人先からの完全削除。元に戻せません）─────
+    @PostMapping("/retired-list/delete/{id}")
+    public String deleteRetired(@PathVariable Long id, HttpSession session) {
         if (!checkAuth(session)) return "redirect:/login";
         customerRepository.deleteById(id);
-        return "redirect:/customer/list";
+        return "redirect:/customer/retired-list";
     }
 
     // ─── 1-2-3 求人者一覧 ──────────────────────────────
@@ -197,7 +244,11 @@ public class CustomerController {
     public String list(@RequestParam(required = false) String sort,
                        HttpSession session, Model model) {
         if (!checkAuth(session)) return "redirect:/login";
-        model.addAttribute("customers", customerRepository.findAll());
+        List<Customer> active = new ArrayList<>();
+        for (Customer c : customerRepository.findAll()) {
+            if (c.getRetiredAt() == null) active.add(c);
+        }
+        model.addAttribute("customers", active);
         model.addAttribute("sort", sort);
         return "customer-list";
     }

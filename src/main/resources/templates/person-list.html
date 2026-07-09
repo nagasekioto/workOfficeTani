@@ -35,8 +35,11 @@
 </head>
 <body>
 <div class="header">
-    <h1>&#128084; 求職者情報（1-1-4）</h1>
-    <a href="/person-menu" class="back-btn">&#8592; 求職者管理に戻る</a>
+    <h1>&#128084; 求職者情報（1-1-6）</h1>
+    <div style="display:flex; gap:10px;">
+        <a href="/person/retired-list" class="back-btn" style="background:#757575;">&#128100; 退職者リスト（1-1-8）</a>
+        <a href="/person-menu" class="back-btn">&#8592; 求職者管理に戻る</a>
+    </div>
 </div>
 <div class="container">
     <div class="toolbar">
@@ -99,7 +102,7 @@
                 <td class="ops">
                     <a th:href="@{/person/edit/{id}(id=${p.id})}" class="edit-link">修正</a>
                     <a href="#" class="delete-link"
-                       th:attr="onclick='confirmPersonDelete(' + ${p.id} + ', this)'">削除</a>
+                       th:attr="onclick='confirmPersonRetire(' + ${p.id} + ', this)'">退職</a>
                 </td>
             </tr>
         </tbody>
@@ -161,12 +164,12 @@ function sortTable(col, dir) {
     });
 }
 
-function confirmPersonDelete(id, el) {
+function confirmPersonRetire(id, el) {
     var name = el.closest('tr').cells[1].textContent.trim();
-    if (!confirm('「' + name + '」を削除してもいいですか？\nこの操作は元に戻せません。')) return;
+    if (!confirm('「' + name + '」を退職扱いにしてもいいですか？\n過去の売上・手数料の記録は削除されず残ります。\n一覧からは退職者リスト（1-1-8）に移動します。')) return;
     var form = document.createElement('form');
     form.method = 'post';
-    form.action = '/person/delete/' + id;
+    form.action = '/person/retire/' + id;
     document.body.appendChild(form);
     form.submit();
 }
