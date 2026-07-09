@@ -16,6 +16,11 @@
         .search-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
         .search-row label { font-weight: bold; font-size: 13px; color: #555; display: block; margin-bottom: 4px; }
         .search-row select { padding: 9px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .slot-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+        .slot-table th { background: #f0f0f0; color: #555; font-size: 12px; padding: 6px 8px; text-align: left; border: none; }
+        .slot-table td { padding: 4px 6px; border: none; }
+        .slot-table select { width: 100%; padding: 7px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+        .slot-table .slot-num { color: #999; font-size: 12px; width: 24px; text-align: center; }
         .filter-checks { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
         .filter-checks label { font-size: 14px; font-weight: bold; color: #333; display: flex; align-items: center; gap: 6px; cursor: pointer; }
         .filter-checks input[type=checkbox] { width: 18px; height: 18px; cursor: pointer; accent-color: #4CAF50; }
@@ -59,34 +64,46 @@
     <!-- ── 空き検索 ── -->
     <div class="search-card">
         <h2>🔍 空いている求職者を探す</h2>
-        <div class="search-row">
-            <div>
-                <label>曜日</label>
-                <select id="searchDay">
-                    <option value="月">月曜日</option>
-                    <option value="火">火曜日</option>
-                    <option value="水">水曜日</option>
-                    <option value="木">木曜日</option>
-                    <option value="金">金曜日</option>
-                    <option value="土">土曜日</option>
-                    <option value="日">日曜日</option>
-                </select>
-            </div>
-            <div>
-                <label>開始時刻</label>
-                <select id="searchStart">
-                    <option th:each="slot : ${slots}" th:value="${slot.minutes}" th:text="${slot.label}"></option>
-                </select>
-            </div>
-            <div>
-                <label>終了時刻</label>
-                <select id="searchEnd">
-                    <option th:each="slot : ${slots}" th:value="${slot.minutes}" th:text="${slot.label}"
-                            th:selected="${slot.minutes == 600}"></option>
-                </select>
-            </div>
-            <button class="btn-search" onclick="searchAvailable()">検索</button>
+        <div style="font-size:12px;color:#888;margin-bottom:8px;">
+            最大7つの枠（曜日・開始時刻・終了時刻）を指定できます。指定した枠「すべて」に空いている求職者が表示されます。
+            2つ目以降は使う分だけ入力してください（未入力の枠は無視されます）。
         </div>
+        <table class="slot-table">
+            <thead>
+                <tr><th style="width:24px;"></th><th>曜日</th><th>開始時刻</th><th>終了時刻</th></tr>
+            </thead>
+            <tbody>
+                <tr th:each="i : ${#numbers.sequence(1, 7)}">
+                    <td class="slot-num" th:text="${i}"></td>
+                    <td>
+                        <select th:id="'searchDay' + ${i}">
+                            <option value="" th:selected="${i != 1}">-- 未選択 --</option>
+                            <option value="月" th:selected="${i == 1}">月曜日</option>
+                            <option value="火">火曜日</option>
+                            <option value="水">水曜日</option>
+                            <option value="木">木曜日</option>
+                            <option value="金">金曜日</option>
+                            <option value="土">土曜日</option>
+                            <option value="日">日曜日</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select th:id="'searchStart' + ${i}">
+                            <option value="" th:selected="${i != 1}">-- 未選択 --</option>
+                            <option th:each="slot : ${slots}" th:value="${slot.minutes}" th:text="${slot.label}"></option>
+                        </select>
+                    </td>
+                    <td>
+                        <select th:id="'searchEnd' + ${i}">
+                            <option value="" th:selected="${i != 1}">-- 未選択 --</option>
+                            <option th:each="slot : ${slots}" th:value="${slot.minutes}" th:text="${slot.label}"
+                                    th:selected="${i == 1 and slot.minutes == 600}"></option>
+                        </select>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <button class="btn-search" onclick="searchAvailable()">検索</button>
         <div class="filter-checks">
             <label><input type="checkbox" id="filterCare"> 介護ヘルパー資格ありのみ</label>
             <label><input type="checkbox" id="filterCook"> 料理好きのみ</label>
@@ -149,23 +166,52 @@
 
 <script>
 function searchAvailable() {
-    var day   = document.getElementById('searchDay').value;
-    var start = parseInt(document.getElementById('searchStart').value);
-    var end   = parseInt(document.getElementById('searchEnd').value);
-    if (isNaN(start) || isNaN(end) || end <= start) {
-        alert('終了時刻は開始時刻より後にしてください');
+    // 7枠のうち、曜日・開始・終了がすべて入力されている枠だけを集める
+    var slotsInput = [];
+    for (var i = 1; i <= 7; i++) {
+        var dayEl   = document.getElementById('searchDay' + i);
+        var startEl = document.getElementById('searchStart' + i);
+        var endEl   = document.getElementById('searchEnd' + i);
+        var day     = dayEl.value;
+        var start   = startEl.value;
+        var end     = endEl.value;
+        if (day === '' && start === '' && end === '') continue; // 何も入力していない枠は無視
+        if (day === '' || start === '' || end === '') {
+            alert((i) + '番目の枠は、曜日・開始時刻・終了時刻をすべて入力するか、すべて未選択のままにしてください');
+            return;
+        }
+        start = parseInt(start);
+        end   = parseInt(end);
+        if (end <= start) {
+            alert((i) + '番目の枠：終了時刻は開始時刻より後にしてください');
+            return;
+        }
+        slotsInput.push({ day: day, start: start, end: end });
+    }
+    if (slotsInput.length === 0) {
+        alert('少なくとも1つは枠を入力してください');
         return;
     }
+
     var resultDiv = document.getElementById('searchResult');
     resultDiv.style.display = 'block';
     resultDiv.innerHTML = '<span style="color:#888;font-size:13px;">検索中...</span>';
 
-    var startLabel = formatMin(start);
-    var endLabel   = formatMin(end);
     var filterCare = document.getElementById('filterCare').checked;
     var filterCook = document.getElementById('filterCook').checked;
 
-    fetch('/person/schedule/search?day=' + encodeURIComponent(day) + '&slotStart=' + start + '&slotEnd=' + end)
+    var params = new URLSearchParams();
+    slotsInput.forEach(function(s) {
+        params.append('days', s.day);
+        params.append('starts', s.start);
+        params.append('ends', s.end);
+    });
+
+    var labelParts = slotsInput.map(function(s) {
+        return s.day + '曜日 ' + formatMin(s.start) + '〜' + formatMin(s.end);
+    });
+
+    fetch('/person/schedule/search?' + params.toString())
         .then(function(r){ return r.json(); })
         .then(function(data) {
             // フィルター適用（チェックが入っている条件だけ絞り込む）
@@ -190,7 +236,7 @@ function searchAvailable() {
             if (filterCare) filterNote.push('介護ヘルパー資格あり');
             if (filterCook) filterNote.push('料理好き');
             var noteStr = filterNote.length > 0 ? '（絞込：' + filterNote.join('・') + '）' : '';
-            var label = day + '曜日 ' + startLabel + ' 〜 ' + endLabel + ' に空いている求職者' + noteStr + '：';
+            var label = labelParts.join('、') + ' の全てに空いている求職者' + noteStr + '：';
             var tags = filtered.map(function(p) {
                 var badges = '';
                 if (p.careHelper === '1') badges += '<span class="badge-care">介護ヘルパー</span>';

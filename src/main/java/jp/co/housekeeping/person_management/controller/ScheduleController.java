@@ -56,46 +56,31 @@ public class ScheduleController {
     }
 
     // ─── 空き検索 API ───────────────────────────────────────
-    // 指定曜日・時間帯（分単位）で「空いている求職者」の一覧をJSONで返す
+    // 指定した曜日・時間帯（複数可・最大7つ）「すべて」で空いている求職者の一覧をJSONで返す
+    // days/starts/ends は同じ添字が1つの枠を表す（days[0]・starts[0]・ends[0] で1枠目、というように対応）
     @GetMapping("/person/schedule/search")
     @ResponseBody
     public List<Map<String, String>> searchAvailable(
-            @RequestParam String day,
-            @RequestParam int slotStart,   // 例: 9:30 → 570
-            @RequestParam int slotEnd,     // 例: 11:00 → 660
+            @RequestParam List<String> days,
+            @RequestParam List<Integer> starts,   // 例: 9:30 → 570
+            @RequestParam List<Integer> ends,     // 例: 11:00 → 660
             HttpSession session) {
         if (session.getAttribute("authenticated") == null) return new ArrayList<>();
 
-        List<Map<String, String>> result = new ArrayList<>();
-        ObjectMapper mapper = new ObjectMapper();
+        int slotCount = Math.min(days.size(), Math.min(starts.size(), ends.size()));
 
-        // 全求職者について、指定曜日×時間帯に既存の勤務と重なっているか判定
+        List<Map<String, String>> result = new ArrayList<>();
+
+        // 全求職者について、指定された枠「すべて」で既存の勤務と重なっていないか判定
         for (Person p : personRepository.findAll()) {
-            boolean booked = false;
-            for (Introduction intro : introductionRepository.findAll()) {
-                if (!p.getId().equals(intro.getPersonId())) continue;
-                if (intro.getFormData() == null || intro.getFormData().isBlank()) continue;
-                try {
-                    JsonNode fd = mapper.readTree(intro.getFormData());
-                    String dowStr = fd.path("dow").asText("");
-                    int startH = parseIntSafe(fd.path("wSH").asText(""));
-                    int startM = parseIntSafe(fd.path("wSM").asText(""));
-                    int endH   = parseIntSafe(fd.path("wEH").asText(""));
-                    int endM   = parseIntSafe(fd.path("wEM").asText(""));
-                    if (dowStr.isBlank() || startH < 0 || endH < 0) continue;
-                    for (String d : dowStr.split("・")) {
-                        if (!d.trim().equals(day)) continue;
-                        int wStart = startH * 60 + startM;
-                        int wEnd   = endH   * 60 + endM;
-                        if (wStart < slotEnd && wEnd > slotStart) {
-                            booked = true;
-                            break;
-                        }
-                    }
-                    if (booked) break;
-                } catch (Exception ignored) {}
+            boolean availableForAll = true;
+            for (int i = 0; i < slotCount; i++) {
+                if (isBooked(p, days.get(i), starts.get(i), ends.get(i))) {
+                    availableForAll = false;
+                    break;
+                }
             }
-            if (!booked) {
+            if (availableForAll) {
                 Map<String, String> m = new LinkedHashMap<>();
                 m.put("id",          String.valueOf(p.getId()));
                 m.put("name",        p.getLastNameKanji() + " " + p.getFirstNameKanji());
@@ -106,6 +91,33 @@ public class ScheduleController {
             }
         }
         return result;
+    }
+
+    // ─── 共通：指定曜日・時間帯に既存の勤務と重なっているか判定 ─────
+    private boolean isBooked(Person p, String day, int slotStart, int slotEnd) {
+        ObjectMapper mapper = new ObjectMapper();
+        for (Introduction intro : introductionRepository.findAll()) {
+            if (!p.getId().equals(intro.getPersonId())) continue;
+            if (intro.getFormData() == null || intro.getFormData().isBlank()) continue;
+            try {
+                JsonNode fd = mapper.readTree(intro.getFormData());
+                String dowStr = fd.path("dow").asText("");
+                int startH = parseIntSafe(fd.path("wSH").asText(""));
+                int startM = parseIntSafe(fd.path("wSM").asText(""));
+                int endH   = parseIntSafe(fd.path("wEH").asText(""));
+                int endM   = parseIntSafe(fd.path("wEM").asText(""));
+                if (dowStr.isBlank() || startH < 0 || endH < 0) continue;
+                for (String d : dowStr.split("・")) {
+                    if (!d.trim().equals(day)) continue;
+                    int wStart = startH * 60 + startM;
+                    int wEnd   = endH   * 60 + endM;
+                    if (wStart < slotEnd && wEnd > slotStart) {
+                        return true;
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+        return false;
     }
 
     // ─── 共通：勤務中マップ構築 ─────────────────────────────
