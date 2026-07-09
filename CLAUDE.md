@@ -63,6 +63,7 @@
     /system-qa-help                  1-7-2 Q&A表
     /system-qa                        1-7-3 システム診断（データ整合性チェック）
     /data-flow-guide                    1-7-4 データフロー・計算式ガイド
+    /backup-guide                        1-7-5 バックアップ手順
 ```
 
 金額の流れ・各画面の計算式の詳細は `/data-flow-guide`（1-7-4）を参照。

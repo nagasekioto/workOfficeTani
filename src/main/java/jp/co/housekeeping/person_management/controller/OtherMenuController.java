@@ -50,6 +50,13 @@ public class OtherMenuController {
         return "data-flow-guide";
     }
 
+    // ─── 1-7-5 バックアップ手順 ───────────────────────
+    @GetMapping("/backup-guide")
+    public String backupGuide(HttpSession session) {
+        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+        return "backup-guide";
+    }
+
     @GetMapping("/system-qa-help")
     public String systemQaHelp(HttpSession session) {
         if (session.getAttribute("authenticated") == null) return "redirect:/login";

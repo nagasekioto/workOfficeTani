@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>バックアップ手順（1-7-5） - 家政婦紹介事務所</title>
+    <style>
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; color: #333; font-size: 22px; }
+        .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; font-size: 14px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .section { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,.1); margin-bottom: 20px; overflow: hidden; }
+        .section-header { background: #00695C; color: white; padding: 14px 20px; font-size: 16px; font-weight: bold; }
+        .section-body { padding: 20px; }
+        .status-box { background: #E8F5E9; border-left: 4px solid #4CAF50; padding: 12px 16px; border-radius: 0 4px 4px 0; font-size: 13px; color: #333; margin-bottom: 16px; line-height: 1.8; }
+        .subsection-title { font-size: 15px; font-weight: bold; color: #00695C; margin: 18px 0 8px; }
+        .subsection-title:first-child { margin-top: 0; }
+        pre { background: #263238; color: #B2FF59; padding: 14px 16px; border-radius: 6px; font-size: 12.5px; overflow-x: auto; line-height: 1.6; white-space: pre-wrap; word-break: break-all; }
+        .note { background: #FFF8E1; border-left: 4px solid #FFC107; padding: 10px 14px; border-radius: 0 4px 4px 0; font-size: 13px; color: #555; margin: 10px 0; line-height: 1.6; }
+        .step-list { margin: 8px 0; padding-left: 20px; font-size: 13.5px; line-height: 1.9; color: #333; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0; }
+        th { background: #E0F2F1; color: #00695C; padding: 8px 12px; text-align: left; border: 1px solid #B2DFDB; }
+        td { padding: 8px 12px; border: 1px solid #e0e0e0; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>&#128190; バックアップ手順（1-7-5）</h1>
+    <a href="/other-menu" class="back-btn">&#8592; その他に戻る</a>
+</div>
+<div class="container">
+
+    <div class="section">
+        <div class="section-body">
+            <div class="status-box">
+                <b>✅ 現在の設定状況</b><br>
+                毎日 <b>23:30</b> に自動でデータベース全体のバックアップが作成されるよう設定済みです。<br>
+                保存先：<b>C:\DBBackup</b>（30日より古いバックアップは自動削除）<br>
+                2026年7月9日、復元テストも実施済み（求職者12件・氏名・電話番号を含め正しく復元できることを確認）。
+            </div>
+            このページには、バックアップ設定の内容・復元が必要になったときの手順をまとめています。
+            設定を変更する場合や、新しいパソコンに引っ越す場合にも参照してください。
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-header">① 設定内容の一覧</div>
+        <div class="section-body">
+            <table>
+                <tr><th>項目</th><th>内容</th></tr>
+                <tr><td>バックアップ対象</td><td>データベース <code>kaseihu</code>（求職者・求人者・売上・紹介状など全データ）</td></tr>
+                <tr><td>バックアップスクリプト</td><td>C:\DBBackup\backup.ps1</td></tr>
+                <tr><td>実行タイミング</td><td>毎日 23:30（タスクスケジューラ「kaseihu-DB-Backup」）</td></tr>
+                <tr><td>保存先フォルダ</td><td>C:\DBBackup</td></tr>
+                <tr><td>ファイル名の形式</td><td>kaseihu_（年月日_時分秒）.backup</td></tr>
+                <tr><td>保持期間</td><td>30日（それより古いものは自動削除）</td></tr>
+                <tr><td>PostgreSQLツールの場所</td><td>C:\workofficetani\bin</td></tr>
+            </table>
+            <div class="note">
+                ⚠️ 今のところバックアップ先はこのパソコンの中（C:\DBBackup）だけです。パソコンの故障・盗難・火災等が
+                起きた場合は元データもバックアップも同時に失われます。OneDriveやGoogleドライブの同期フォルダの中に
+                C:\DBBackupを作り直すと、自動的にクラウドにも保管されるようになるので、あわせて検討してください。
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-header">② 今すぐ手動でバックアップを取りたいとき</div>
+        <div class="section-body">
+            PowerShellを開いて、以下を実行してください。
+            <pre>& "C:\DBBackup\backup.ps1"</pre>
+            「Backup OK: （ファイルパス）」と表示されれば成功です。
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-header">③ データを復元したいとき（本番復元）</div>
+        <div class="section-body">
+            <div class="note">
+                ⚠️ この操作は既存のデータを上書きします。本当に必要なとき以外は実行しないでください。
+                心配な場合は、先に④の「試験復元」で内容を確認してから行ってください。
+            </div>
+            <ol class="step-list">
+                <li>C:\DBBackup フォルダの中から、復元したいバックアップファイル（例：kaseihu_20260709_215908.backup）を確認する</li>
+                <li>PowerShellで以下を実行する（ファイル名は実際のものに置き換える）</li>
+            </ol>
+            <pre>$env:PGPASSWORD = "7136"
+& "C:\workofficetani\bin\pg_restore.exe" -U postgres -h localhost -d kaseihu --clean "C:\DBBackup\kaseihu_20260709_215908.backup"</pre>
+            <div class="note">
+                <code>--clean</code> を付けると、既存のテーブルを消してからバックアップ内容で復元し直してくれます。
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-header">④ 試験復元（本番データに触れずに確認したいとき）</div>
+        <div class="section-body">
+            「本当にこのバックアップから復元できるか」を、実際の <code>kaseihu</code> データベースに触れずに確認する方法です。
+            <div class="subsection-title">1. 試験用の空のデータベースを作る</div>
+            <pre>$env:PGPASSWORD = "7136"
+& "C:\workofficetani\bin\createdb.exe" -U postgres -h localhost kaseihu_test</pre>
+            <div class="subsection-title">2. バックアップファイルを試験用DBに復元する</div>
+            <pre>& "C:\workofficetani\bin\pg_restore.exe" -U postgres -h localhost -d kaseihu_test "C:\DBBackup\（確認したいファイル名）"</pre>
+            <div class="subsection-title">3. 中身を確認する（件数比較・データ内容の目視確認）</div>
+            <pre>& "C:\workofficetani\bin\psql.exe" -U postgres -h localhost -d kaseihu -c "SELECT count(*) FROM persons;"
+& "C:\workofficetani\bin\psql.exe" -U postgres -h localhost -d kaseihu_test -c "SELECT count(*) FROM persons;"
+& "C:\workofficetani\bin\psql.exe" -U postgres -h localhost -d kaseihu_test -c "SELECT last_name_kanji, first_name_kanji, mobile_phone FROM persons LIMIT 3;"</pre>
+            件数が一致し、氏名・電話番号などの中身も正しく表示されればOKです。
+            <div class="subsection-title">4. 試験用データベースを削除する（後片付け）</div>
+            <pre>& "C:\workofficetani\bin\dropdb.exe" -U postgres -h localhost kaseihu_test</pre>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-header">⑤ タスクの確認・変更・削除</div>
+        <div class="section-body">
+            <table>
+                <tr><th>やりたいこと</th><th>コマンド</th></tr>
+                <tr><td>タスクの状態を確認</td><td><code>Get-ScheduledTask -TaskName "kaseihu-DB-Backup"</code></td></tr>
+                <tr><td>今すぐ手動で実行</td><td><code>Start-ScheduledTask -TaskName "kaseihu-DB-Backup"</code></td></tr>
+                <tr><td>タスクを削除</td><td><code>Unregister-ScheduledTask -TaskName "kaseihu-DB-Backup" -Confirm:$false</code></td></tr>
+            </table>
+            <div class="note">
+                実行時刻を変更したい場合は、一度タスクを削除してから、下記③（新規登録）の <code>-At "23:30"</code> の部分を
+                変えて登録し直してください。
+            </div>
+            <div class="subsection-title">タスクの新規登録（削除後の再設定用）</div>
+            <pre>Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument '-ExecutionPolicy Bypass -File "C:\DBBackup\backup.ps1"'
+$trigger = New-ScheduledTaskTrigger -Daily -At "23:30"
+Register-ScheduledTask -TaskName "kaseihu-DB-Backup" -Action $action -Trigger $trigger -Description "Daily backup of kaseihu database" -RunLevel Highest</pre>
+            <div class="note">
+                ⚠️ タスクの新規登録には管理者権限が必要です。PowerShellを「管理者として実行」してから行ってください。
+            </div>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>
