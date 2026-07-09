@@ -49,7 +49,19 @@
         <div class="section-header">① 初期セットアップ手順（本番機で最初に1回行う）</div>
         <div class="section-body">
 
-            <div class="subsection-title"><span class="step-num">1</span>バックアップ保存フォルダを作る</div>
+            <div class="subsection-title"><span class="step-num">1</span>PowerShellを「管理者として実行」で開く</div>
+            <div class="warn">
+                ⚠️ この後の手順6（タスク登録）で管理者権限が必要になるため、最初から管理者権限のPowerShellを
+                使うことで、途中で画面を開き直す手間を省けます。
+            </div>
+            <ol class="step-list">
+                <li>スタートメニューを開き、「PowerShell」と検索する</li>
+                <li>表示された「Windows PowerShell」を右クリック→「管理者として実行」をクリック</li>
+                <li>「このアプリがデバイスに変更を加えることを許可しますか？」と出たら「はい」をクリック</li>
+            </ol>
+            以降の手順②〜⑨は、すべてこの管理者権限のPowerShell画面でそのまま行ってください。
+
+            <div class="subsection-title"><span class="step-num">2</span>バックアップ保存フォルダを作る</div>
             <pre>New-Item -ItemType Directory -Path "C:\DBBackup" -Force</pre>
             <div class="note">
                 保存先はローカルのC:\DBBackupで構いませんが、OneDriveやGoogleドライブの同期フォルダの中に
@@ -57,16 +69,16 @@
                 <code>C:\Users\ユーザー名\OneDrive\DBBackup</code>）。以降の手順ではC:\DBBackupとして説明します。
             </div>
 
-            <div class="subsection-title"><span class="step-num">2</span>PostgreSQLの実行ファイルの場所を確認する</div>
+            <div class="subsection-title"><span class="step-num">3</span>PostgreSQLの実行ファイルの場所を確認する</div>
             開発機では <code>C:\workofficetani\bin</code> にありましたが、本番機ではインストール場所が
             異なる可能性があります。まず標準的な場所を確認してください。
             <pre>Get-ChildItem "C:\Program Files\PostgreSQL" -Directory -ErrorAction SilentlyContinue</pre>
             見つからない場合は、パソコン全体から検索します（少し時間がかかります）。
             <pre>Get-ChildItem -Path C:\ -Filter "pg_dump.exe" -Recurse -ErrorAction SilentlyContinue -Force</pre>
-            表示された <code>pg_dump.exe</code> があるフォルダのパスを、次の手順3で使う
+            表示された <code>pg_dump.exe</code> があるフォルダのパスを、次の手順4で使う
             <code>$pgBin</code> の値として使ってください。
 
-            <div class="subsection-title"><span class="step-num">3</span>バックアップ用スクリプトを作る</div>
+            <div class="subsection-title"><span class="step-num">4</span>バックアップ用スクリプトを作る</div>
             <div class="warn">
                 ⚠️ 重要：この後の内容をメモ帳等に貼り付けて保存すると、引用符が自動的に変換されて
                 「文字列に終端記号 " がありません」というエラーになることがあります。
@@ -75,7 +87,7 @@
             </div>
             <pre>Remove-Item C:\DBBackup\backup.ps1 -ErrorAction SilentlyContinue
 Add-Content -Path C:\DBBackup\backup.ps1 -Value '$backupDir = "C:\DBBackup"'
-Add-Content -Path C:\DBBackup\backup.ps1 -Value '$pgBin = "（手順2で確認したフォルダのパス）"'
+Add-Content -Path C:\DBBackup\backup.ps1 -Value '$pgBin = "（手順3で確認したフォルダのパス）"'
 Add-Content -Path C:\DBBackup\backup.ps1 -Value '$dbName = "kaseihu"'
 Add-Content -Path C:\DBBackup\backup.ps1 -Value '$dbUser = "postgres"'
 Add-Content -Path C:\DBBackup\backup.ps1 -Value '$env:PGPASSWORD = "7136"'
@@ -88,33 +100,32 @@ Add-Content -Path C:\DBBackup\backup.ps1 -Value 'Get-ChildItem -Path $backupDir 
             実行後、中身が文字化けせず正しく書き込まれたか確認します。
             <pre>Get-Content C:\DBBackup\backup.ps1</pre>
 
-            <div class="subsection-title"><span class="step-num">4</span>実行ポリシーを設定する</div>
-            初期状態のWindowsではスクリプトの実行が禁止されているため、まず許可します（管理者権限は不要）。
+            <div class="subsection-title"><span class="step-num">5</span>実行ポリシーを設定する</div>
+            初期状態のWindowsではスクリプトの実行が禁止されているため、まず許可します。
             <pre>Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force</pre>
 
-            <div class="subsection-title"><span class="step-num">5</span>手動で1回試す</div>
+            <div class="subsection-title"><span class="step-num">6</span>手動で1回試す</div>
             <pre>& "C:\DBBackup\backup.ps1"</pre>
             「Backup OK: （ファイルパス）」と表示され、C:\DBBackupフォルダにファイルができていれば成功です。
 
-            <div class="subsection-title"><span class="step-num">6</span>毎日自動実行するタスクを登録する</div>
-            <div class="warn">
-                ⚠️ この手順は管理者権限が必要です。PowerShellを「管理者として実行」（右クリック→管理者として実行）
-                してから行ってください。管理者権限でない場合「アクセスが拒否されました」というエラーになります。
-            </div>
-            <pre>Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
-$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument '-ExecutionPolicy Bypass -File "C:\DBBackup\backup.ps1"'
+            <div class="subsection-title"><span class="step-num">7</span>毎日自動実行するタスクを登録する</div>
+            <pre>$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument '-ExecutionPolicy Bypass -File "C:\DBBackup\backup.ps1"'
 $trigger = New-ScheduledTaskTrigger -Daily -At "23:30"
 Register-ScheduledTask -TaskName "kaseihu-DB-Backup" -Action $action -Trigger $trigger -Description "Daily backup of kaseihu database" -RunLevel Highest</pre>
             実行時刻（23:30の部分）は、業務に支障のない時間帯に変更しても構いません。
+            <div class="note">
+                手順1で管理者権限のPowerShellを開いていない場合、ここで「アクセスが拒否されました」という
+                エラーになります。その場合は手順1からやり直してください。
+            </div>
 
-            <div class="subsection-title"><span class="step-num">7</span>タスクが正しく動くか確認する</div>
+            <div class="subsection-title"><span class="step-num">8</span>タスクが正しく動くか確認する</div>
             時刻を待たずに、今すぐ手動でタスクを起動して確認できます。
             <pre>Start-ScheduledTask -TaskName "kaseihu-DB-Backup"
 Start-Sleep -Seconds 5
 Get-ChildItem C:\DBBackup</pre>
             新しいタイムスタンプのバックアップファイルが増えていれば、タスク経由でも正常に動作しています。
 
-            <div class="subsection-title"><span class="step-num">8</span>復元テストを行う（必須）</div>
+            <div class="subsection-title"><span class="step-num">9</span>復元テストを行う（必須）</div>
             「バックアップは取れていたのに、いざという時に復元できなかった」という事態を防ぐため、
             必ず一度、実際のデータに触れない方法で復元テストを行ってください。手順は下記④を参照してください。
         </div>
@@ -178,7 +189,7 @@ Get-ChildItem C:\DBBackup</pre>
                 <tr><td>保存先フォルダ</td><td>C:\DBBackup</td></tr>
                 <tr><td>ファイル名の形式</td><td>kaseihu_（年月日_時分秒）.backup</td></tr>
                 <tr><td>保持期間</td><td>30日（それより古いものは自動削除）</td></tr>
-                <tr><td>PostgreSQLツールの場所（開発機の例）</td><td>C:\workofficetani\bin（本番機では①手順2で確認し直すこと）</td></tr>
+                <tr><td>PostgreSQLツールの場所（開発機の例）</td><td>C:\workofficetani\bin（本番機では①手順3で確認し直すこと）</td></tr>
             </table>
             <div class="note">
                 ⚠️ バックアップ先を同じパソコンの中だけにしていると、パソコンの故障・盗難・火災等が起きた場合は
@@ -198,7 +209,7 @@ Get-ChildItem C:\DBBackup</pre>
                 <tr><td>タスクを削除</td><td><code>Unregister-ScheduledTask -TaskName "kaseihu-DB-Backup" -Confirm:$false</code></td></tr>
             </table>
             <div class="note">
-                実行時刻を変更したい場合は、一度タスクを削除してから、①手順6の登録コマンドの
+                実行時刻を変更したい場合は、一度タスクを削除してから、①手順7の登録コマンドの
                 <code>-At "23:30"</code> の部分を変えて登録し直してください（管理者権限のPowerShellが必要）。
             </div>
         </div>
