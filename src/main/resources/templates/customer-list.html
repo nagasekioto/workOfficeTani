@@ -84,7 +84,7 @@
                     <a th:href="@{/customer/edit/{id}(id=${c.id})}" class="edit-link">修正</a>
                     <form th:action="@{/customer/retire/{id}(id=${c.id})}" method="post"
                           style="display:inline;" onsubmit="return confirmRetire(this)">
-                        <button type="submit" class="delete-btn">退職</button>
+                        <button type="submit" class="delete-btn">終了</button>
                     </form>
                 </td>
             </tr>
