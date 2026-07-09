@@ -881,15 +881,6 @@ public class ReceiptMenuController {
         PdfPCell c5 = cell(total,  f, Rectangle.BOX, Element.ALIGN_RIGHT);  c5.setFixedHeight(h); t.addCell(c5);
     }
 
-    // wageTable用ヘルパー（旧・未使用だが残置）
-    private void addFixedRow(PdfPTable t, Font f, float h,
-                              String label, String detail, String qty, String amt) {
-        PdfPCell c1 = cell(label,  f, Rectangle.BOX, Element.ALIGN_CENTER); c1.setFixedHeight(h); t.addCell(c1);
-        PdfPCell c2 = cell(detail, f, Rectangle.BOX, Element.ALIGN_LEFT);   c2.setFixedHeight(h); t.addCell(c2);
-        PdfPCell c3 = cell(qty,    f, Rectangle.BOX, Element.ALIGN_CENTER); c3.setFixedHeight(h); t.addCell(c3);
-        PdfPCell c4 = cell(amt,    f, Rectangle.BOX, Element.ALIGN_RIGHT);  c4.setFixedHeight(h); t.addCell(c4);
-    }
-
     // feeTable用ヘルパー
     private void addFeeRow(PdfPTable t, Font nf, Font bf2, float h,
                             String desc, String num, String amt) {
