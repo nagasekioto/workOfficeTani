@@ -370,6 +370,9 @@ public class ReportMenuController {
     private SettlementData buildSettlementData(int baseYear, List<Integer> months, String type) {
         SettlementData d = new SettlementData();
 
+        // N+1クエリ対策: 全SalesDetailを月ごとに振り分けたMapを最初に1回だけ取得
+        Map<String, List<SalesDetail>> byMonth = fetchDetailsByRefMonth();
+
         for (int m : months) {
             // 年の判定: 会社決算は2月〜12月がbaseYear、1月はbaseYear+1
             // 労働局は4月〜12月がbaseYear、1月〜3月はbaseYear+1
@@ -385,17 +388,17 @@ public class ReportMenuController {
             String key = String.valueOf(m);
 
             // ②求職受付手数料管理簿の求人受付事務費(710円×件数) = reception_fee合計
-            int fee710 = calcReceptionFee710(yearMonth);
+            int fee710 = calcReceptionFee710(yearMonth, byMonth);
             d.receptionFee710.put(key, fee710);
 
             // ③紹介手数料管理簿の求人受付事務費(1000円×件数) = customer_fee合計
-            int fee1000 = calcCustomerFee1000(yearMonth);
+            int fee1000 = calcCustomerFee1000(yearMonth, byMonth);
             d.receptionFee1000.put(key, fee1000);
 
             // ④紹介手数料 = 手数料※1累計 + 手数料※2累計
             // 会社決算表・労働局用決算表のいずれもサンケアネットの金額は引かない。
-            int comm1 = calcCommission(yearMonth);   // 手数料※1
-            int comm2 = calcTax(yearMonth);           // 手数料※2
+            int comm1 = calcCommission(yearMonth, byMonth);   // 手数料※1
+            int comm2 = calcTax(yearMonth, byMonth);           // 手数料※2
             int sancare = getSancareNet(ym);
             int introFee = comm1 + comm2;
             d.introFee.put(key, introFee);
@@ -538,72 +541,70 @@ public class ReportMenuController {
         } catch (Exception e) { return null; }
     }
 
-    private int calcReceptionFee710(YearMonth ym) {
+    /**
+     * calcReceptionFee710/calcCustomerFee1000/calcCommission/calcTax の4関数が
+     * それぞれ個別に「Sales全件取得→1件ずつsales_detailsを問い合わせ」を行っていた
+     * N+1クエリを解消するための共有プリフェッチ。
+     *
+     * 全SalesDetailを一度だけ取得し、領収書発行済み(receiptNo あり)かつ
+     * 基準日(getRefDate)が判定できるものだけを、月キー("yyyy-MM")ごとの
+     * リストに振り分けて返す。以降の4関数は、この結果をメモリ上でフィルタ
+     * するだけになり、DB問い合わせ回数が「呼び出しごとに1回」に減る。
+     *
+     * ※Sales側は s.getId() を sales_detail_id 検索に使っていただけで
+     *   他のフィールドは一切参照していなかったため、salesRepository経由を
+     *   やめて salesDetailRepository.findAll() から直接取得するように変更。
+     *   計算結果・フィルタ条件は一切変更していない。
+     */
+    private Map<String, List<SalesDetail>> fetchDetailsByRefMonth() {
+        Map<String, List<SalesDetail>> byMonth = new HashMap<>();
+        for (SalesDetail d : salesDetailRepository.findAll()) {
+            if (d.getReceiptNo() == null || d.getReceiptNo().isEmpty()) continue;
+            LocalDate rd = getRefDate(d);
+            if (rd == null) continue;
+            String key = rd.getYear() + "-" + String.format("%02d", rd.getMonthValue());
+            byMonth.computeIfAbsent(key, k -> new ArrayList<>()).add(d);
+        }
+        return byMonth;
+    }
+
+    private int calcReceptionFee710(YearMonth ym, Map<String, List<SalesDetail>> byMonth) {
         int total = 0;
-        for (Sales s : salesRepository.findAll()) {
-            if (s.getId() == null) continue;
-            for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {
-                if (d.getReceiptNo() == null || d.getReceiptNo().isEmpty()) continue;
-                int fee = d.getReceptionFee() != null ? d.getReceptionFee() : 0;
-                if (fee == 0) continue;
-                LocalDate rd = getRefDate(d);
-                if (rd == null) continue;
-                if (rd.getYear() == ym.getYear() && rd.getMonthValue() == ym.getMonthValue())
-                    total += fee;
-            }
+        for (SalesDetail d : byMonth.getOrDefault(ym.toString(), List.of())) {
+            int fee = d.getReceptionFee() != null ? d.getReceptionFee() : 0;
+            if (fee == 0) continue;
+            total += fee;
         }
         return total;
     }
 
-    private int calcCustomerFee1000(YearMonth ym) {
+    private int calcCustomerFee1000(YearMonth ym, Map<String, List<SalesDetail>> byMonth) {
         int total = 0;
-        for (Sales s : salesRepository.findAll()) {
-            if (s.getId() == null) continue;
-            for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {
-                if (d.getReceiptNo() == null || d.getReceiptNo().isEmpty()) continue;
-                int fee = d.getCustomerFee() != null ? d.getCustomerFee() : 0;
-                if (fee == 0) continue;
-                LocalDate rd = getRefDate(d);
-                if (rd == null) continue;
-                if (rd.getYear() == ym.getYear() && rd.getMonthValue() == ym.getMonthValue())
-                    total += fee;
-            }
+        for (SalesDetail d : byMonth.getOrDefault(ym.toString(), List.of())) {
+            int fee = d.getCustomerFee() != null ? d.getCustomerFee() : 0;
+            if (fee == 0) continue;
+            total += fee;
         }
         return total;
     }
 
-    private int calcCommission(YearMonth ym) {
+    private int calcCommission(YearMonth ym, Map<String, List<SalesDetail>> byMonth) {
         int total = 0;
-        for (Sales s : salesRepository.findAll()) {
-            if (s.getId() == null) continue;
-            for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {
-                if (d.getReceiptNo() == null || d.getReceiptNo().isEmpty()) continue;
-                int wage = d.getMonthlyTotal() != null ? d.getMonthlyTotal() : 0;
-                if (wage == 0) continue;
-                LocalDate rd = getRefDate(d);
-                if (rd == null) continue;
-                if (rd.getYear() == ym.getYear() && rd.getMonthValue() == ym.getMonthValue())
-                    total += (int)(wage * FEE_RATE);
-            }
+        for (SalesDetail d : byMonth.getOrDefault(ym.toString(), List.of())) {
+            int wage = d.getMonthlyTotal() != null ? d.getMonthlyTotal() : 0;
+            if (wage == 0) continue;
+            total += (int)(wage * FEE_RATE);
         }
         return total;
     }
 
-    private int calcTax(YearMonth ym) {
+    private int calcTax(YearMonth ym, Map<String, List<SalesDetail>> byMonth) {
         int total = 0;
-        for (Sales s : salesRepository.findAll()) {
-            if (s.getId() == null) continue;
-            for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {
-                if (d.getReceiptNo() == null || d.getReceiptNo().isEmpty()) continue;
-                int wage = d.getMonthlyTotal() != null ? d.getMonthlyTotal() : 0;
-                if (wage == 0) continue;
-                LocalDate rd = getRefDate(d);
-                if (rd == null) continue;
-                if (rd.getYear() == ym.getYear() && rd.getMonthValue() == ym.getMonthValue()) {
-                    int comm = (int)(wage * FEE_RATE);
-                    total += (int)(comm * 0.10);
-                }
-            }
+        for (SalesDetail d : byMonth.getOrDefault(ym.toString(), List.of())) {
+            int wage = d.getMonthlyTotal() != null ? d.getMonthlyTotal() : 0;
+            if (wage == 0) continue;
+            int comm = (int)(wage * FEE_RATE);
+            total += (int)(comm * 0.10);
         }
         return total;
     }
