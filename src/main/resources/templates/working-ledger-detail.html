@@ -89,6 +89,7 @@
                     <th>日数</th>
                     <th>賃金総額</th>
                     <th>手数料率</th>
+                    <th>手数料（16.5%）</th>
                     <th>領収月日</th>
                     <th>領収書No</th>
                     <th>備考</th>
@@ -120,6 +121,7 @@
                     <td th:text="${row.workDays > 0 ? row.workDays + '日' : '-'}">-</td>
                     <td th:text="${row.wageTotalStr}">-</td>
                     <td th:text="${row.commissionRate}">16.5%</td>
+                    <td th:text="${row.commissionAmountStr}">-</td>
                     <td th:text="${row.receiptDate}">-</td>
                     <td th:text="${row.detail.receiptNo}">-</td>
 
