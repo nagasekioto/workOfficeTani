@@ -51,6 +51,9 @@ import jp.co.housekeeping.person_management.util.ValidationUtils;
 @RequestMapping("/person")
 public class PersonController {
 
+    // 求職者No(no)の採番を排他制御するためのロック
+    private static final Object PERSON_NO_LOCK = new Object();
+
     @Autowired private PersonRepository personRepository;
     @Autowired private CustomerRepository customerRepository;
     @Autowired private SalesRepository salesRepository;
@@ -116,14 +119,17 @@ public class PersonController {
             person.setRegisteredDate(LocalDate.now());
         }
         if (person.getNo() == null) {
-            int maxNo = 0;
-            for (Person p : personRepository.findAll()) {
-                if (p.getNo() != null && p.getNo() > maxNo) maxNo = p.getNo();
+            synchronized (PERSON_NO_LOCK) {
+                int maxNo = 0;
+                for (Person p : personRepository.findAll()) {
+                    if (p.getNo() != null && p.getNo() > maxNo) maxNo = p.getNo();
+                }
+                person.setNo(maxNo + 1);
+                personRepository.save(person);
             }
-            person.setNo(maxNo + 1);
+        } else {
+            personRepository.save(person);
         }
-
-        personRepository.save(person);
         return "redirect:/person/register";
     }
 

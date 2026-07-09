@@ -54,6 +54,9 @@ import jp.co.housekeeping.person_management.repository.SalesRepository;
 @RequestMapping("/customer")
 public class CustomerController {
 
+    // 求人者No(no)の採番を排他制御するためのロック
+    private static final Object CUSTOMER_NO_LOCK = new Object();
+
     @Autowired private CustomerRepository customerRepository;
     @Autowired private CustomerRequestRepository customerRequestRepository;
     @Autowired private PersonRepository personRepository;
@@ -121,13 +124,17 @@ public class CustomerController {
         if (!checkAuth(session)) return "redirect:/login";
         if (customer.getRegisteredDate() == null) customer.setRegisteredDate(LocalDate.now());
         if (customer.getNo() == null) {
-            int maxNo = 0;
-            for (Customer c : customerRepository.findAll()) {
-                if (c.getNo() != null && c.getNo() > maxNo) maxNo = c.getNo();
+            synchronized (CUSTOMER_NO_LOCK) {
+                int maxNo = 0;
+                for (Customer c : customerRepository.findAll()) {
+                    if (c.getNo() != null && c.getNo() > maxNo) maxNo = c.getNo();
+                }
+                customer.setNo(maxNo + 1);
+                customerRepository.save(customer);
             }
-            customer.setNo(maxNo + 1);
+        } else {
+            customerRepository.save(customer);
         }
-        customerRepository.save(customer);
         return "redirect:/customer/register";
     }
 

@@ -55,6 +55,11 @@ public class ReceiptMenuController {
 
     private static final double FEE_RATE = 0.15; // 15%（PDFに合わせて変更）
 
+    // 領収書番号(receipt_no)のMAX+1採番を排他制御するためのロック
+    // （求人者宛・求職受付・紹介状経由の3つの採番箇所すべてで共有し、
+    //   同一カウンターへの同時アクセスによる番号重複を防止する）
+    private static final Object RECEIPT_NO_LOCK = new Object();
+
     @Autowired private CustomerRepository    customerRepository;
     @Autowired private SalesRepository       salesRepository;
     @Autowired private SalesDetailRepository salesDetailRepository;
@@ -118,14 +123,16 @@ public class ReceiptMenuController {
         if (sales != null && sales.getPersonId() != null)
             person = personRepository.findById(sales.getPersonId()).orElse(null);
 
-        // 領収番号：未発行なら採番してDBに保存
+        // 領収番号：未発行なら採番してDBに保存（同時アクセスでの番号重複を防ぐため排他制御）
         String receiptNo = detail.getReceiptNo();
         if (receiptNo == null || receiptNo.isEmpty()) {
-            int nextNo = salesDetailRepository.findMaxReceiptNo() + 1;
-            receiptNo  = String.format("%04d", nextNo);
-            detail.setReceiptNo(receiptNo);
-            detail.setIssuedAt(LocalDateTime.now());
-            salesDetailRepository.save(detail);
+            synchronized (RECEIPT_NO_LOCK) {
+                int nextNo = salesDetailRepository.findMaxReceiptNo() + 1;
+                receiptNo  = String.format("%04d", nextNo);
+                detail.setReceiptNo(receiptNo);
+                detail.setIssuedAt(LocalDateTime.now());
+                salesDetailRepository.save(detail);
+            }
         } else if (detail.getIssuedAt() == null) {
             detail.setIssuedAt(LocalDateTime.now());
             salesDetailRepository.save(detail);
@@ -220,14 +227,16 @@ public class ReceiptMenuController {
         }
         if (groupDetails.isEmpty()) groupDetails.add(detail);
 
-        // 領収番号（代表レコードに付番）
+        // 領収番号（代表レコードに付番。同時アクセスでの番号重複を防ぐため排他制御）
         String receiptNo = detail.getReceiptNo();
         if (receiptNo == null || receiptNo.isEmpty()) {
-            int nextNo = salesDetailRepository.findMaxReceiptNo() + 1;
-            receiptNo  = String.format("%04d", nextNo);
-            detail.setReceiptNo(receiptNo);
-            detail.setIssuedAt(LocalDateTime.now());
-            salesDetailRepository.save(detail);
+            synchronized (RECEIPT_NO_LOCK) {
+                int nextNo = salesDetailRepository.findMaxReceiptNo() + 1;
+                receiptNo  = String.format("%04d", nextNo);
+                detail.setReceiptNo(receiptNo);
+                detail.setIssuedAt(LocalDateTime.now());
+                salesDetailRepository.save(detail);
+            }
         } else if (detail.getIssuedAt() == null) {
             detail.setIssuedAt(LocalDateTime.now());
             salesDetailRepository.save(detail);
@@ -260,16 +269,18 @@ public class ReceiptMenuController {
         // introルートは1件固定（紹介状1枚＝710円）
         LocalDate introDate = intro.getIntroDate() != null ? intro.getIntroDate() : LocalDate.now();
 
-        // 領収番号はintro.ledgerRemarksに「RCPT:XXXX」形式で保存
+        // 領収番号はintro.ledgerRemarksに「RCPT:XXXX」形式で保存（同時アクセスでの番号重複を防ぐため排他制御）
         String receiptNo;
         String ledger = intro.getLedgerRemarks();
         if (ledger != null && ledger.startsWith("RCPT:")) {
             receiptNo = ledger.substring(5);
         } else {
-            int nextNo = salesDetailRepository.findMaxReceiptNo() + 1;
-            receiptNo  = String.format("%04d", nextNo);
-            intro.setLedgerRemarks("RCPT:" + receiptNo);
-            introductionRepository.save(intro);
+            synchronized (RECEIPT_NO_LOCK) {
+                int nextNo = salesDetailRepository.findMaxReceiptNo() + 1;
+                receiptNo  = String.format("%04d", nextNo);
+                intro.setLedgerRemarks("RCPT:" + receiptNo);
+                introductionRepository.save(intro);
+            }
         }
 
         // 既存のPDF生成ロジックを再利用するためダミーのSalesDetailを1件作成

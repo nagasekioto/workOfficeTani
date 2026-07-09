@@ -52,6 +52,9 @@ import jp.co.housekeeping.person_management.repository.PersonRepository;
 @RequestMapping("/introduction")
 public class IntroductionController {
 
+    // 紹介状番号(ref_no)のMAX+1採番を排他制御するためのロック
+    private static final Object REF_NO_LOCK = new Object();
+
     @Autowired private PersonRepository personRepository;
     @Autowired private CustomerRepository customerRepository;
     @Autowired private IntroductionRepository introductionRepository;
@@ -95,6 +98,8 @@ public class IntroductionController {
         Introduction intro;
         String refNo;
 
+        // 採番(MAX+1)からsaveまでを排他制御し、同時アクセスでの番号重複を防止する
+        synchronized (REF_NO_LOCK) {
         if (editId != null) {
             // 更新
             intro = introductionRepository.findById(editId).orElse(new Introduction());
@@ -129,6 +134,7 @@ public class IntroductionController {
 
         introductionRepository.save(intro);
         return refNo;
+        }
     }
 
     // 1-6-2 紹介状一覧

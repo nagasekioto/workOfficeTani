@@ -224,10 +224,4 @@ public class SalesController {
         return "redirect:/person/sales?saved=" + personId;
     }
 
-    // 領収書No採番（0001～）
-    private String generateReceiptNo() {
-        int maxNo = salesDetailRepository.findMaxReceiptNo();
-        return String.format("%04d", maxNo + 1);
-    }
-
 }
