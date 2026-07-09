@@ -9,7 +9,7 @@ import org.springframework.data.relational.core.mapping.Table;
  * 領収書発行記録テーブル (receipts_issued)
  *
  * 既存カラム: id, customer_id, sales_detail_id, receipt_type, amount, printed, printed_at, created_at
- * 追加カラム: receipt_number, person_id  ← schema-update-5.sql で追加要
+ * 追加カラム: receipt_number, person_id  ← schema-all.sql 適用要（旧schema-update-5.sql）
  *
  * DBマイグレーション未適用の場合は receipt_number / person_id を @Transient 相当として
  * アプリ側でのみ使用し、DBには id を採番番号として利用する。
@@ -28,7 +28,7 @@ public class ReceiptsIssued {
     private LocalDateTime printedAt;
     private LocalDateTime createdAt;
 
-    // ↓ これらは schema-update-5.sql 適用後に有効
+    // ↓ これらは schema-all.sql 適用後に有効
     // Spring Data JDBC は未知カラムがあるとエラーになるため
     // マイグレーション適用後にコメントを外してください
     // private Integer receiptNumber;
