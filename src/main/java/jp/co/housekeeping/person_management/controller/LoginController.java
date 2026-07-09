@@ -12,9 +12,7 @@ public class LoginController {
     
     private static final String CORRECT_PASSWORD = "7136";
 
-    // ⚠️ テスト段階のため一時的にパスワードチェックを無効化(常に成功扱い)。
-    //    本番運用に戻す際は、この行を false に戻すこと。
-    private static final boolean SKIP_PASSWORD_CHECK = true;
+    private static final boolean SKIP_PASSWORD_CHECK = false;
     
     @GetMapping("/login")
     public String loginPage() {
