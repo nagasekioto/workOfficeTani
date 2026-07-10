@@ -88,7 +88,7 @@
 
         <div class="error" th:if="${param.locked}">
             パスワードの入力に複数回失敗したため、しばらくログインできません。<br>
-            <span id="lockCountdown" th:text="${param.locked[0]}" th:attr="data-seconds=${param.locked[0]}"></span>秒後に再度お試しください。
+            <span id="lockCountdown" th:text="${param.locked[0]}" th:data-seconds="${param.locked[0]}"></span>秒後に再度お試しください。
         </div>
         
         <form method="post" action="/login">
