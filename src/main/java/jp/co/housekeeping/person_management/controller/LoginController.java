@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 public class LoginController {
 
-    private static final String CORRECT_PASSWORD = "7136";
+    private static final String CORRECT_PASSWORD = "tani";
 
     private static final boolean SKIP_PASSWORD_CHECK = false;
 

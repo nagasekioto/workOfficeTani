@@ -157,7 +157,7 @@ Started PersonManagementApplication in X.XXX seconds
 http://localhost:8080/login
 ```
 
-パスワード欄に `7136` と入力してログインできれば成功です
+パスワード欄に `tani` と入力してログインできれば成功です
 （このパスワードは `src/main/java/.../controller/LoginController.java` 内の `CORRECT_PASSWORD` で
 設定されています。変更したい場合はこの値を書き換えてください）。
 
