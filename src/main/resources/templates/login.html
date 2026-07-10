@@ -77,6 +77,11 @@
         <div class="error" th:if="${param.error}">
             パスワードが違います
         </div>
+
+        <div class="error" th:if="${param.locked}">
+            パスワードの入力に複数回失敗したため、しばらくログインできません。<br>
+            <span th:text="${param.locked[0]} + '秒後'"></span>に再度お試しください。
+        </div>
         
         <form method="post" action="/login">
             <div class="form-group">
