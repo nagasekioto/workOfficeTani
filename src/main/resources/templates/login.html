@@ -60,6 +60,14 @@
         button:hover {
             background: #5568d3;
         }
+        button:disabled {
+            background: #b0b0b0;
+            cursor: not-allowed;
+        }
+        input[type="password"]:disabled {
+            background: #f0f0f0;
+            cursor: not-allowed;
+        }
         .error {
             background: #ffebee;
             color: #c62828;
@@ -87,10 +95,11 @@
             <div class="form-group">
                 <label for="password">パスワード</label>
                 <input type="password" id="password" name="password" 
-                       placeholder="パスワードを入力" required autofocus>
+                       placeholder="パスワードを入力" required autofocus
+                       th:disabled="${param.locked}">
             </div>
             
-            <button type="submit">ログイン</button>
+            <button type="submit" th:disabled="${param.locked}">ログイン</button>
         </form>
     </div>
 <script>
