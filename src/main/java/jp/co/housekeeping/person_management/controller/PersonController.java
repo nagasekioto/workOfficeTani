@@ -324,7 +324,14 @@ public class PersonController {
     @PostMapping("/retired-list/delete/{id}")
     public String deleteRetired(@PathVariable Long id, HttpSession session) {
         if (!checkAuth(session)) return "redirect:/login";
-        personRepository.deleteById(id);
+        try {
+            personRepository.deleteById(id);
+        } catch (org.springframework.dao.EmptyResultDataAccessException e) {
+            // 対象が既に存在しない場合は何もせず一覧に戻る
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            // 売上明細・紹介状・会費記録など他テーブルから参照されているため削除できない
+            return "redirect:/person/retired-list?deleteError";
+        }
         return "redirect:/person/retired-list";
     }
 

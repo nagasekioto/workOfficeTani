@@ -21,6 +21,7 @@
         .delete-link:hover { background: #f44336; color: white; }
         .empty { text-align: center; padding: 30px; color: #999; }
         .count-label { font-size: 13px; color: #777; margin-bottom: 10px; }
+        .delete-error { background: #FFEBEE; border-left: 4px solid #f44336; padding: 10px 14px; border-radius: 0 4px 4px 0; font-size: 13px; color: #b71c1c; margin-bottom: 16px; line-height: 1.6; }
     </style>
 </head>
 <body>
@@ -33,6 +34,9 @@
         ここに表示されるのは、求職者情報（1-1-6）で「退職」処理を行った求職者です。
         過去の売上・手数料の記録は削除されておらず、月別売上一覧・紹介手数料管理簿・手数料収入決算表などの集計には引き続き含まれます。<br>
         「復職」で在職中に戻せます。「完全に削除」は<b>元に戻せません</b>（過去の売上明細等はデータとして残りますが、この求職者の氏名情報自体は失われます）。
+    </div>
+    <div class="delete-error" th:if="${param.deleteError}">
+        この求職者は売上明細・紹介状・会費記録など他の記録から参照されているため、完全に削除できませんでした。関連記録が残っている求職者は削除できない仕様です。
     </div>
     <div class="count-label" th:text="${#lists.size(persons)} + '件'"></div>
     <table>
