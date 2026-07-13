@@ -3,8 +3,7 @@
 -- 家政婦紹介事務所 人物管理システム 初期スキーマ（ゼロからの構築用）
 --
 -- 【重要】このファイルは、これまでリポジトリに存在していなかった
--- 「土台となるテーブル」(persons, customers, sales, sales_details,
--- schedules 等) を作成するためのものです。
+-- 「土台となるテーブル」(persons, customers, sales, sales_details)
 -- schema-all.sql は既存テーブルへの追加・変更（ALTER/CREATE IF NOT EXISTS）
 -- のみを前提としており、この bootstrap ファイルなしでは
 -- 新しいパソコンでゼロからデータベースを作ることができませんでした。
@@ -194,25 +193,6 @@ ALTER TABLE ONLY public.sales_details
     DROP CONSTRAINT IF EXISTS sales_details_pkey,
     ADD CONSTRAINT sales_details_pkey PRIMARY KEY (id);
 
--- ─── schedules（スケジュール）────────────────────────────
-CREATE TABLE IF NOT EXISTS public.schedules (
-    id integer NOT NULL,
-    person_id integer,
-    customer_id integer,
-    day_of_week character varying(10),
-    time_slot time without time zone,
-    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE SEQUENCE IF NOT EXISTS public.schedules_id_seq
-    AS integer START WITH 1 INCREMENT BY 1 NO MINVALUE NO MAXVALUE CACHE 1;
-ALTER SEQUENCE public.schedules_id_seq OWNED BY public.schedules.id;
-ALTER TABLE ONLY public.schedules ALTER COLUMN id SET DEFAULT nextval('public.schedules_id_seq'::regclass);
-
-ALTER TABLE ONLY public.schedules
-    DROP CONSTRAINT IF EXISTS schedules_pkey,
-    ADD CONSTRAINT schedules_pkey PRIMARY KEY (id);
-
 -- ─── 外部キー制約（すべての土台テーブルが揃った後で追加）──────
 ALTER TABLE ONLY public.sales
     DROP CONSTRAINT IF EXISTS sales_person_id_fkey,
@@ -225,14 +205,6 @@ ALTER TABLE ONLY public.sales_details
 ALTER TABLE ONLY public.sales_details
     DROP CONSTRAINT IF EXISTS sales_details_customer_id_fkey,
     ADD CONSTRAINT sales_details_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id);
-
-ALTER TABLE ONLY public.schedules
-    DROP CONSTRAINT IF EXISTS schedules_person_id_fkey,
-    ADD CONSTRAINT schedules_person_id_fkey FOREIGN KEY (person_id) REFERENCES public.persons(id);
-
-ALTER TABLE ONLY public.schedules
-    DROP CONSTRAINT IF EXISTS schedules_customer_id_fkey,
-    ADD CONSTRAINT schedules_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES public.customers(id);
 
 -- ============================================================
 -- 以降、schema-all.sql / DatabaseMigrationRunner.java が
