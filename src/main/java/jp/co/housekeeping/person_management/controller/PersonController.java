@@ -51,6 +51,9 @@ import jp.co.housekeeping.person_management.util.ValidationUtils;
 @RequestMapping("/person")
 public class PersonController {
 
+    private static final org.slf4j.Logger log =
+            org.slf4j.LoggerFactory.getLogger(PersonController.class);
+
     // 求職者No(no)の採番を排他制御するためのロック
     private static final Object PERSON_NO_LOCK = new Object();
 
@@ -332,6 +335,7 @@ public class PersonController {
             // Spring Data JDBCは外部キー制約違反をDbActionExecutionExceptionとして
             // 投げる（DataIntegrityViolationExceptionではない）ため、cause chainの
             // SQLStateで判定する。それ以外の予期しないエラーはそのまま500にする。
+            log.warn("求職者(id={})の完全削除に失敗: {}", id, e.toString(), e);
             if (jp.co.housekeeping.person_management.util.DbErrorUtils.isForeignKeyViolation(e)) {
                 // 売上・売上明細・紹介状・会費記録など他テーブルから参照されているため削除できない
                 return "redirect:/person/retired-list?deleteError";
