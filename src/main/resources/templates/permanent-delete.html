@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>完全削除（1-7-6） - 家政婦紹介事務所</title>
+    <style>
+        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        .header { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; color: #333; }
+        h2 { font-size: 17px; color: #444; margin: 0 0 12px 0; }
+        .back-btn { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; text-decoration: none; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        .section { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .danger-note { background: #FFEBEE; border-left: 4px solid #c62828; padding: 12px 16px; border-radius: 0 4px 4px 0; font-size: 13px; color: #b71c1c; margin-bottom: 20px; line-height: 1.7; }
+        .info-note { background: #E3F2FD; border-left: 4px solid #2196F3; padding: 10px 14px; border-radius: 0 4px 4px 0; font-size: 13px; color: #444; margin-bottom: 16px; line-height: 1.6; }
+        .success-msg { background: #E8F5E9; border-left: 4px solid #43A047; padding: 10px 14px; border-radius: 0 4px 4px 0; font-size: 13px; color: #2e7d32; margin-bottom: 20px; }
+        .warn-msg { background: #FFF8E1; border-left: 4px solid #FFC107; padding: 10px 14px; border-radius: 0 4px 4px 0; font-size: 13px; color: #6d4c00; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #757575; color: white; padding: 10px; text-align: left; white-space: nowrap; }
+        td { padding: 9px 10px; border-bottom: 1px solid #e0e0e0; }
+        tr:hover { background: #fafafa; }
+        .empty { text-align: center; padding: 20px; color: #999; }
+        .delete-btn { color: white; background: #c62828; text-decoration: none; font-weight: bold; padding: 5px 12px; border: none; border-radius: 3px; font-size: 12px; cursor: pointer; }
+        .delete-btn:hover { background: #8e0000; }
+        .count-badge { display: inline-block; background: #eee; color: #555; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>&#9888;&#65039; 完全削除（1-7-6）</h1>
+    <a href="/other-menu" class="back-btn">&#8592; その他（1-7）に戻る</a>
+</div>
+<div class="container">
+    <div class="danger-note">
+        <b>この画面の操作は、過去の売上・紹介状などの記録ごと完全に削除します。元に戻すことは一切できません。</b><br>
+        通常の「完全に削除」ボタンは、売上等の記録が残っている人物を保護のためブロックしますが、
+        ここではその保護を外して、記録ごと消し去ります。本当に不要なデータであることを確認してから実行してください。
+        対象は退職・取引終了処理済みの人物のみです。
+    </div>
+
+    <div class="success-msg" th:if="${param.deletedPerson}">求職者を、関連する売上記録ごと完全に削除しました。</div>
+    <div class="success-msg" th:if="${param.deletedCustomer}">求人者を、関連する売上明細ごと完全に削除しました。</div>
+    <div class="warn-msg" th:if="${param.notRetired}">対象が見つからないか、退職／取引終了処理が済んでいないため実行できませんでした。</div>
+
+    <div class="section">
+        <h2>&#128100; 求職者（退職済みのみ表示）</h2>
+        <div class="info-note">売上件数・紹介状件数が表示されている場合、それらのデータもすべて一緒に削除されます。</div>
+        <table>
+            <thead>
+                <tr><th>No</th><th>氏名</th><th>退職日</th><th>売上明細件数</th><th>紹介状件数</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+                <tr th:each="r : ${personRows}">
+                    <td th:text="${r.no}">-</td>
+                    <td th:text="${r.name}"></td>
+                    <td th:text="${r.retiredAt}"></td>
+                    <td><span class="count-badge" th:text="${r.salesCount} + '件'"></span></td>
+                    <td><span class="count-badge" th:text="${r.introCount} + '件'"></span></td>
+                    <td>
+                        <a href="#" class="delete-btn"
+                           th:attr="onclick='confirmPersonDelete(' + ${r.id} + ', this)'">完全削除（記録ごと）</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="empty" th:if="${#lists.isEmpty(personRows)}">対象の求職者はいません</div>
+    </div>
+
+    <div class="section">
+        <h2>&#127970; 求人者（取引終了済みのみ表示）</h2>
+        <div class="info-note">売上明細件数・紹介状件数が表示されている場合、それらのデータもすべて一緒に削除されます（求職者側のsales本体は残ります）。</div>
+        <table>
+            <thead>
+                <tr><th>No</th><th>名称</th><th>取引終了日</th><th>売上明細件数</th><th>紹介状件数</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+                <tr th:each="r : ${customerRows}">
+                    <td th:text="${r.no}">-</td>
+                    <td th:text="${r.name}"></td>
+                    <td th:text="${r.retiredAt}"></td>
+                    <td><span class="count-badge" th:text="${r.salesDetailCount} + '件'"></span></td>
+                    <td><span class="count-badge" th:text="${r.introCount} + '件'"></span></td>
+                    <td>
+                        <a href="#" class="delete-btn"
+                           th:attr="onclick='confirmCustomerDelete(' + ${r.id} + ', this)'">完全削除（記録ごと）</a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="empty" th:if="${#lists.isEmpty(customerRows)}">対象の求人者はいません</div>
+    </div>
+</div>
+
+<script>
+function confirmPersonDelete(id, el) {
+    var name = el.closest('tr').cells[1].textContent.trim();
+    var typed = prompt(
+        '「' + name + '」を、過去の売上・紹介状などの記録ごと完全に削除します。\n' +
+        'この操作は元に戻せません。\n\n' +
+        '本当に削除する場合は、氏名（' + name + '）を正確に入力してください。'
+    );
+    if (typed !== name) {
+        if (typed !== null) alert('入力が一致しなかったため、削除を中止しました。');
+        return;
+    }
+    var form = document.createElement('form');
+    form.method = 'post';
+    form.action = '/permanent-delete/person/' + id;
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function confirmCustomerDelete(id, el) {
+    var name = el.closest('tr').cells[1].textContent.trim();
+    var typed = prompt(
+        '「' + name + '」を、過去の売上明細・紹介状などの記録ごと完全に削除します。\n' +
+        'この操作は元に戻せません。\n\n' +
+        '本当に削除する場合は、名称（' + name + '）を正確に入力してください。'
+    );
+    if (typed !== name) {
+        if (typed !== null) alert('入力が一致しなかったため、削除を中止しました。');
+        return;
+    }
+    var form = document.createElement('form');
+    form.method = 'post';
+    form.action = '/permanent-delete/customer/' + id;
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
+</body>
+</html>

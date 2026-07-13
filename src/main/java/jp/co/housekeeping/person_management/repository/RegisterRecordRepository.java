@@ -17,4 +17,7 @@ public interface RegisterRecordRepository extends CrudRepository<RegisterRecord,
 
     @Query("SELECT * FROM register_records WHERE work_month LIKE :yearPrefix ORDER BY work_month, created_at")
     List<RegisterRecord> findByYear(@Param("yearPrefix") String yearPrefix);
+
+    @Query("SELECT * FROM register_records WHERE person_id = :personId")
+    List<RegisterRecord> findByPersonId(@Param("personId") Long personId);
 }

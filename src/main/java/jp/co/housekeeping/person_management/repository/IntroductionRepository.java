@@ -14,4 +14,10 @@ public interface IntroductionRepository extends CrudRepository<Introduction, Lon
 
     @Query("SELECT * FROM introductions ORDER BY created_at DESC")
     Iterable<Introduction> findAllOrderByCreatedAtDesc();
+
+    @Query("SELECT * FROM introductions WHERE person_id = :personId")
+    java.util.List<Introduction> findByPersonId(@org.springframework.data.repository.query.Param("personId") Long personId);
+
+    @Query("SELECT * FROM introductions WHERE customer_id = :customerId")
+    java.util.List<Introduction> findByCustomerId(@org.springframework.data.repository.query.Param("customerId") Long customerId);
 }

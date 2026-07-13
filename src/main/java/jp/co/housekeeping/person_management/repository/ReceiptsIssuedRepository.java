@@ -18,4 +18,10 @@ public interface ReceiptsIssuedRepository extends CrudRepository<ReceiptsIssued,
 
     @Query("SELECT * FROM receipts_issued WHERE TO_CHAR(created_at, 'YYYY-MM') = :month ORDER BY id")
     List<ReceiptsIssued> findByMonth(@Param("month") String month);
+
+    @Query("SELECT * FROM receipts_issued WHERE person_id = :personId")
+    List<ReceiptsIssued> findByPersonId(@Param("personId") Long personId);
+
+    @Query("SELECT * FROM receipts_issued WHERE customer_id = :customerId")
+    List<ReceiptsIssued> findByCustomerId(@Param("customerId") Long customerId);
 }
