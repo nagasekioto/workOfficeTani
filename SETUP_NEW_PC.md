@@ -102,7 +102,15 @@ $env:PGPASSWORD = "（1-4で設定したPostgreSQLのパスワード）"
 
 ### 3-2. テーブルを作成する
 
-このシステムのフォルダに入っている統合スキーマファイル`schema-all.sql`を流し込みます。
+まず、土台となるテーブル（persons・customers・sales・sales_details・schedules）を作成する
+`schema-bootstrap.sql` を流し込みます。**これを飛ばすと、後続の手順でテーブルが正しく作成されません。**
+
+```powershell
+& "C:\Program Files\PostgreSQL\17\bin\psql.exe" -U postgres -h localhost -d kaseihu -f "C:\workofficetani\src\main\resources\schema-bootstrap.sql"
+```
+
+続けて、このシステムのフォルダに入っている統合スキーマファイル`schema-all.sql`を流し込みます
+（追加のカラムやその他のテーブルが反映されます）。
 
 ```powershell
 & "C:\Program Files\PostgreSQL\17\bin\psql.exe" -U postgres -h localhost -d kaseihu -f "C:\workofficetani\src\main\resources\schema-all.sql"
