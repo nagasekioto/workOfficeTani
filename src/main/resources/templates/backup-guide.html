@@ -144,6 +144,20 @@ Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value 'Get-ChildItem -Pat
                 エラーになります。その場合は手順1からやり直してください。
             </div>
 
+            <div class="subsection-title"><span class="step-num">7.5</span>PCの電源が入っていなかった場合に備える(推奨)</div>
+            <div class="warn">
+                ⚠️ <code>schtasks</code>で作成したタスクは既定で、<b>15日23:30にPCの電源が入っていないと
+                その回はスキップされ、次に実行されるのは翌月15日</b>になります（自動ではキャッチアップ
+                されません）。以下を実行しておくと、<b>機会を逃しても次にPCを起動した時点で自動的に
+                実行される</b>ようになります。
+            </div>
+            <pre>$task = Get-ScheduledTask -TaskName "kaseihu-DB-Backup"
+$task.Settings.StartWhenAvailable = $true
+Set-ScheduledTask -TaskName "kaseihu-DB-Backup" -Settings $task.Settings</pre>
+            設定できたか確認します。
+            <pre>(Get-ScheduledTask -TaskName "kaseihu-DB-Backup").Settings.StartWhenAvailable</pre>
+            <code>True</code>と表示されればOKです。
+
             <div class="subsection-title"><span class="step-num">8</span>タスクが正しく動くか確認する</div>
             時刻を待たずに、今すぐ手動でタスクを起動して確認できます。
             <pre>Start-ScheduledTask -TaskName "kaseihu-DB-Backup"
@@ -213,6 +227,7 @@ Get-ChildItem C:\workOfficeTani\backup</pre>
                 <tr><td>バックアップスクリプト</td><td>C:\workOfficeTani\backup\backup.ps1</td></tr>
                 <tr><td>実行タイミング</td><td>毎月15日 23:30（タスクスケジューラ「kaseihu-DB-Backup」）</td></tr>
                 <tr><td>実行アカウント</td><td>SYSTEM（ログオンしていなくても実行される。パスワード不要）</td></tr>
+                <tr><td>機会を逃した場合</td><td>StartWhenAvailable = True（PCの電源が入っていなかった場合、次に起動した時点で自動的にキャッチアップ実行）</td></tr>
                 <tr><td>保存先フォルダ</td><td>C:\workOfficeTani\backup（存在しない場合はスクリプト実行時に自動作成）</td></tr>
                 <tr><td>ファイル名の形式</td><td>kaseihu_（年月日_時分秒）.backup</td></tr>
                 <tr><td>保持期間</td><td>直近12個（約1年分）。それより古いものは自動削除</td></tr>
