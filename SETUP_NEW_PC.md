@@ -249,6 +249,43 @@ netstat -ano | findstr :8080
 Stop-Process -Id (PID) -Force
 ```
 
+### 9-5. プログラムが更新されたときの反映方法
+
+`git pull` で最新版を取り込んでも、9-1で作った jar ファイルは
+自動更新されません。以下のいずれかの方法で反映してください。
+
+**おすすめ：更新スクリプトを使う（1クリック）**
+
+`C:\workOfficeTani\scripts\update-system.bat` をダブルクリックすると、
+以下を自動で行います。
+
+1. 動いているシステムを安全に停止
+2. `git pull`（最新版の取得）
+3. jar ファイルの作り直し（ビルド）
+4. システムの再起動
+
+黒い画面に進行状況が表示され、「更新が完了しました」と出れば成功です。
+エラーが出た場合は画面を閉じずに、表示された内容を確認してください。
+
+**手動で行う場合**
+
+```powershell
+# 1. 実行中のシステムを停止
+Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*person-management*.jar*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+
+# 2. 最新版を取得してビルドし直す
+cd C:\workOfficeTani
+git pull
+.\mvnw clean package -DskipTests
+
+# 3. 再起動（ダブルクリックでも可）
+.\scripts\start-system.vbs
+```
+
+※ jar 使用中に `mvnw clean` を実行すると
+「別のプロセスが使用中です」というエラーになります。
+必ず手順1でシステムを停止してから行ってください。
+
 ログイン後、「その他（1-7）」から以下も参照できます。
 
 - **1-7-1 システム説明書**：各画面の使い方
