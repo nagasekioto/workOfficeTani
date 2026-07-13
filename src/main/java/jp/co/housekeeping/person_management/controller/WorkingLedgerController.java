@@ -46,6 +46,11 @@ public class WorkingLedgerController {
         List<LedgerListRow> rows = new ArrayList<>();
 
         for (Person p : allPersons) {
+            // 退職済みの求職者は稼働管理簿の一覧には表示しない
+            // （退職者リスト(1-1-8)から復職すれば再度表示される。過去の売上明細等の
+            //   データ自体は削除されず、月別売上一覧等の集計には引き続き含まれる）
+            if (p.getRetiredAt() != null) continue;
+
             // 検索フィルター
             if (search != null && !search.isBlank()) {
                 boolean match = containsIgnoreCase(p.getLastNameKanji(), search)
