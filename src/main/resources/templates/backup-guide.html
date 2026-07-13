@@ -41,6 +41,8 @@
                 <b>✅ 動作確認済みの実績（2026年7月9日・開発機にて）</b><br>
                 下記①の手順で毎日23:30の自動バックアップを設定し、復元テストも実施済み
                 （求職者12件・氏名・電話番号を含め正しく復元できることを確認）。
+                その後、<b>毎月15日 23:30に実行する方式</b>に変更（保存先も
+                <code>C:\workOfficeTani\backup</code> に変更）。
             </div>
         </div>
     </div>
@@ -62,11 +64,13 @@
             以降の手順②〜⑨は、すべてこの管理者権限のPowerShell画面でそのまま行ってください。
 
             <div class="subsection-title"><span class="step-num">2</span>バックアップ保存フォルダを作る</div>
-            <pre>New-Item -ItemType Directory -Path "C:\DBBackup" -Force</pre>
+            <pre>New-Item -ItemType Directory -Path "C:\workOfficeTani\backup" -Force</pre>
             <div class="note">
-                保存先はローカルのC:\DBBackupで構いませんが、OneDriveやGoogleドライブの同期フォルダの中に
-                作ると、自動的にクラウドにも保管されるようになるためおすすめです（例：
-                <code>C:\Users\ユーザー名\OneDrive\DBBackup</code>）。以降の手順ではC:\DBBackupとして説明します。
+                保存先は <code>C:\workOfficeTani\backup</code>（workOfficeTani配下の backup フォルダ）です。
+                フォルダが存在しない場合は上記コマンドで新規作成されます。既に存在する場合は
+                <code>-Force</code> により何も壊さずそのまま使われます（バックアップスクリプト自体も
+                実行のたびに同様のフォルダ作成チェックを行うため、途中でフォルダを消してしまっても
+                次回実行時に自動的に作り直されます）。
             </div>
 
             <div class="subsection-title"><span class="step-num">3</span>PostgreSQLの実行ファイルの場所を確認する</div>
@@ -85,34 +89,42 @@
                 必ず<b>PowerShell上でこのコマンドをそのまま実行</b>して、ファイルを直接作成してください
                 （日本語コメントを含めないのも、文字化けを避けるポイントです）。
             </div>
-            <pre>Remove-Item C:\DBBackup\backup.ps1 -ErrorAction SilentlyContinue
-Add-Content -Path C:\DBBackup\backup.ps1 -Value '$backupDir = "C:\DBBackup"'
-Add-Content -Path C:\DBBackup\backup.ps1 -Value '$pgBin = "（手順3で確認したフォルダのパス）"'
-Add-Content -Path C:\DBBackup\backup.ps1 -Value '$dbName = "kaseihu"'
-Add-Content -Path C:\DBBackup\backup.ps1 -Value '$dbUser = "postgres"'
-Add-Content -Path C:\DBBackup\backup.ps1 -Value '$env:PGPASSWORD = "7136"'
-Add-Content -Path C:\DBBackup\backup.ps1 -Value '$dateStr = Get-Date -Format "yyyyMMdd_HHmmss"'
-Add-Content -Path C:\DBBackup\backup.ps1 -Value '$backupFile = "$backupDir\kaseihu_$dateStr.backup"'
-Add-Content -Path C:\DBBackup\backup.ps1 -Value '& "$pgBin\pg_dump.exe" -U $dbUser -h localhost -d $dbName -F c -f $backupFile'
-Add-Content -Path C:\DBBackup\backup.ps1 -Value 'if ($LASTEXITCODE -eq 0) { Write-Output "Backup OK: $backupFile" } else { Write-Output "Backup FAILED, exit code: $LASTEXITCODE" }'
-Add-Content -Path C:\DBBackup\backup.ps1 -Value 'Get-ChildItem -Path $backupDir -Filter "kaseihu_*.backup" | Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-30) } | Remove-Item -Force'</pre>
+            <pre>Remove-Item C:\workOfficeTani\backup\backup.ps1 -ErrorAction SilentlyContinue
+Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value '$backupDir = "C:\workOfficeTani\backup"'
+Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value 'New-Item -ItemType Directory -Path $backupDir -Force | Out-Null'
+Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value '$pgBin = "（手順3で確認したフォルダのパス）"'
+Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value '$dbName = "kaseihu"'
+Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value '$dbUser = "postgres"'
+Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value '$env:PGPASSWORD = "7136"'
+Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value '$dateStr = Get-Date -Format "yyyyMMdd_HHmmss"'
+Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value '$backupFile = "$backupDir\kaseihu_$dateStr.backup"'
+Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value '& "$pgBin\pg_dump.exe" -U $dbUser -h localhost -d $dbName -F c -f $backupFile'
+Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value 'if ($LASTEXITCODE -eq 0) { Write-Output "Backup OK: $backupFile" } else { Write-Output "Backup FAILED, exit code: $LASTEXITCODE" }'
+Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value 'Get-ChildItem -Path $backupDir -Filter "kaseihu_*.backup" | Sort-Object LastWriteTime -Descending | Select-Object -Skip 12 | Remove-Item -Force'</pre>
             <code>$pgBin</code>の行だけ、実際に確認したパスに書き換えてから実行してください。
             実行後、中身が文字化けせず正しく書き込まれたか確認します。
-            <pre>Get-Content C:\DBBackup\backup.ps1</pre>
+            <pre>Get-Content C:\workOfficeTani\backup\backup.ps1</pre>
+            <div class="note">
+                最後の1行は保持ロジックです。毎月15日に1回だけ実行する運用のため、日数ではなく
+                <b>「直近12個（約1年分）を残し、それより古いものだけ削除」</b>という件数ベースの方式に
+                しています（日数ベースの「30日より古いものを削除」のままだと、次回実行時に前回分が
+                必ず削除対象になってしまい、バックアップが1世代しか残らなくなるためです）。</div>
 
             <div class="subsection-title"><span class="step-num">5</span>実行ポリシーを設定する</div>
             初期状態のWindowsではスクリプトの実行が禁止されているため、まず許可します。
             <pre>Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force</pre>
 
             <div class="subsection-title"><span class="step-num">6</span>手動で1回試す</div>
-            <pre>& "C:\DBBackup\backup.ps1"</pre>
-            「Backup OK: （ファイルパス）」と表示され、C:\DBBackupフォルダにファイルができていれば成功です。
+            <pre>& "C:\workOfficeTani\backup\backup.ps1"</pre>
+            「Backup OK: （ファイルパス）」と表示され、C:\workOfficeTani\backup フォルダにファイルができていれば成功です。
 
-            <div class="subsection-title"><span class="step-num">7</span>毎日自動実行するタスクを登録する</div>
-            <pre>$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument '-ExecutionPolicy Bypass -File "C:\DBBackup\backup.ps1"'
-$trigger = New-ScheduledTaskTrigger -Daily -At "23:30"
-Register-ScheduledTask -TaskName "kaseihu-DB-Backup" -Action $action -Trigger $trigger -Description "Daily backup of kaseihu database" -RunLevel Highest</pre>
-            実行時刻（23:30の部分）は、業務に支障のない時間帯に変更しても構いません。
+            <div class="subsection-title"><span class="step-num">7</span>毎月15日に自動実行するタスクを登録する</div>
+            <div class="note">
+                PowerShellの<code>New-ScheduledTaskTrigger</code>には「毎月◯日」を直接指定する機能が
+                ないため、ここだけは<code>schtasks</code>コマンドを使います。
+            </div>
+            <pre>schtasks /create /tn "kaseihu-DB-Backup" /tr "powershell.exe -ExecutionPolicy Bypass -File \"C:\workOfficeTani\backup\backup.ps1\"" /sc MONTHLY /d 15 /st 23:30 /rl HIGHEST /f</pre>
+            実行時刻（23:30の部分）・実行日（15の部分）は、業務に支障のない値に変更しても構いません。
             <div class="note">
                 手順1で管理者権限のPowerShellを開いていない場合、ここで「アクセスが拒否されました」という
                 エラーになります。その場合は手順1からやり直してください。
@@ -122,7 +134,7 @@ Register-ScheduledTask -TaskName "kaseihu-DB-Backup" -Action $action -Trigger $t
             時刻を待たずに、今すぐ手動でタスクを起動して確認できます。
             <pre>Start-ScheduledTask -TaskName "kaseihu-DB-Backup"
 Start-Sleep -Seconds 5
-Get-ChildItem C:\DBBackup</pre>
+Get-ChildItem C:\workOfficeTani\backup</pre>
             新しいタイムスタンプのバックアップファイルが増えていれば、タスク経由でも正常に動作しています。
 
             <div class="subsection-title"><span class="step-num">9</span>復元テストを行う（必須）</div>
@@ -135,7 +147,7 @@ Get-ChildItem C:\DBBackup</pre>
         <div class="section-header">② 今すぐ手動でバックアップを取りたいとき</div>
         <div class="section-body">
             PowerShellを開いて、以下を実行してください。
-            <pre>& "C:\DBBackup\backup.ps1"</pre>
+            <pre>& "C:\workOfficeTani\backup\backup.ps1"</pre>
             「Backup OK: （ファイルパス）」と表示されれば成功です。
         </div>
     </div>
@@ -148,11 +160,11 @@ Get-ChildItem C:\DBBackup</pre>
                 心配な場合は、先に④の「試験復元」で内容を確認してから行ってください。
             </div>
             <ol class="step-list">
-                <li>C:\DBBackup フォルダの中から、復元したいバックアップファイル（例：kaseihu_20260709_215908.backup）を確認する</li>
+                <li>C:\workOfficeTani\backup フォルダの中から、復元したいバックアップファイル（例：kaseihu_20260709_215908.backup）を確認する</li>
                 <li>PowerShellで以下を実行する（ファイル名・pgBinのパスは実際のものに置き換える）</li>
             </ol>
             <pre>$env:PGPASSWORD = "7136"
-& "C:\workofficetani\bin\pg_restore.exe" -U postgres -h localhost -d kaseihu --clean "C:\DBBackup\kaseihu_20260709_215908.backup"</pre>
+& "C:\workofficetani\bin\pg_restore.exe" -U postgres -h localhost -d kaseihu --clean "C:\workOfficeTani\backup\kaseihu_20260709_215908.backup"</pre>
             <div class="note">
                 <code>--clean</code> を付けると、既存のテーブルを消してからバックアップ内容で復元し直してくれます。
             </div>
@@ -167,7 +179,7 @@ Get-ChildItem C:\DBBackup</pre>
             <pre>$env:PGPASSWORD = "7136"
 & "C:\workofficetani\bin\createdb.exe" -U postgres -h localhost kaseihu_test</pre>
             <div class="subsection-title">2. バックアップファイルを試験用DBに復元する</div>
-            <pre>& "C:\workofficetani\bin\pg_restore.exe" -U postgres -h localhost -d kaseihu_test "C:\DBBackup\（確認したいファイル名）"</pre>
+            <pre>& "C:\workofficetani\bin\pg_restore.exe" -U postgres -h localhost -d kaseihu_test "C:\workOfficeTani\backup\（確認したいファイル名）"</pre>
             <div class="subsection-title">3. 中身を確認する（件数比較・データ内容の目視確認）</div>
             <pre>& "C:\workofficetani\bin\psql.exe" -U postgres -h localhost -d kaseihu -c "SELECT count(*) FROM persons;"
 & "C:\workofficetani\bin\psql.exe" -U postgres -h localhost -d kaseihu_test -c "SELECT count(*) FROM persons;"
@@ -184,11 +196,11 @@ Get-ChildItem C:\DBBackup</pre>
             <table>
                 <tr><th>項目</th><th>内容</th></tr>
                 <tr><td>バックアップ対象</td><td>データベース <code>kaseihu</code>（求職者・求人者・売上・紹介状など全データ）</td></tr>
-                <tr><td>バックアップスクリプト</td><td>C:\DBBackup\backup.ps1</td></tr>
-                <tr><td>実行タイミング</td><td>毎日 23:30（タスクスケジューラ「kaseihu-DB-Backup」）</td></tr>
-                <tr><td>保存先フォルダ</td><td>C:\DBBackup</td></tr>
+                <tr><td>バックアップスクリプト</td><td>C:\workOfficeTani\backup\backup.ps1</td></tr>
+                <tr><td>実行タイミング</td><td>毎月15日 23:30（タスクスケジューラ「kaseihu-DB-Backup」）</td></tr>
+                <tr><td>保存先フォルダ</td><td>C:\workOfficeTani\backup（存在しない場合はスクリプト実行時に自動作成）</td></tr>
                 <tr><td>ファイル名の形式</td><td>kaseihu_（年月日_時分秒）.backup</td></tr>
-                <tr><td>保持期間</td><td>30日（それより古いものは自動削除）</td></tr>
+                <tr><td>保持期間</td><td>直近12個（約1年分）。それより古いものは自動削除</td></tr>
                 <tr><td>PostgreSQLツールの場所（開発機の例）</td><td>C:\workofficetani\bin（本番機では①手順3で確認し直すこと）</td></tr>
             </table>
             <div class="note">
@@ -209,8 +221,10 @@ Get-ChildItem C:\DBBackup</pre>
                 <tr><td>タスクを削除</td><td><code>Unregister-ScheduledTask -TaskName "kaseihu-DB-Backup" -Confirm:$false</code></td></tr>
             </table>
             <div class="note">
-                実行時刻を変更したい場合は、一度タスクを削除してから、①手順7の登録コマンドの
-                <code>-At "23:30"</code> の部分を変えて登録し直してください（管理者権限のPowerShellが必要）。
+                実行日・実行時刻を変更したい場合は、①手順7の登録コマンドの
+                <code>/d 15</code>（実行日）や <code>/st "23:30"</code>（実行時刻）の部分を変えて、
+                同じコマンドをもう一度実行してください（<code>/f</code>により上書き登録されるため、
+                事前にタスクを削除する必要はありません。管理者権限のPowerShellが必要です）。
             </div>
         </div>
     </div>
