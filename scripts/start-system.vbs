@@ -40,6 +40,32 @@ WScript.Sleep 5000
 ' 起動ログは system-log.txt に記録する（トラブル時の確認用）。
 objShell.Run "cmd /c java -jar """ & jarName & """ > """ & logFile & """ 2>&1", 0, False
 
-' アプリの起動が完了するまで待ってから、ログイン画面をブラウザで自動的に開く
+' アプリの起動が完了するまで待ってから、ログイン画面を開く
 WScript.Sleep 15000
-objShell.Run "http://localhost:8080/login", 1, False
+
+' Google Chromeを優先して起動する（インストール場所の候補を順番に探す）。
+' 見つからない場合は既定のブラウザで開く。
+Dim fso, chromePaths, chromePath, i
+Set fso = CreateObject("Scripting.FileSystemObject")
+
+chromePaths = Array( _
+    objShell.ExpandEnvironmentStrings("%ProgramFiles%\Google\Chrome\Application\chrome.exe"), _
+    objShell.ExpandEnvironmentStrings("%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"), _
+    objShell.ExpandEnvironmentStrings("%LocalAppData%\Google\Chrome\Application\chrome.exe") _
+)
+
+chromePath = ""
+For i = 0 To UBound(chromePaths)
+    If fso.FileExists(chromePaths(i)) Then
+        chromePath = chromePaths(i)
+        Exit For
+    End If
+Next
+
+If chromePath <> "" Then
+    ' --new-window を付けて、前回のタブ復元を避け、ログイン画面だけを開く
+    objShell.Run """" & chromePath & """ --new-window ""http://localhost:8080/login""", 1, False
+Else
+    ' Chromeが見つからない場合は既定のブラウザで開く
+    objShell.Run "http://localhost:8080/login", 1, False
+End If
