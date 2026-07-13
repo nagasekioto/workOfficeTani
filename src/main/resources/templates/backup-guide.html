@@ -123,8 +123,16 @@ Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value 'Get-ChildItem -Pat
                 PowerShellの<code>New-ScheduledTaskTrigger</code>には「毎月◯日」を直接指定する機能が
                 ないため、ここだけは<code>schtasks</code>コマンドを使います。
             </div>
-            <pre>schtasks /create /tn "kaseihu-DB-Backup" /tr "powershell.exe -ExecutionPolicy Bypass -File \"C:\workOfficeTani\backup\backup.ps1\"" /sc MONTHLY /d 15 /st 23:30 /rl HIGHEST /f</pre>
+            <pre>schtasks /create /tn "kaseihu-DB-Backup" /tr 'powershell.exe -ExecutionPolicy Bypass -File "C:\workOfficeTani\backup\backup.ps1"' /sc MONTHLY /d 15 /st 23:30 /rl HIGHEST /f</pre>
             実行時刻（23:30の部分）・実行日（15の部分）は、業務に支障のない値に変更しても構いません。
+            <div class="warn">
+                ⚠️ <code>/tr</code> の値を二重引用符<code>"..."</code>で囲み、その中の引用符を
+                <code>\"</code>のように書くと、PowerShellでは<code>\</code>がエスケープとして扱われず
+                文字列がそこで終了してしまい、「必須のオプション 'sc' が指定されていません」という
+                エラーになります。上記のように<b>単一引用符<code>'...'</code>で外側を囲む</b>書き方にしてください。
+            </div>
+            登録内容は以下で確認できます。
+            <pre>schtasks /query /tn "kaseihu-DB-Backup" /v /fo LIST</pre>
             <div class="note">
                 手順1で管理者権限のPowerShellを開いていない場合、ここで「アクセスが拒否されました」という
                 エラーになります。その場合は手順1からやり直してください。
