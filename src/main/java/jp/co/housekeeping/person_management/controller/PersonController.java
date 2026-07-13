@@ -328,9 +328,15 @@ public class PersonController {
             personRepository.deleteById(id);
         } catch (org.springframework.dao.EmptyResultDataAccessException e) {
             // 対象が既に存在しない場合は何もせず一覧に戻る
-        } catch (org.springframework.dao.DataIntegrityViolationException e) {
-            // 売上明細・紹介状・会費記録など他テーブルから参照されているため削除できない
-            return "redirect:/person/retired-list?deleteError";
+        } catch (RuntimeException e) {
+            // Spring Data JDBCは外部キー制約違反をDbActionExecutionExceptionとして
+            // 投げる（DataIntegrityViolationExceptionではない）ため、cause chainの
+            // SQLStateで判定する。それ以外の予期しないエラーはそのまま500にする。
+            if (jp.co.housekeeping.person_management.util.DbErrorUtils.isForeignKeyViolation(e)) {
+                // 売上・売上明細・紹介状・会費記録など他テーブルから参照されているため削除できない
+                return "redirect:/person/retired-list?deleteError";
+            }
+            throw e;
         }
         return "redirect:/person/retired-list";
     }
