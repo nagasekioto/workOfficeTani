@@ -1,8 +1,10 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/kaseihu
-    username: postgres
-    password: 7136
+    # 環境変数(DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD)で上書き可能。
+    # 未設定の場合は従来通りの値がそのまま使われるため、既存の起動方法(mvnw / 既存jar)には影響しない。
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:kaseihu}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:7136}
     driver-class-name: org.postgresql.Driver
 
   sql:

@@ -32,3 +32,10 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### 自己完結型パッケージング(exe化) ###
+# PostgreSQLポータブル版のバイナリはサイズが大きいためGit管理対象外
+# (配置方法は packaging/pgsql-portable/README.md を参照)
+packaging/pgsql-portable/*
+!packaging/pgsql-portable/README.md
+!packaging/pgsql-portable/.gitkeep
