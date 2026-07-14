@@ -18,9 +18,12 @@ import jp.co.housekeeping.person_management.service.EmailAuthService;
 @Controller
 public class LoginController {
 
-    private static final String CORRECT_PASSWORD = "tani";
-
     private static final boolean SKIP_PASSWORD_CHECK = false;
+
+    // ログインパスワード。app.login.password(環境変数 LOGIN_PASSWORD)で上書き可能。
+    // 未設定時はデフォルトで"tani"となり、既存の動作と完全に同一。
+    @Value("${app.login.password:tani}")
+    private String correctPassword;
 
     // ログイン試行回数制限：IPアドレスごとに5回連続失敗したら5分間ロックする
     private static final int MAX_ATTEMPTS = 5;
@@ -70,7 +73,7 @@ public class LoginController {
             return "redirect:/login?locked=" + remainingSec;
         }
 
-        if (SKIP_PASSWORD_CHECK || CORRECT_PASSWORD.equals(password)) {
+        if (SKIP_PASSWORD_CHECK || correctPassword.equals(password)) {
             info.failCount = 0;
             info.lockedUntil = 0L;
             session.setAttribute("authenticated", true);

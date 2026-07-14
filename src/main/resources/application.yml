@@ -25,6 +25,11 @@ spring:
             enable: true
 
 app:
+  # ログインパスワード。環境変数 LOGIN_PASSWORD で上書き可能。
+  # 未設定時はデフォルトで"tani"(既存動作と同一)。
+  login:
+    password: ${LOGIN_PASSWORD:tani}
+
   auth:
     # ============================================================
     # メール認証への切り替えフラグ。
