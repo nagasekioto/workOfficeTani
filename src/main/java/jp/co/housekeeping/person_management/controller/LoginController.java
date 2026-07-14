@@ -5,6 +5,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -29,12 +30,15 @@ public class LoginController {
     @Value("${app.auth.email-enabled:false}")
     private boolean emailAuthEnabled;
 
-    private final EmailAuthService emailAuthService;
+    // ObjectProviderにすることで、EmailAuthServiceのBeanが存在しない環境
+    // (@WebMvcTestなどWeb層のみをロードするスライステスト等)でも
+    // LoginController自体の生成には失敗しないようにしている。
+    private final ObjectProvider<EmailAuthService> emailAuthServiceProvider;
 
     private static final String SESSION_PENDING_EMAIL = "pendingEmail";
 
-    public LoginController(EmailAuthService emailAuthService) {
-        this.emailAuthService = emailAuthService;
+    public LoginController(ObjectProvider<EmailAuthService> emailAuthServiceProvider) {
+        this.emailAuthServiceProvider = emailAuthServiceProvider;
     }
 
     private static class AttemptInfo {
@@ -93,6 +97,10 @@ public class LoginController {
         if (!emailAuthEnabled) {
             return "redirect:/login";
         }
+        EmailAuthService emailAuthService = emailAuthServiceProvider.getIfAvailable();
+        if (emailAuthService == null) {
+            return "redirect:/login";
+        }
         String ip = request.getRemoteAddr();
         AttemptInfo info = attempts.computeIfAbsent(ip, k -> new AttemptInfo());
         long now = System.currentTimeMillis();
@@ -116,6 +124,10 @@ public class LoginController {
     public String verifyEmailCode(@RequestParam String code, HttpSession session,
                                    HttpServletRequest request) {
         if (!emailAuthEnabled) {
+            return "redirect:/login";
+        }
+        EmailAuthService emailAuthService = emailAuthServiceProvider.getIfAvailable();
+        if (emailAuthService == null) {
             return "redirect:/login";
         }
         String ip = request.getRemoteAddr();
