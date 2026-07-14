@@ -90,8 +90,41 @@
             パスワードの入力に複数回失敗したため、しばらくログインできません。<br>
             <span id="lockCountdown" th:text="${param.locked[0]}"></span>秒後に再度お試しください。
         </div>
-        
-        <form method="post" action="/login">
+
+        <!-- ============================================================
+             メール認証コード方式(app.auth.email-enabled=true の場合のみ表示)
+             ============================================================ -->
+        <div th:if="${emailAuthEnabled}">
+            <div class="error" th:if="${param.sent}" style="background:#e8f5e9; color:#2e7d32;">
+                認証コードを送信しました。メールをご確認ください。
+            </div>
+
+            <form th:if="${!codeSent}" method="post" action="/login/email/request">
+                <div class="form-group">
+                    <label for="email">メールアドレス</label>
+                    <input type="email" id="email" name="email"
+                           placeholder="メールアドレスを入力" required autofocus
+                           th:disabled="${param.locked}">
+                </div>
+                <button type="submit" th:disabled="${param.locked}">認証コードを送信</button>
+            </form>
+
+            <form th:if="${codeSent}" method="post" action="/login/email/verify">
+                <div class="form-group">
+                    <label for="code">認証コード(6桁)</label>
+                    <input type="text" id="code" name="code" inputmode="numeric" maxlength="6"
+                           placeholder="メールに届いた6桁のコード" required autofocus
+                           th:disabled="${param.locked}">
+                </div>
+                <button type="submit" th:disabled="${param.locked}">ログイン</button>
+            </form>
+        </div>
+
+        <!-- ============================================================
+             従来の共通パスワード方式(app.auth.email-enabled=false の場合に表示。
+             デフォルトはこちら) 
+             ============================================================ -->
+        <form th:unless="${emailAuthEnabled}" method="post" action="/login">
             <div class="form-group">
                 <label for="password">パスワード</label>
                 <input type="password" id="password" name="password" 

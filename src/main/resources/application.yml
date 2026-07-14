@@ -10,3 +10,32 @@ spring:
   sql:
     init:
       mode: never   # 既存DBを使うので自動DDLはしない
+
+  # --- メール認証用の送信設定(app.auth.email-enabled: true にした時だけ実際に使われる) ---
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+app:
+  auth:
+    # ============================================================
+    # メール認証への切り替えフラグ。
+    # false(デフォルト): 今まで通り「共通パスワード方式」でログインする(挙動は変更なし)
+    # true            : 「メールアドレス宛の認証コード方式」に完全に切り替わる
+    #                   (切り替える前に、下のallowed-emailsとMAIL_USERNAME/MAIL_PASSWORDの
+    #                    環境変数設定が必要)
+    # ============================================================
+    email-enabled: ${AUTH_EMAIL_ENABLED:false}
+    # ログインを許可するメールアドレス一覧(ここに無いアドレスにはコードを送信しない)
+    allowed-emails:
+      - example@example.com
+    # 認証コードの有効期限(秒)
+    otp-expiry-seconds: 300
