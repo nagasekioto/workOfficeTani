@@ -1,5 +1,7 @@
 package jp.co.housekeeping.person_management.controller;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -7,7 +9,21 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.Font;
+import com.itextpdf.text.PageSize;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.Phrase;
+import com.itextpdf.text.Rectangle;
+import com.itextpdf.text.pdf.BaseFont;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -222,6 +238,115 @@ public class SalesController {
         // ── 完全に削除したい場合は稼働管理簿（1-1-5）の「削除」ボタンを使う。
 
         return "redirect:/person/sales?saved=" + personId;
+    }
+
+    // ─── 売上PDF印刷 ───────────────────────────────
+    // 【脆弱性修正(高②)】以前は認証チェックがなく、未ログインでも
+    // 他人の売上PDFを生成できてしまっていた。session認証チェックを追加。
+    @PostMapping("/person/sales/print")
+    public void printSalesPdf(@RequestParam Long personId,
+                               HttpSession session, HttpServletResponse response)
+            throws IOException, DocumentException {
+
+        if (session.getAttribute("authenticated") == null) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+
+        Person person = personRepository.findById(personId).orElse(null);
+        if (person == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+
+        List<Sales> salesList = salesRepository.findByPersonId(personId);
+        List<SalesDetail> details = new ArrayList<>();
+        if (!salesList.isEmpty()) {
+            details = salesDetailRepository.findBySalesId(salesList.get(0).getId());
+        }
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        buildSalesPdf(person, details, baos);
+
+        response.setContentType("application/pdf");
+        response.setHeader("Content-Disposition", "inline; filename=sales-" + personId + ".pdf");
+        response.setContentLength(baos.size());
+        response.getOutputStream().write(baos.toByteArray());
+        response.getOutputStream().flush();
+    }
+
+    private void buildSalesPdf(Person person, List<SalesDetail> details, ByteArrayOutputStream baos)
+            throws DocumentException, IOException {
+
+        Document doc = new Document(PageSize.A4, 14, 14, 14, 14);
+        PdfWriter.getInstance(doc, baos);
+        doc.open();
+
+        BaseFont bf = BaseFont.createFont("HeiseiMin-W3", "UniJIS-UCS2-H", BaseFont.NOT_EMBEDDED);
+        Font title = new Font(bf, 14, Font.BOLD);
+        Font infoLabel = new Font(bf, 10, Font.BOLD);
+        Font headerFont = new Font(bf, 8, Font.BOLD);
+        Font bodyFont = new Font(bf, 8);
+
+        // ── タイトル ──
+        PdfPTable titleTbl = new PdfPTable(1);
+        titleTbl.setWidthPercentage(100);
+        titleTbl.setSpacingAfter(8);
+        PdfPCell titleCell = new PdfPCell(new Phrase("売　上　管　理　票", title));
+        titleCell.setBorder(Rectangle.NO_BORDER);
+        titleCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        titleCell.setPaddingBottom(6);
+        titleTbl.addCell(titleCell);
+        doc.add(titleTbl);
+
+        // ── 対象者情報 ──
+        String fullName = safe(person.getLastNameKanji()) + " " + safe(person.getFirstNameKanji());
+        Paragraph nameParagraph = new Paragraph(fullName.trim(), infoLabel);
+        nameParagraph.setSpacingAfter(10);
+        doc.add(nameParagraph);
+
+        // ── 売上明細テーブル ──
+        String[] headers = {"就労開始", "就労終了", "就労時間", "時給", "手当", "受付手数料", "求人手数料", "売上金額", "備考"};
+        PdfPTable table = new PdfPTable(headers.length);
+        table.setWidthPercentage(100);
+        for (String h : headers) {
+            PdfPCell cell = new PdfPCell(new Phrase(h, headerFont));
+            cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            cell.setBackgroundColor(new com.itextpdf.text.BaseColor(230, 230, 230));
+            table.addCell(cell);
+        }
+
+        DateTimeFormatter dateFmt = DateTimeFormatter.ofPattern("yyyy/MM/dd");
+        for (SalesDetail d : details) {
+            table.addCell(cellOf(d.getWorkStartDate() != null ? d.getWorkStartDate().format(dateFmt) : "", bodyFont));
+            table.addCell(cellOf(d.getWorkEndDate() != null ? d.getWorkEndDate().format(dateFmt) : "", bodyFont));
+            table.addCell(cellOf(d.getWorkingHours() != null ? d.getWorkingHours().toString() : "", bodyFont));
+            table.addCell(cellOf(d.getHourlyWage() != null ? d.getHourlyWage().toString() : "", bodyFont));
+            table.addCell(cellOf(d.getHourlyWageOvertime() != null ? d.getHourlyWageOvertime().toString() : "", bodyFont));
+            table.addCell(cellOf(d.getReceptionFee() != null ? d.getReceptionFee().toString() : "", bodyFont));
+            table.addCell(cellOf(d.getCustomerFee() != null ? d.getCustomerFee().toString() : "", bodyFont));
+            table.addCell(cellOf(d.getSalesAmount() != null ? d.getSalesAmount().toString() : "", bodyFont));
+            table.addCell(cellOf(d.getRemarks() != null ? d.getRemarks() : "", bodyFont));
+        }
+        if (details.isEmpty()) {
+            PdfPCell emptyCell = new PdfPCell(new Phrase("売上明細はありません", bodyFont));
+            emptyCell.setColspan(headers.length);
+            emptyCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            table.addCell(emptyCell);
+        }
+
+        doc.add(table);
+        doc.close();
+    }
+
+    private PdfPCell cellOf(String text, Font font) {
+        PdfPCell cell = new PdfPCell(new Phrase(text, font));
+        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        return cell;
+    }
+
+    private String safe(String s) {
+        return s != null ? s : "";
     }
 
 }
