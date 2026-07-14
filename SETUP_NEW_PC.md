@@ -166,8 +166,9 @@ http://localhost:8080/login
 ```
 
 パスワード欄に `tani` と入力してログインできれば成功です
-（このパスワードは `src/main/java/.../controller/LoginController.java` 内の `CORRECT_PASSWORD` で
-設定されています。変更したい場合はこの値を書き換えてください）。
+（このパスワードは `application.yml` の `app.login.password` で設定されており、
+環境変数 `LOGIN_PASSWORD` を設定するとその値で上書きされます。未設定時の既定値が `tani` です。
+変更したい場合は `application.yml` を書き換えるか、環境変数 `LOGIN_PASSWORD` を設定してください）。
 
 ログイン後、「初期画面」が表示され、1-1〜1-7の各メニューが操作できることを確認してください。
 
@@ -189,7 +190,8 @@ http://localhost:8080/login
 | PostgreSQLの実行ファイルの場所が分からない | `Get-ChildItem -Path C:\ -Filter "psql.exe" -Recurse -ErrorAction SilentlyContinue -Force` でパソコン全体を検索する |
 | `.\mvnw`実行時に「スクリプトの実行が無効」と出る | `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force` を実行してから再度試す |
 | 起動時に「Port 8080 was already in use」と出る | 別のアプリや前回の起動が残っている。`netstat -ano \| findstr :8080` でプロセスIDを確認し、`Stop-Process -Id （番号） -Force` で終了してから再度起動する |
-| ログイン画面でパスワードが通らない | `LoginController.java`内の`CORRECT_PASSWORD`の値と、実際に入力しているパスワードを確認する |
+| ログイン画面でパスワードが通らない | まずシステムの起動ログ（コンソールまたは`system-log.txt`）を確認し、「ログインパスワードは既定値(tani)から変更されています」と出ていないか見る。出ている場合は環境変数`LOGIN_PASSWORD`が設定されている（PowerShellで`$env:LOGIN_PASSWORD`および`[Environment]::GetEnvironmentVariable("LOGIN_PASSWORD","Machine")`と`"User"`を確認）。不要であれば`[Environment]::SetEnvironmentVariable("LOGIN_PASSWORD",$null,"Machine")`等で削除し、ターミナル/アプリを再起動する |
+| 古いプロセスがポートを握ったままで新しいコードが反映されない | `netstat -ano \| findstr :8080` でプロセスIDを確認し、`Get-CimInstance Win32_Process -Filter "ProcessId = 番号"`でコマンドラインを確認。心当たりのない古いプロセスなら`Stop-Process -Id 番号 -Force`で終了してから起動し直す |
 | PowerShellにコマンドを貼り付けると文字化け・引用符エラーが出る | メモ帳等を経由せず、PowerShell上で直接コマンドを実行する（「1-7-5 バックアップ手順」内の注意点も参照） |
 
 ---
