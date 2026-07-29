@@ -45,3 +45,4 @@ build/
 packaging/pgsql-portable/*
 !packaging/pgsql-portable/README.md
 !packaging/pgsql-portable/.gitkeep
+launcher-log.txt
