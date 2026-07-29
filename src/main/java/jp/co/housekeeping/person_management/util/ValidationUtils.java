@@ -13,8 +13,15 @@ import java.math.BigDecimal;
  *
  * 上限値チェックはビジネス上の妥当な上限が定義されていないため行わない
  * （極端に大きい値はIntegerの範囲チェックのみ）。
+ *
+ * また、ZIP出力時のエントリ名・ダウンロードファイル名を安全にする
+ * {@link #sanitizeFileNamePart(String)} もここに置く。
  */
 public final class ValidationUtils {
+
+    /** Windowsの予約デバイス名（大文字小文字を区別しない）。完全一致した場合のみ対象。 */
+    private static final java.util.regex.Pattern RESERVED_WINDOWS_NAME =
+        java.util.regex.Pattern.compile("(?i)^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$");
 
     private ValidationUtils() {}
 
@@ -72,5 +79,49 @@ public final class ValidationUtils {
             }
         }
         return sb.toString();
+    }
+
+    /**
+     * ZIPのエントリ名・ダウンロードファイル名に使う文字列を安全にする。
+     *
+     * 氏名は1-1-1などの画面から入力された値がそのまま渡ってくるため、
+     * パス区切り文字が含まれていると、展開時に意図しない場所へ
+     * ファイルを書き出させられる（パストラバーサル）恐れがある。
+     *
+     * 特に「\」は、ZIPの仕様上の区切りは「/」だけであるにもかかわらず
+     * Windowsの展開ソフトの多くが区切りとして解釈するため、必ず潰す。
+     */
+    public static String sanitizeFileNamePart(String s) {
+        if (s == null || s.isBlank()) return "不明";
+
+        String result = s.trim();
+
+        // 制御文字（NULバイト含む）を除去する
+        result = result.replaceAll("\\p{Cntrl}", "");
+
+        // パス区切り文字やOSで特別な意味を持つ文字を置換する
+        result = result.replaceAll("[/\\\\:*?\"<>|]", "_");
+
+        // ".."による上位ディレクトリへの移動を、区切り文字が無い場合でも封じる
+        result = result.replaceAll("\\.{2,}", "_");
+
+        // 先頭・末尾のドット・空白を除去する
+        // （Windowsは末尾のドット/空白を無視するため、別名のはずのファイルが衝突する）
+        result = result.replaceAll("^[.\\s]+|[.\\s]+$", "");
+
+        // Windowsの予約デバイス名に完全一致したら、デバイスとして解釈されないよう
+        // 末尾に "_" を付ける
+        if (RESERVED_WINDOWS_NAME.matcher(result).matches()) {
+            result = result + "_";
+        }
+
+        // 長すぎるファイル名によるエラーを避けるため切り詰める。
+        // 切り詰めた結果、末尾がドット・空白になった場合は再度除去する。
+        if (result.length() > 80) {
+            result = result.substring(0, 80);
+            result = result.replaceAll("[.\\s]+$", "");
+        }
+
+        return result.isEmpty() ? "不明" : result;
     }
 }

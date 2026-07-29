@@ -49,6 +49,7 @@ import jp.co.housekeeping.person_management.repository.IntroductionRepository;
 import jp.co.housekeeping.person_management.repository.PersonRepository;
 import jp.co.housekeeping.person_management.repository.SalesDetailRepository;
 import jp.co.housekeeping.person_management.repository.SalesRepository;
+import jp.co.housekeeping.person_management.util.ValidationUtils;
 
 @Controller
 @RequestMapping("/receipt-menu")
@@ -552,17 +553,17 @@ public class ReceiptMenuController {
                         ? personRepository.findById(s.getPersonId()).orElse(null) : null;
                     createCustomerReceiptPdf(d, customer, person, d.getReceiptNo(), baos);
                     String name = customer != null
-                        ? (customer.getLastNameKanji() + customer.getFirstNameKanji()).replaceAll("[/:*?<>|]", "_")
+                        ? ValidationUtils.sanitizeFileNamePart(customer.getLastNameKanji() + customer.getFirstNameKanji())
                         : "不明";
-                    fileName = d.getReceiptNo() + "_求人者宛_" + name + ".pdf";
+                    fileName = ValidationUtils.sanitizeFileNamePart(d.getReceiptNo()) + "_求人者宛_" + name + ".pdf";
                 } else {
                     Person person = s.getPersonId() != null
                         ? personRepository.findById(s.getPersonId()).orElse(null) : null;
                     createJobseekerReceiptPdf(d, java.util.Collections.singletonList(d), person, d.getReceiptNo(), baos);
                     String name = person != null
-                        ? (person.getLastNameKanji() + person.getFirstNameKanji()).replaceAll("[/:*?<>|]", "_")
+                        ? ValidationUtils.sanitizeFileNamePart(person.getLastNameKanji() + person.getFirstNameKanji())
                         : "不明";
-                    fileName = d.getReceiptNo() + "_求職受付_" + name + ".pdf";
+                    fileName = ValidationUtils.sanitizeFileNamePart(d.getReceiptNo()) + "_求職受付_" + name + ".pdf";
                 }
 
                 zos.putNextEntry(new ZipEntry(fileName));

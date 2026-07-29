@@ -47,6 +47,7 @@ import jp.co.housekeeping.person_management.model.Person;
 import jp.co.housekeeping.person_management.repository.CustomerRepository;
 import jp.co.housekeeping.person_management.repository.IntroductionRepository;
 import jp.co.housekeeping.person_management.repository.PersonRepository;
+import jp.co.housekeeping.person_management.util.ValidationUtils;
 
 @Controller
 @RequestMapping("/introduction")
@@ -375,9 +376,13 @@ public class IntroductionController {
                 for (String[] docType : docTypes) {
                     String corner = docType[0];
                     String title  = docType[1];
-                    String safePersonName   = personName.replaceAll("[/:*?<>|]", "_");
-                    String safeCustomerName = customerName.replaceAll("[/:*?<>|]", "_");
-                    String fileName = refNo + "_" + title + "_" + safePersonName
+                    // 氏名・番号・帳票種別はいずれもDB/画面由来でありパス区切り文字を
+                    // 含み得るため、ZIPエントリ名に使う前に必ずサニタイズする
+                    String safeRefNo         = ValidationUtils.sanitizeFileNamePart(refNo);
+                    String safeTitle         = ValidationUtils.sanitizeFileNamePart(title);
+                    String safePersonName    = ValidationUtils.sanitizeFileNamePart(personName);
+                    String safeCustomerName  = ValidationUtils.sanitizeFileNamePart(customerName);
+                    String fileName = safeRefNo + "_" + safeTitle + "_" + safePersonName
                         + "_" + safeCustomerName + ".pdf";
 
                     byte[] pdfBytes = generateIntroPdf(

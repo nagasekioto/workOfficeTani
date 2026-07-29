@@ -5,13 +5,25 @@ server:
       # URLに載ると、ブラウザの履歴・Referer・監査ログ・プロキシのログ等に
       # セッションIDが残り、そこから乗っ取られる恐れがあるためCookieのみにする。
       tracking-modes: cookie
+      # 無操作のまま放置されたセッションを自動的に切る。
+      # 個人情報の画面を開いたまま離席されると、そのまま操作されてしまうため。
+      timeout: ${SESSION_TIMEOUT:30m}
       cookie:
         http-only: true
+        # 他サイトから当システムへのリクエストにはCookieを付けない。
+        # 本システムにはCSRFトークンが無いため、細工したページを踏まされると
+        # /permanent-delete などのPOSTが外部から発火しうる。それを防ぐ。
+        same-site: strict
+        # HTTPS化したときに true にする。
+        # 現在はHTTP(localhost)で動いているため true にするとCookieが一切
+        # 送られなくなり、ログインできなくなる。既定は false のままにすること。
+        secure: ${COOKIE_SECURE:false}
 
-  # 待ち受けアドレス。未設定なら全インターフェース(0.0.0.0)で待ち受ける。
-  # このPCだけで使う運用なら SERVER_ADDRESS=127.0.0.1 を設定する。
-  # 詳細は docs/NETWORK_RESTRICTION.md 第5章を参照。
-  address: ${SERVER_ADDRESS:0.0.0.0}
+  # 待ち受けアドレス。既定はこのPC自身(127.0.0.1)のみ。
+  # 社内の他PCからも画面を使う運用に変える場合は SERVER_ADDRESS=0.0.0.0 を設定する
+  # （その場合はファイアウォールで社内サブネットのみに絞ること。
+  #   詳細は docs/NETWORK_RESTRICTION.md 第4章・第5章を参照）。
+  address: ${SERVER_ADDRESS:127.0.0.1}
 
 spring:
   datasource:
