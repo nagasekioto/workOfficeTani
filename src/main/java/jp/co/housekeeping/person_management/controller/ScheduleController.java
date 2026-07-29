@@ -5,8 +5,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.servlet.http.HttpSession;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -37,9 +35,7 @@ public class ScheduleController {
     // ─── 個人スケジュール画面 ──────────────────────────────
     @GetMapping("/person/schedule")
     public String schedule(@RequestParam(required = false) Long personId,
-                           HttpSession session, Model model) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
-
+                           Model model) {
         model.addAttribute("persons", personRepository.findAll());
         model.addAttribute("hours", buildHourList());
         model.addAttribute("slots", buildSlotList());
@@ -63,10 +59,7 @@ public class ScheduleController {
     public List<Map<String, String>> searchAvailable(
             @RequestParam List<String> days,
             @RequestParam List<Integer> starts,   // 例: 9:30 → 570
-            @RequestParam List<Integer> ends,     // 例: 11:00 → 660
-            HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return new ArrayList<>();
-
+            @RequestParam List<Integer> ends) {   // 例: 11:00 → 660
         int slotCount = Math.min(days.size(), Math.min(starts.size(), ends.size()));
 
         List<Map<String, String>> result = new ArrayList<>();

@@ -11,7 +11,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -66,16 +65,13 @@ public class ReceiptMenuController {
     @Autowired private IntroductionRepository introductionRepository;
 
     @GetMapping("")
-    public String menu(HttpSession session, Model model) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+    public String menu(Model model) {
         return "receipt-menu";
     }
 
     // ─── 1-7-1 求人者宛領収書一覧 ────────────────────────
     @GetMapping("/customer-receipt")
-    public String customerReceipt(HttpSession session, Model model) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
-
+    public String customerReceipt(Model model) {
         List<ReceiptItem> items = new ArrayList<>();
         for (Customer c : customerRepository.findAll()) {
             for (Sales s : salesRepository.findAll()) {
@@ -103,10 +99,8 @@ public class ReceiptMenuController {
     // ─── 1-7-1 PDF出力 ────────────────────────────────
     @GetMapping("/customer-receipt/pdf")
     public void customerReceiptPdf(@RequestParam Long detailId,
-                                    HttpSession session, HttpServletResponse response)
+                                    HttpServletResponse response)
             throws IOException, DocumentException {
-        if (session.getAttribute("authenticated") == null) { response.sendError(401); return; }
-
         SalesDetail detail = salesDetailRepository.findById(detailId).orElse(null);
         if (detail == null) { response.sendError(404); return; }
 
@@ -146,9 +140,7 @@ public class ReceiptMenuController {
 
     // ─── 1-5-2 求職受付手数料領収書一覧 ─────────────────
     @GetMapping("/jobseeker-receipt")
-    public String jobseekerReceipt(HttpSession session, Model model) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
-
+    public String jobseekerReceipt(Model model) {
         // 紹介状作成（1-4-1）で「受付料 710円」チェックが入っているものだけを対象にする
         java.util.Map<String, JobseekerReceiptItem> groupMap = new java.util.LinkedHashMap<>();
         ObjectMapper mapper = new ObjectMapper();
@@ -193,10 +185,8 @@ public class ReceiptMenuController {
     // ─── 1-5-2 PDF出力（introルート） ─────────────────
     @GetMapping("/jobseeker-receipt/pdf")
     public void jobseekerReceiptPdf(@RequestParam Long detailId,
-                                     HttpSession session, HttpServletResponse response)
+                                     HttpServletResponse response)
             throws IOException, DocumentException {
-        if (session.getAttribute("authenticated") == null) { response.sendError(401); return; }
-
         SalesDetail detail = salesDetailRepository.findById(detailId).orElse(null);
         if (detail == null) { response.sendError(404); return; }
 
@@ -248,10 +238,8 @@ public class ReceiptMenuController {
     // ─── 1-7-2 introルート PDF出力（紹介状フラグから） ────────
     @GetMapping("/jobseeker-receipt/pdf-intro")
     public void jobseekerReceiptPdfIntro(@RequestParam Long introId,
-                                          HttpSession session, HttpServletResponse response)
+                                          HttpServletResponse response)
             throws IOException, DocumentException {
-        if (session.getAttribute("authenticated") == null) { response.sendError(401); return; }
-
         Introduction intro = introductionRepository.findById(introId).orElse(null);
         if (intro == null) { response.sendError(404); return; }
 
@@ -292,9 +280,7 @@ public class ReceiptMenuController {
 
     // ─── 1-5-4 領収書削除（テスト用）──────────────────────
     @GetMapping("/delete")
-    public String deleteReceiptPage(HttpSession session, Model model) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
-
+    public String deleteReceiptPage(Model model) {
         List<DeleteReceiptItem> items = new ArrayList<>();
         // SalesDetail.receiptNoが設定されているもの
         for (Sales s : salesRepository.findAll()) {
@@ -331,8 +317,7 @@ public class ReceiptMenuController {
     }
 
     @PostMapping("/delete/all")
-    public String deleteAllReceipts(HttpSession session, Model model) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+    public String deleteAllReceipts(Model model) {
         int count = 0;
         for (Sales s : salesRepository.findAll()) {
             for (SalesDetail d : salesDetailRepository.findBySalesId(s.getId())) {
@@ -360,9 +345,7 @@ public class ReceiptMenuController {
 
     @PostMapping("/delete/one")
     public String deleteOneReceipt(@RequestParam String type,
-                                   @RequestParam String targetId,
-                                   HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+                                   @RequestParam String targetId) {
         if (type.startsWith("1-5-2 求職受付(紹介状)")) {
             introductionRepository.findById(Long.parseLong(targetId)).ifPresent(intro -> {
                 intro.setLedgerRemarks(null);
@@ -389,9 +372,7 @@ public class ReceiptMenuController {
     public String issuedList(@RequestParam(required = false) String month,
                               @RequestParam(required = false) String year,
                               @RequestParam(required = false, defaultValue = "month") String viewMode,
-                              HttpSession session, Model model) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
-
+                              Model model) {
         // デフォルトリダイレクト
         if ("year".equals(viewMode)) {
             if (year == null || year.isBlank()) {
@@ -501,10 +482,8 @@ public class ReceiptMenuController {
     public void issuedListExportPdf(@RequestParam(required = false) String month,
                                      @RequestParam(required = false) String year,
                                      @RequestParam(required = false, defaultValue = "month") String viewMode,
-                                     HttpSession session, HttpServletResponse response)
+                                     HttpServletResponse response)
             throws IOException, DocumentException {
-        if (session.getAttribute("authenticated") == null) { response.sendError(401); return; }
-
         final String targetMonth = (month != null && !month.isBlank()) ? month : null;
         final String targetYear  = (year  != null && !year.isBlank())  ? year  : null;
         final boolean isYearMode = "year".equals(viewMode);
@@ -1120,9 +1099,7 @@ public class ReceiptMenuController {
 
     // ─── 領収番号リセット（1-7-1 求人者宛） ──────────────────────
     @PostMapping("/customer-receipt/reset")
-    public String resetCustomerReceiptNo(@RequestParam Long detailId,
-                                          HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+    public String resetCustomerReceiptNo(@RequestParam Long detailId) {
         salesDetailRepository.findById(detailId).ifPresent(d -> {
             d.setReceiptNo(null);
             d.setIssuedAt(null);
@@ -1133,9 +1110,7 @@ public class ReceiptMenuController {
 
     // ─── 領収番号リセット（1-7-2 求職受付） ──────────────────────
     @PostMapping("/jobseeker-receipt/reset")
-    public String resetJobseekerReceiptNo(@RequestParam Long detailId,
-                                           HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+    public String resetJobseekerReceiptNo(@RequestParam Long detailId) {
         salesDetailRepository.findById(detailId).ifPresent(d -> {
             d.setReceiptNo(null);
             d.setIssuedAt(null);

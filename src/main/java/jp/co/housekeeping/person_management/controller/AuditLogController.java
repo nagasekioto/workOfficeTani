@@ -5,8 +5,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import jakarta.servlet.http.HttpSession;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -37,9 +35,7 @@ public class AuditLogController {
                             @RequestParam(required = false) String to,
                             @RequestParam(required = false) String eventType,
                             @RequestParam(required = false) String clientIp,
-                            HttpSession session, Model model) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
-
+                            Model model) {
         model.addAttribute("from", from);
         model.addAttribute("to", to);
         model.addAttribute("eventType", eventType);

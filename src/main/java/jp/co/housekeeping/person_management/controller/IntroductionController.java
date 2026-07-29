@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.stream.StreamSupport;
 
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -60,14 +59,9 @@ public class IntroductionController {
     @Autowired private CustomerRepository customerRepository;
     @Autowired private IntroductionRepository introductionRepository;
 
-    private boolean checkAuth(HttpSession session) {
-        return session.getAttribute("authenticated") != null;
-    }
-
     // 1-6-1 紹介状入力
     @GetMapping("")
-    public String introduction(HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String introduction(Model model) {
         model.addAttribute("persons", personRepository.findAll());
         model.addAttribute("customers", customerRepository.findAll());
         return "introduction";
@@ -75,8 +69,7 @@ public class IntroductionController {
 
     // 1-6-1 修正（既存データ読み込み）
     @GetMapping("/edit/{id}")
-    public String edit(@PathVariable Long id, HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String edit(@PathVariable Long id, Model model) {
         model.addAttribute("persons", personRepository.findAll());
         model.addAttribute("customers", customerRepository.findAll());
         introductionRepository.findById(id).ifPresent(intro -> model.addAttribute("intro", intro));
@@ -92,10 +85,7 @@ public class IntroductionController {
             @RequestParam(required = false) Long customerId,
             @RequestParam(required = false) String introDate,
             @RequestParam(required = false) String startDate,
-            @RequestParam(required = false) String formData,
-            HttpSession session) {
-        if (!checkAuth(session)) return "UNAUTHORIZED";
-
+            @RequestParam(required = false) String formData) {
         Introduction intro;
         String refNo;
 
@@ -140,9 +130,7 @@ public class IntroductionController {
 
     // 1-6-2 紹介状一覧
     @GetMapping("/list")
-    public String list(HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
-
+    public String list(Model model) {
         Iterable<Introduction> intros = introductionRepository.findAllOrderByCreatedAtDesc();
         model.addAttribute("introductions", intros);
 
@@ -162,8 +150,7 @@ public class IntroductionController {
 
     // 1-6-2 詳細表示
     @GetMapping("/detail/{id}")
-    public String detail(@PathVariable Long id, HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String detail(@PathVariable Long id, Model model) {
         Introduction intro = introductionRepository.findById(id).orElse(null);
         if (intro == null) return "redirect:/introduction/list";
 
@@ -305,26 +292,22 @@ public class IntroductionController {
 
     // 削除（個別）
     @PostMapping("/delete/{id}")
-    public String delete(@PathVariable Long id, HttpSession session) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String delete(@PathVariable Long id) {
         introductionRepository.deleteById(id);
         return "redirect:/introduction/list";
     }
 
     // ─── 一括削除 ──────────────────────────────────────
     @PostMapping("/delete-all")
-    public String deleteAll(HttpSession session) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String deleteAll() {
         introductionRepository.deleteAll();
         return "redirect:/introduction/list";
     }
 
     // ─── 1-6-3 紹介状 PDF一括エクスポート（ZIP） ────────
     @GetMapping("/export-pdf")
-    public void exportPdfZip(HttpSession session, HttpServletResponse response)
+    public void exportPdfZip(HttpServletResponse response)
             throws IOException {
-        if (!checkAuth(session)) { response.sendError(401); return; }
-
         List<Introduction> intros = new ArrayList<>();
         introductionRepository.findAllOrderByCreatedAtDesc().forEach(intros::add);
 

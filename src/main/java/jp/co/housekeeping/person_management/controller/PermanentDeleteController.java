@@ -3,8 +3,6 @@ package jp.co.housekeeping.person_management.controller;
 import java.util.ArrayList;
 import java.util.List;
 
-import jakarta.servlet.http.HttpSession;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Controller;
@@ -46,9 +44,7 @@ public class PermanentDeleteController {
     @Autowired private JdbcTemplate jdbcTemplate;
 
     @GetMapping("/permanent-delete")
-    public String index(HttpSession session, Model model) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
-
+    public String index(Model model) {
         List<PersonRow> personRows = new ArrayList<>();
         for (Person p : personRepository.findAll()) {
             if (p.getRetiredAt() == null) continue; // 退職済みのみ対象
@@ -93,9 +89,7 @@ public class PermanentDeleteController {
     // ─── 求職者の完全削除（売上記録も含む） ─────────────────────
     @PostMapping("/permanent-delete/person/{id}")
     @Transactional
-    public String deletePersonPermanently(@PathVariable Long id, HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
-
+    public String deletePersonPermanently(@PathVariable Long id) {
         Person p = personRepository.findById(id).orElse(null);
         // 安全装置：退職処理済みの求職者のみ対象（在職中の人物を誤って完全削除するのを防ぐ）
         if (p == null || p.getRetiredAt() == null) {
@@ -126,9 +120,7 @@ public class PermanentDeleteController {
     // ─── 求人者の完全削除（売上記録も含む） ─────────────────────
     @PostMapping("/permanent-delete/customer/{id}")
     @Transactional
-    public String deleteCustomerPermanently(@PathVariable Long id, HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
-
+    public String deleteCustomerPermanently(@PathVariable Long id) {
         Customer c = customerRepository.findById(id).orElse(null);
         // 安全装置：取引終了処理済みの求人者のみ対象
         if (c == null || c.getRetiredAt() == null) {

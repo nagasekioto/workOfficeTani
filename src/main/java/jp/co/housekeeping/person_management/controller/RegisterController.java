@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.stream.StreamSupport;
 
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -59,14 +58,9 @@ public class RegisterController {
     @Autowired private SalesDetailRepository salesDetailRepository;
     @Autowired private CustomerRepository customerRepository;
 
-    private boolean checkAuth(HttpSession session) {
-        return session.getAttribute("authenticated") != null;
-    }
-
     // ─── 1-8-1 計算 ───────────────────────────────────
     @GetMapping("/calc")
-    public String calc(HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String calc(Model model) {
         model.addAttribute("persons", personRepository.findAll());
         return "register-calc";
     }
@@ -80,10 +74,7 @@ public class RegisterController {
             @RequestParam Integer fee,
             @RequestParam(required = false, defaultValue = "0") Integer membershipFee,
             @RequestParam(required = false) String memo,
-            HttpSession session,
             HttpServletResponse response) {
-        if (!checkAuth(session)) { response.setStatus(401); return "UNAUTHORIZED"; }
-
         if (ValidationUtils.requireNonNegative(salary) == null
                 || ValidationUtils.requireNonNegative(fee) == null
                 || ValidationUtils.requireNonNegative(membershipFee) == null) {
@@ -109,9 +100,7 @@ public class RegisterController {
     @ResponseBody
     public String toggleTransferred(@RequestParam Long id,
                                      @RequestParam boolean transferred,
-                                     HttpSession session,
                                      HttpServletResponse response) {
-        if (!checkAuth(session)) { response.setStatus(401); return "UNAUTHORIZED"; }
         registerRecordRepository.findById(id).ifPresent(r -> {
             r.setTransferred(transferred);
             registerRecordRepository.save(r);
@@ -120,8 +109,7 @@ public class RegisterController {
     }
 
     @PostMapping("/calc/delete")
-    public String deleteCalc(@RequestParam Long id, @RequestParam(required = false) String month, HttpSession session) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String deleteCalc(@RequestParam Long id, @RequestParam(required = false) String month) {
         registerRecordRepository.deleteById(id);
         if (month != null && !month.isBlank()) {
             return "redirect:/register/list?month=" + month;
@@ -132,8 +120,7 @@ public class RegisterController {
     // ─── 修正（編集画面）───────────────────────────────
     @GetMapping("/calc/edit")
     public String editForm(@RequestParam Long id, @RequestParam(required = false) String month,
-                           HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
+                           Model model) {
         RegisterRecord record = registerRecordRepository.findById(id).orElse(null);
         if (record == null) return "redirect:/register/list";
 
@@ -162,9 +149,7 @@ public class RegisterController {
                            @RequestParam Integer fee,
                            @RequestParam(required = false, defaultValue = "0") Integer membershipFee,
                            @RequestParam(required = false) String memo,
-                           @RequestParam(required = false) String month,
-                           HttpSession session) {
-        if (!checkAuth(session)) return "redirect:/login";
+                           @RequestParam(required = false) String month) {
         if (ValidationUtils.requireNonNegative(salary) == null
                 || ValidationUtils.requireNonNegative(fee) == null
                 || ValidationUtils.requireNonNegative(membershipFee) == null) {
@@ -188,9 +173,7 @@ public class RegisterController {
     // ─── 1-8-2 レジ一覧 ────────────────────────────────
     @GetMapping("/list")
     public String list(@RequestParam(required = false) String month,
-                       HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
-
+                       Model model) {
         // monthパラメータがない場合は現在月にリダイレクト
         if (month == null || month.isBlank()) {
             String currentMonth = LocalDateTime.now().getYear() + "-"
@@ -347,9 +330,7 @@ public class RegisterController {
     // ─── 1-8-3 手数料管理簿 ─────────────────────────────
     @GetMapping("/fee-ledger")
     public String feeLedger(@RequestParam(required = false) String month,
-                            HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
-
+                            Model model) {
         // monthパラメータがない場合は現在月にリダイレクト
         if (month == null || month.isBlank()) {
             String currentMonth = LocalDateTime.now().getYear() + "-"
@@ -398,10 +379,7 @@ public class RegisterController {
     // ─── 1-8-3 手数料管理簿 PDF出力 ─────────────────────
     @GetMapping("/fee-ledger/pdf")
     public void feeLedgerPdf(@RequestParam String month,
-                              HttpSession session,
                               HttpServletResponse response) throws IOException, DocumentException {
-        if (!checkAuth(session)) { response.sendError(401); return; }
-
         // monthはヘッダー出力に使うため、ヘッダーインジェクション対策として形式検証を行う
         java.time.YearMonth ym;
         try {

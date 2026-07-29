@@ -142,10 +142,7 @@ public class LoginController {
     // ============================================================
 
     @GetMapping("/menu")
-    public String menu(HttpSession session) {
-        if (session.getAttribute("authenticated") == null) {
-            return "redirect:/login";
-        }
+    public String menu() {
         return "menu";
     }
 

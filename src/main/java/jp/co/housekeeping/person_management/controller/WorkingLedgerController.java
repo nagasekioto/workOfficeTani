@@ -7,8 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import jakarta.servlet.http.HttpSession;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -39,9 +37,7 @@ public class WorkingLedgerController {
     // ─── 1ページ目：全求職者一覧 + 検索 ────────────────
     @GetMapping
     public String list(@RequestParam(required = false) String search,
-                       HttpSession session, Model model) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
-
+                       Model model) {
         Iterable<Person> allPersons = personRepository.findAll();
         List<LedgerListRow> rows = new ArrayList<>();
 
@@ -86,9 +82,7 @@ public class WorkingLedgerController {
     // ─── 2ページ目：求職者詳細（稼働履歴）──────────────
     @GetMapping("/{personId}")
     public String detail(@PathVariable Long personId,
-                         HttpSession session, Model model) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
-
+                         Model model) {
         Person person = personRepository.findById(personId).orElse(null);
         if (person == null) return "redirect:/person/working-ledger";
 
@@ -171,9 +165,7 @@ public class WorkingLedgerController {
     @PostMapping("/update-remarks")
     public String updateRemarks(@RequestParam Long detailId,
                                 @RequestParam String remarks,
-                                @RequestParam Long personId,
-                                HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+                                @RequestParam Long personId) {
         salesDetailRepository.findById(detailId).ifPresent(d -> {
             d.setRemarks(remarks);
             salesDetailRepository.save(d);
@@ -184,9 +176,7 @@ public class WorkingLedgerController {
     // 稼働履歴（売上明細）の削除
     @PostMapping("/delete-detail")
     public String deleteDetail(@RequestParam Long detailId,
-                               @RequestParam Long personId,
-                               HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+                               @RequestParam Long personId) {
         salesDetailRepository.deleteById(detailId);
         return "redirect:/person/working-ledger/" + personId;
     }

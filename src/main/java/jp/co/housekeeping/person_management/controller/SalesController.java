@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 
 import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
@@ -54,9 +53,7 @@ public class SalesController {
     // ─── 売上入力画面 ───────────────────────────────
     @GetMapping("/person/sales")
     public String sales(@RequestParam(required = false) Long personId,
-                        HttpSession session, Model model) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
-
+                        Model model) {
         model.addAttribute("persons", personRepository.findAll());
         model.addAttribute("customers", customerRepository.findAll());
 
@@ -93,10 +90,7 @@ public class SalesController {
             @RequestParam(required = false) String[] workEndDates,
             @RequestParam(required = false) String[] workDaysList,
             @RequestParam(required = false) String[] workingHoursList,
-            @RequestParam(required = false) String[] remarksList,
-            HttpSession session) {
-
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+            @RequestParam(required = false) String[] remarksList) {
 
         // 既存salesレコードを取得 or 新規作成
         List<Sales> existing = salesRepository.findByPersonId(personId);
@@ -242,16 +236,12 @@ public class SalesController {
 
     // ─── 売上PDF印刷 ───────────────────────────────
     // 【脆弱性修正(高②)】以前は認証チェックがなく、未ログインでも
-    // 他人の売上PDFを生成できてしまっていた。session認証チェックを追加。
+    // 他人の売上PDFを生成できてしまっていた。現在はAuthenticationInterceptorが
+    // このパスを含む全リクエストを既定でガードするため、個別チェックは不要。
     @PostMapping("/person/sales/print")
     public void printSalesPdf(@RequestParam Long personId,
-                               HttpSession session, HttpServletResponse response)
+                               HttpServletResponse response)
             throws IOException, DocumentException {
-
-        if (session.getAttribute("authenticated") == null) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-            return;
-        }
 
         Person person = personRepository.findById(personId).orElse(null);
         if (person == null) {

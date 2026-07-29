@@ -1,6 +1,5 @@
 package jp.co.housekeeping.person_management.controller;
 
-import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
@@ -8,32 +7,27 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class MenuController {
 
     @GetMapping("/")
-    public String root(HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+    public String root() {
         return "menu";
     }
 
     @GetMapping("/person-menu")
-    public String personMenu(HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+    public String personMenu() {
         return "person-menu";
     }
 
     @GetMapping("/customer-menu")
-    public String customerMenu(HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+    public String customerMenu() {
         return "customer-menu";
     }
 
     @GetMapping("/introduction-menu")
-    public String introductionMenu(HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+    public String introductionMenu() {
         return "introduction-menu";
     }
 
     @GetMapping("/register-menu")
-    public String registerMenu(HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+    public String registerMenu() {
         return "register-menu";
     }
 

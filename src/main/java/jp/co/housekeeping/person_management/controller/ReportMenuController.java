@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -58,16 +57,14 @@ public class ReportMenuController {
 
     // ─── 1-3 サブメニュー ────────────────────────────────────────
     @GetMapping("/fee-menu")
-    public String feeMenu(HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+    public String feeMenu() {
         return "fee-menu";
     }
 
     // ─── 1-3-1 紹介手数料管理簿 一覧 ────────────────────────────
     @RequestMapping("/report-menu")
     public String list(@RequestParam(required = false) String month,
-                        HttpSession session, Model model) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+                        Model model) {
         if (month == null || month.isBlank()) {
             String cur = LocalDateTime.now().getYear() + "-"
                 + String.format("%02d", LocalDateTime.now().getMonthValue());
@@ -88,9 +85,8 @@ public class ReportMenuController {
     @GetMapping("/report-menu/pdf")
     public void pdf(@RequestParam(required = false) String month,
                     @RequestParam(required = false) String dl,
-                    HttpSession session, HttpServletResponse response)
+                    HttpServletResponse response)
             throws IOException, DocumentException {
-        if (session.getAttribute("authenticated") == null) { response.sendError(401); return; }
         YearMonth ym = (month != null && !month.isBlank()) ? YearMonth.parse(month) : YearMonth.now();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         buildPdf131(buildRows(ym), ym, baos);
@@ -106,8 +102,7 @@ public class ReportMenuController {
     // ─── 1-3-2 求職受付手数料管理簿 一覧 ───────────────────────
     @GetMapping("/fee-reception-ledger")
     public String receptionLedger(@RequestParam(required = false) String month,
-                                   HttpSession session, Model model) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+                                   Model model) {
         if (month == null || month.isBlank()) {
             String cur = LocalDateTime.now().getYear() + "-"
                 + String.format("%02d", LocalDateTime.now().getMonthValue());
@@ -126,9 +121,8 @@ public class ReportMenuController {
     @GetMapping("/fee-reception-ledger/pdf")
     public void receptionPdf(@RequestParam(required = false) String month,
                               @RequestParam(required = false) String dl,
-                              HttpSession session, HttpServletResponse response)
+                              HttpServletResponse response)
             throws IOException, DocumentException {
-        if (session.getAttribute("authenticated") == null) { response.sendError(401); return; }
         YearMonth ym = (month != null && !month.isBlank()) ? YearMonth.parse(month) : YearMonth.now();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         buildPdf132(buildReceptionRows(ym), ym, baos);
@@ -145,9 +139,7 @@ public class ReportMenuController {
     @GetMapping("/fee-settlement")
     public String feeSettlement(@RequestParam(required = false) Integer compYear,
                                  @RequestParam(required = false) Integer laborYear,
-                                 HttpSession session, Model model) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
-
+                                 Model model) {
         int curYear = LocalDateTime.now().getYear();
         List<Integer> yearList = new ArrayList<>();
         for (int y = curYear + 1; y >= 2020; y--) yearList.add(y);
@@ -176,9 +168,7 @@ public class ReportMenuController {
 
     // ─── 1-3-3 サンケアネット保存 ────────────────────────────────
     @PostMapping("/fee-settlement/save-sancare")
-    public String saveSancare(@RequestParam Map<String,String> params,
-                               HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+    public String saveSancare(@RequestParam Map<String,String> params) {
         Integer compYear  = null;
         Integer laborYear = null;
         try { compYear  = Integer.parseInt(params.get("compYear"));  } catch (Exception ignored) {}
@@ -217,9 +207,8 @@ public class ReportMenuController {
     public void settlementPdf(@RequestParam(required = false) Integer compYear,
                                @RequestParam(required = false) Integer laborYear,
                                @RequestParam(required = false) String dl,
-                               HttpSession session, HttpServletResponse response)
+                               HttpServletResponse response)
             throws IOException, DocumentException {
-        if (session.getAttribute("authenticated") == null) { response.sendError(401); return; }
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         buildPdf133(compYear, laborYear, baos);
         response.setContentType("application/pdf");

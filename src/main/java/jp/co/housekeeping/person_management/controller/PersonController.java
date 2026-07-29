@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -65,14 +64,9 @@ public class PersonController {
     @Autowired private jp.co.housekeeping.person_management.repository.RegisterRecordRepository registerRecordRepository;
     @Autowired private JdbcTemplate jdbcTemplate;
 
-    private boolean checkAuth(HttpSession session) {
-        return session.getAttribute("authenticated") != null;
-    }
-
     // ─── 名簿入力画面（新規登録 + 一覧）───────────────
     @GetMapping("/register")
-    public String registerForm(HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String registerForm(Model model) {
         List<Person> active = new ArrayList<>();
         for (Person p : personRepository.findAll()) {
             if (p.getRetiredAt() == null) active.add(p);
@@ -107,10 +101,7 @@ public class PersonController {
             @RequestParam(required = false) String emergencyRelation,
             @RequestParam(required = false) String emergencyPhone,
             @RequestParam(required = false) String babysitterExp,
-            @RequestParam(required = false) String babysitterAvail,
-            HttpSession session) {
-
-        if (!checkAuth(session)) return "redirect:/login";
+            @RequestParam(required = false) String babysitterAvail) {
 
         applyCheckboxes(person, qualNursery, qualCook, qualCareWorker, qualCareHelper,
                 animalDogOk, animalCatOk, animalDogAllergy, animalCatAllergy, lineWorks);
@@ -138,8 +129,7 @@ public class PersonController {
 
     // ─── 編集画面 ──────────────────────────────────────
     @GetMapping("/edit/{id}")
-    public String editForm(@PathVariable Long id, HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String editForm(@PathVariable Long id, Model model) {
         Person person = personRepository.findById(id).orElse(null);
         if (person == null) return "redirect:/person/register";
         model.addAttribute("persons", personRepository.findAll());
@@ -172,10 +162,7 @@ public class PersonController {
             @RequestParam(required = false) String emergencyRelation,
             @RequestParam(required = false) String emergencyPhone,
             @RequestParam(required = false) String babysitterExp,
-            @RequestParam(required = false) String babysitterAvail,
-            HttpSession session) {
-
-        if (!checkAuth(session)) return "redirect:/login";
+            @RequestParam(required = false) String babysitterAvail) {
 
         applyCheckboxes(person, qualNursery, qualCook, qualCareWorker, qualCareHelper,
                 animalDogOk, animalCatOk, animalDogAllergy, animalCatAllergy, lineWorks);
@@ -276,8 +263,7 @@ public class PersonController {
 
     // ─── 1-1-6 求職者情報一覧 ──────────────────────────
     @GetMapping("/list")
-    public String list(HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String list(Model model) {
         List<Person> active = new ArrayList<>();
         for (Person p : personRepository.findAll()) {
             if (p.getRetiredAt() == null) active.add(p);
@@ -288,8 +274,7 @@ public class PersonController {
 
     // ─── 求職者を退職扱いにする（1-1-6の「削除」ボタン→「退職」ボタン）───
     @PostMapping("/retire/{id}")
-    public String retire(@PathVariable Long id, HttpSession session) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String retire(@PathVariable Long id) {
         Person p = personRepository.findById(id).orElse(null);
         if (p != null) {
             p.setRetiredAt(LocalDate.now());
@@ -300,8 +285,7 @@ public class PersonController {
 
     // ─── 1-1-8 退職者リスト ────────────────────────────
     @GetMapping("/retired-list")
-    public String retiredList(HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String retiredList(Model model) {
         List<Person> retired = new ArrayList<>();
         for (Person p : personRepository.findAll()) {
             if (p.getRetiredAt() != null) retired.add(p);
@@ -313,8 +297,7 @@ public class PersonController {
 
     // ─── 退職を取り消して在職中に戻す ──────────────────────
     @PostMapping("/retired-list/reinstate/{id}")
-    public String reinstate(@PathVariable Long id, HttpSession session) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String reinstate(@PathVariable Long id) {
         Person p = personRepository.findById(id).orElse(null);
         if (p != null) {
             p.setRetiredAt(null);
@@ -325,8 +308,7 @@ public class PersonController {
 
     // ─── 求職者削除（退職者リストからの完全削除。元に戻せません）─────
     @PostMapping("/retired-list/delete/{id}")
-    public String deleteRetired(@PathVariable Long id, HttpSession session) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String deleteRetired(@PathVariable Long id) {
         try {
             personRepository.deleteById(id);
         } catch (org.springframework.dao.EmptyResultDataAccessException e) {
@@ -348,9 +330,7 @@ public class PersonController {
     // ─── 1-1-7 会費 ────────────────────────────────────
     @GetMapping("/membership")
     public String membership(@RequestParam(required = false) String month,
-                              HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
-
+                              Model model) {
         if (month == null || month.isBlank()) {
             return "redirect:/person/membership?month=" + YearMonth.now();
         }
@@ -400,9 +380,7 @@ public class PersonController {
     public String membershipConfirm(@RequestParam Long personId,
                                      @RequestParam String month,
                                      @RequestParam boolean confirmed,
-                                     HttpSession session,
                                      HttpServletResponse response) {
-        if (!checkAuth(session)) { response.setStatus(401); return "UNAUTHORIZED"; }
         jdbcTemplate.update(
             "INSERT INTO membership_confirmations (person_id, work_month, confirmed, updated_at) " +
             "VALUES (?, ?, ?, CURRENT_TIMESTAMP) " +
@@ -416,9 +394,7 @@ public class PersonController {
     public String membershipSave(@RequestParam Long personId,
                                   @RequestParam String membershipFee,
                                   @RequestParam(required = false) Integer membershipFeeAmount,
-                                  HttpSession session,
                                   HttpServletResponse response) {
-        if (!checkAuth(session)) { response.setStatus(401); return "UNAUTHORIZED"; }
         if (membershipFeeAmount != null && ValidationUtils.requireNonNegative(membershipFeeAmount) == null) {
             response.setStatus(400);
             return "INVALID_AMOUNT";
@@ -443,9 +419,7 @@ public class PersonController {
     // ─── 1-1-4 求職管理簿 ──────────────────────────────
     @GetMapping("/shokuji-ledger")
     public String shokujiLedger(@RequestParam(required = false) Long personId,
-                                HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
-
+                                Model model) {
         model.addAttribute("persons", personRepository.findAll());
 
         if (personId != null) {
@@ -501,9 +475,7 @@ public class PersonController {
                                        @RequestParam(required = false) String[] remarksList,
                                        @RequestParam(required = false) String[] rishokuStatusList,
                                        @RequestParam(required = false) String[] henreikinList,
-                                       HttpSession session,
                                        HttpServletResponse response) {
-        if (!checkAuth(session)) { response.setStatus(401); return "UNAUTHORIZED"; }
         if (introIds == null) return "OK";
 
         for (int i = 0; i < introIds.length; i++) {
@@ -537,10 +509,8 @@ public class PersonController {
                                  @RequestParam(required = false) String[] remarksList,
                                  @RequestParam(required = false) String[] rishokuStatusList,
                                  @RequestParam(required = false) String[] henreikinList,
-                                 HttpSession session, HttpServletResponse response)
+                                 HttpServletResponse response)
             throws IOException, DocumentException {
-        if (!checkAuth(session)) { response.sendError(401); return; }
-
         Person person = personId != null
                 ? personRepository.findById(personId).orElse(null) : null;
 

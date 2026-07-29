@@ -9,7 +9,6 @@ import java.util.List;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpServletResponse;
 
 import com.itextpdf.text.BaseColor;
@@ -67,10 +66,6 @@ public class CustomerController {
     @Autowired private SalesDetailRepository salesDetailRepository;
     @Autowired private IntroductionRepository introductionRepository;
 
-    private boolean checkAuth(HttpSession session) {
-        return session.getAttribute("authenticated") != null;
-    }
-
     // 紹介履歴行を「紹介状一覧（1-6-2）」のデータから構築する
     private List<KaijinRow> buildRowsFromIntroductions(Long customerId) {
         List<KaijinRow> rows = new ArrayList<>();
@@ -108,8 +103,7 @@ public class CustomerController {
 
     // ─── 1-2 求人者新規登録フォーム ───────────────────
     @GetMapping("/register")
-    public String registerForm(HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String registerForm(Model model) {
         List<Customer> active = new ArrayList<>();
         for (Customer c : customerRepository.findAll()) {
             if (c.getRetiredAt() == null) active.add(c);
@@ -123,8 +117,7 @@ public class CustomerController {
 
     // ─── 求人者新規登録処理 ────────────────────────────
     @PostMapping("/register")
-    public String register(@ModelAttribute Customer customer, HttpSession session) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String register(@ModelAttribute Customer customer) {
         if (customer.getRegisteredDate() == null) customer.setRegisteredDate(LocalDate.now());
         if (customer.getNo() == null) {
             synchronized (CUSTOMER_NO_LOCK) {
@@ -143,8 +136,7 @@ public class CustomerController {
 
     // ─── 求人者編集フォーム ────────────────────────────
     @GetMapping("/edit/{id}")
-    public String editForm(@PathVariable Long id, HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String editForm(@PathVariable Long id, Model model) {
         Customer c = customerRepository.findById(id).orElse(null);
         if (c == null) return "redirect:/customer/list";
         List<Customer> active = new ArrayList<>();
@@ -160,8 +152,7 @@ public class CustomerController {
 
     // ─── 求人者更新処理 ────────────────────────────────
     @PostMapping("/update")
-    public String update(@ModelAttribute Customer customer, HttpSession session) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String update(@ModelAttribute Customer customer) {
         customerRepository.findById(customer.getId()).ifPresent(existing -> {
             if (customer.getLastNameKana() == null || customer.getLastNameKana().isBlank())
                 customer.setLastNameKana(existing.getLastNameKana());
@@ -206,8 +197,7 @@ public class CustomerController {
 
     // ─── 求人者を取引終了扱いにする（1-2-3の「削除」ボタン→「退職」ボタン）───
     @PostMapping("/retire/{id}")
-    public String retire(@PathVariable Long id, HttpSession session) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String retire(@PathVariable Long id) {
         Customer c = customerRepository.findById(id).orElse(null);
         if (c != null) {
             c.setRetiredAt(LocalDate.now());
@@ -218,8 +208,7 @@ public class CustomerController {
 
     // ─── 1-2-4 元求人先 ────────────────────────────────
     @GetMapping("/retired-list")
-    public String retiredList(HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String retiredList(Model model) {
         List<Customer> retired = new ArrayList<>();
         for (Customer c : customerRepository.findAll()) {
             if (c.getRetiredAt() != null) retired.add(c);
@@ -231,8 +220,7 @@ public class CustomerController {
 
     // ─── 取引終了を取り消して取引中に戻す ────────────────────
     @PostMapping("/retired-list/reinstate/{id}")
-    public String reinstate(@PathVariable Long id, HttpSession session) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String reinstate(@PathVariable Long id) {
         Customer c = customerRepository.findById(id).orElse(null);
         if (c != null) {
             c.setRetiredAt(null);
@@ -243,8 +231,7 @@ public class CustomerController {
 
     // ─── 求人者削除（元求人先からの完全削除。元に戻せません）─────
     @PostMapping("/retired-list/delete/{id}")
-    public String deleteRetired(@PathVariable Long id, HttpSession session) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String deleteRetired(@PathVariable Long id) {
         try {
             customerRepository.deleteById(id);
         } catch (org.springframework.dao.EmptyResultDataAccessException e) {
@@ -266,8 +253,7 @@ public class CustomerController {
     // ─── 1-2-3 求人者一覧 ──────────────────────────────
     @GetMapping("/list")
     public String list(@RequestParam(required = false) String sort,
-                       HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
+                       Model model) {
         List<Customer> active = new ArrayList<>();
         for (Customer c : customerRepository.findAll()) {
             if (c.getRetiredAt() == null) active.add(c);
@@ -280,8 +266,7 @@ public class CustomerController {
     // ─── 1-2-1 求人受付表（新規）──────────────────────
     @GetMapping("/request/new")
     public String requestForm(@RequestParam(required = false) Long customerId,
-                              HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
+                              Model model) {
         model.addAttribute("customers", customerRepository.findAll());
         model.addAttribute("persons", personRepository.findAll());
         model.addAttribute("selectedCustomerId", customerId);
@@ -329,10 +314,7 @@ public class CustomerController {
             @RequestParam(required = false) Boolean interviewNone,
             @RequestParam(required = false) String interviewDate1,
             @RequestParam(required = false) String interviewDate2,
-            @RequestParam(required = false) Long candidatePersonId,
-            HttpSession session) {
-
-        if (!checkAuth(session)) return "redirect:/login";
+            @RequestParam(required = false) Long candidatePersonId) {
 
         CustomerRequest req = new CustomerRequest();
         req.setCustomerId(customerId);
@@ -380,8 +362,7 @@ public class CustomerController {
 
     // ─── 求人受付表一覧 ────────────────────────────────
     @GetMapping("/request/list")
-    public String requestList(HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
+    public String requestList(Model model) {
         model.addAttribute("requests", customerRequestRepository.findAllOrdered());
         model.addAttribute("customers", customerRepository.findAll());
         model.addAttribute("persons", personRepository.findAll());
@@ -391,8 +372,7 @@ public class CustomerController {
     // ─── 1-2-2 管理簿入力 ─────────────────────────────
     @GetMapping("/report")
     public String report(@RequestParam(required = false) Long customerId,
-                         HttpSession session, Model model) {
-        if (!checkAuth(session)) return "redirect:/login";
+                         Model model) {
         model.addAttribute("customers", customerRepository.findAll());
         model.addAttribute("requests", customerRequestRepository.findAllOrdered());
         model.addAttribute("persons", personRepository.findAll());
@@ -418,9 +398,7 @@ public class CustomerController {
                                 @RequestParam(required = false) Long[] introIds,
                                 @RequestParam(required = false) String[] empStatusList,
                                 @RequestParam(required = false) String[] hireResultList,
-                                @RequestParam(required = false) String[] remarksList,
-                                HttpSession session) {
-        if (!checkAuth(session)) return "UNAUTHORIZED";
+                                @RequestParam(required = false) String[] remarksList) {
         if (introIds == null) return "OK";
 
         for (int i = 0; i < introIds.length; i++) {
@@ -450,10 +428,8 @@ public class CustomerController {
                           @RequestParam(required = false) String[] empStatusList,
                           @RequestParam(required = false) String[] hireResultList,
                           @RequestParam(required = false) String[] remarksList,
-                          HttpSession session, HttpServletResponse response)
+                          HttpServletResponse response)
             throws IOException, DocumentException {
-        if (!checkAuth(session)) { response.sendError(401); return; }
-
         Customer customer = customerId != null
                 ? customerRepository.findById(customerId).orElse(null) : null;
 

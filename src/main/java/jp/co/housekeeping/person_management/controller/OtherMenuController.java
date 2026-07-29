@@ -5,8 +5,6 @@ import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 
-import jakarta.servlet.http.HttpSession;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -32,43 +30,36 @@ public class OtherMenuController {
 
     // ─── 1-5 サブメニュー ────────────────────────────────────────
     @GetMapping("/other-menu")
-    public String otherMenu(HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+    public String otherMenu() {
         return "other-menu";
     }
 
     @GetMapping("/system-manual")
-    public String systemManual(HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+    public String systemManual() {
         return "system-manual";
     }
 
     // ─── 1-7-4 データフロー・計算式ガイド ─────────────────────────
     @GetMapping("/data-flow-guide")
-    public String dataFlowGuide(HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+    public String dataFlowGuide() {
         return "data-flow-guide";
     }
 
     // ─── 1-7-5 バックアップ手順 ───────────────────────
     @GetMapping("/backup-guide")
-    public String backupGuide(HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+    public String backupGuide() {
         return "backup-guide";
     }
 
     @GetMapping("/system-qa-help")
-    public String systemQaHelp(HttpSession session) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
+    public String systemQaHelp() {
         return "system-qa-help";
     }
 
     // ─── 1-7-3 システム診断 ──────────────────────────────────────
     @GetMapping("/system-qa")
     public String systemQa(@RequestParam(required = false) String month,
-                            HttpSession session, Model model) {
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
-
+                            Model model) {
         model.addAttribute("selectedMonth", month);
 
         // 月フィルタ用の YearMonth（null = 全期間）

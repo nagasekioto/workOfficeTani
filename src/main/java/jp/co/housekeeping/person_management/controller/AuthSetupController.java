@@ -192,15 +192,8 @@ public class AuthSetupController {
     // (D)(E)(F)(G) 利用者管理（ログイン必須）
     // ============================================================
 
-    private boolean isLoggedIn(HttpSession session) {
-        return session.getAttribute("authenticated") != null;
-    }
-
     @GetMapping("/auth/users")
-    public String usersPage(HttpSession session, Model model) {
-        if (!isLoggedIn(session)) {
-            return "redirect:/login";
-        }
+    public String usersPage(Model model) {
         AuthUserService svc = authUserServiceProvider.getIfAvailable();
         List<UserRow> rows = new ArrayList<>();
         if (svc != null) {
@@ -216,9 +209,6 @@ public class AuthSetupController {
     @PostMapping("/auth/users/add")
     public String addUser(@RequestParam String username, @RequestParam String displayName,
                            HttpSession session, HttpServletRequest request, Model model) {
-        if (!isLoggedIn(session)) {
-            return "redirect:/login";
-        }
         AuthUserService svc = authUserServiceProvider.getIfAvailable();
         QrCodeService qr = qrCodeServiceProvider.getIfAvailable();
         if (svc == null || qr == null) {
@@ -236,10 +226,7 @@ public class AuthSetupController {
     }
 
     @PostMapping("/auth/users/{id}/disable")
-    public String disableUser(@PathVariable Long id, HttpSession session, HttpServletRequest request) {
-        if (!isLoggedIn(session)) {
-            return "redirect:/login";
-        }
+    public String disableUser(@PathVariable Long id, HttpServletRequest request) {
         AuthUserService svc = authUserServiceProvider.getIfAvailable();
         if (svc == null) {
             return "redirect:/auth/users?errorMessage=" + encode("システムの初期化に失敗しました");
@@ -254,10 +241,7 @@ public class AuthSetupController {
     }
 
     @PostMapping("/auth/users/{id}/enable")
-    public String enableUser(@PathVariable Long id, HttpSession session, HttpServletRequest request) {
-        if (!isLoggedIn(session)) {
-            return "redirect:/login";
-        }
+    public String enableUser(@PathVariable Long id, HttpServletRequest request) {
         AuthUserService svc = authUserServiceProvider.getIfAvailable();
         if (svc == null) {
             return "redirect:/auth/users?errorMessage=" + encode("システムの初期化に失敗しました");
@@ -272,11 +256,8 @@ public class AuthSetupController {
     }
 
     @PostMapping("/auth/users/{id}/backup-codes")
-    public String reissueBackupCodes(@PathVariable Long id, HttpSession session,
+    public String reissueBackupCodes(@PathVariable Long id,
                                       HttpServletRequest request, Model model) {
-        if (!isLoggedIn(session)) {
-            return "redirect:/login";
-        }
         AuthUserService svc = authUserServiceProvider.getIfAvailable();
         if (svc == null) {
             return "redirect:/auth/users?errorMessage=" + encode("システムの初期化に失敗しました");

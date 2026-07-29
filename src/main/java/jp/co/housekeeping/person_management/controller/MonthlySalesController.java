@@ -10,8 +10,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.StreamSupport;
 
-import jakarta.servlet.http.HttpSession;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -34,10 +32,7 @@ public class MonthlySalesController {
 
     @GetMapping("/sales-monthly")
     public String monthly(@RequestParam(required = false) String month,
-                          HttpSession session, Model model) {
-
-        if (session.getAttribute("authenticated") == null) return "redirect:/login";
-
+                          Model model) {
         // 月未指定時は当月をデフォルト表示する
         if (month == null || month.isBlank()) {
             month = YearMonth.now().toString();
