@@ -6,8 +6,11 @@
 - **技術スタック**: Java 17 / Spring Boot 3.5 / Spring Data JDBC / Thymeleaf / PostgreSQL / iTextPDF
 - **ビルドツール**: Maven
 - **DB**: kaseihu (PostgreSQL, localhost:5432)
-- **認証**: セッションベース + **TOTP（Google Authenticator）**。共通パスワード方式は廃止
-  （`app.auth.mode=password` で退避可能だが非推奨）
+- **認証**: セッションベース + **TOTP（Google Authenticator）の一本のみ**。
+  共通パスワード方式・メール認証方式は削除済み（迂回経路を残さないため）。
+  パスワードを比較する処理を新たに書かないこと。詳細は `docs/PASSWORD_POLICY.md`
+- **秘密の値**: すべて環境変数から読む。`application.yml` の既定値に本物の値を書かないこと。
+  `DB_PASSWORD` 未設定では起動しない（テスト実行時も設定が必要）
 
 ## 用語定義
 

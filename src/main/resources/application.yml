@@ -8,79 +8,57 @@ server:
       cookie:
         http-only: true
 
+  # 待ち受けアドレス。未設定なら全インターフェース(0.0.0.0)で待ち受ける。
+  # このPCだけで使う運用なら SERVER_ADDRESS=127.0.0.1 を設定する。
+  # 詳細は docs/NETWORK_RESTRICTION.md 第5章を参照。
+  address: ${SERVER_ADDRESS:0.0.0.0}
+
 spring:
   datasource:
-    # 環境変数(DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD)で上書き可能。
-    # 未設定の場合は従来通りの値がそのまま使われるため、既存の起動方法(mvnw / 既存jar)には影響しない。
+    # 接続先は環境変数(DB_HOST/DB_PORT/DB_NAME/DB_USER)で上書きできる。
+    #
+    # パスワードには既定値を置いていない。
+    # 既定値に本物のパスワードを書くと、(1)設定し忘れても動いてしまい設定漏れに
+    # 気付けない (2)値がリポジトリと全コミット履歴に残り、閲覧できる人全員に知られる、
+    # という2つの問題が起きるため。
+    # 未設定の場合は、Springの起動処理に入る前に日本語のメッセージを出して停止する
+    # (PersonManagementApplication.checkRequiredEnv)。
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:kaseihu}
     username: ${DB_USER:postgres}
-    password: ${DB_PASSWORD:7136}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   sql:
     init:
       mode: never   # 既存DBを使うので自動DDLはしない
 
-  # --- メール認証用の送信設定(app.auth.email-enabled: true にした時だけ実際に使われる) ---
-  mail:
-    host: ${MAIL_HOST:smtp.gmail.com}
-    port: ${MAIL_PORT:587}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-
 app:
-  # ログインパスワード。環境変数 LOGIN_PASSWORD で上書き可能。
-  # 未設定時はデフォルトで"tani"(既存動作と同一)。
-  login:
-    password: ${LOGIN_PASSWORD:tani}
-
   # --- 監査ログ（誰が・いつ・何を見たか）1-7-7で閲覧 ---
   audit:
     # false にすると記録を停止する。通常は true のままにすること。
     enabled: ${AUDIT_ENABLED:true}
     # ログファイルの出力先。DBのaccess_logsを消されても、ここが残るようにしている。
-    # 定期的に別媒体へコピーする運用は docs/NETWORK_RESTRICTION.md を参照。
+    # 定期的に別媒体へコピーする運用は /backup-guide（1-7-5）を参照。
     log-dir: ${AUDIT_LOG_DIR:logs/audit}
     # 保持期間（日）。この日数を過ぎたDBレコードとログファイルは自動削除される。
     retention-days: ${AUDIT_RETENTION_DAYS:365}
 
   auth:
     # ============================================================
-    # ログイン方式
-    #   totp     : Google Authenticator の6桁コードでログインする（推奨・既定）
-    #   password : 従来の共通パスワード方式（移行期間の退避用。いずれ廃止する）
+    # 認証は Google Authenticator（TOTP）の一本のみ。
+    # 共通パスワード方式・メール認証方式は削除した。
+    # 設定を1つ変えるだけで二要素認証を迂回できる経路を残さないため。
     #
-    # totp のとき、有効な利用者が1人もいなければ、このPC上(localhost)からの
-    # アクセスに限り初回セットアップ画面が自動的に表示される。
+    # 有効な利用者が1人もいなければ、このPC上(localhost)からのアクセスに限り
+    # 初回セットアップ画面が自動的に表示される。
     # 更新して再起動した瞬間に誰も入れなくなる事態を防ぐための仕組み。
     # ============================================================
-    mode: ${AUTH_MODE:totp}
 
     # TOTPシークレットを暗号化する鍵。**必ず環境変数で設定すること。**
     # ここに直接書くと、DBと同じ場所に鍵を置くのと同じ意味になり暗号化の意味が消える。
-    # 未設定の場合、TOTPの登録・ログインはエラーになる（設定漏れに気付けるようにするため）。
+    # 未設定の場合は起動時に警告を出し、ログイン・登録はエラーになる。
     # 紛失時は全利用者のTOTPが復号できなくなるので、紙と別クラウドにも必ず保管すること。
     totp-encryption-key: ${TOTP_ENCRYPTION_KEY:}
 
     # Google Authenticator のアプリ上に表示されるサービス名
     totp-issuer: ${TOTP_ISSUER:ワークオフィス谷}
-
-    # ============================================================
-    # メール認証への切り替えフラグ。
-    # false(デフォルト): 今まで通り「共通パスワード方式」でログインする(挙動は変更なし)
-    # true            : 「メールアドレス宛の認証コード方式」に完全に切り替わる
-    #                   (切り替える前に、下のallowed-emailsとMAIL_USERNAME/MAIL_PASSWORDの
-    #                    環境変数設定が必要)
-    # ============================================================
-    email-enabled: ${AUTH_EMAIL_ENABLED:false}
-    # ログインを許可するメールアドレス一覧(ここに無いアドレスにはコードを送信しない)
-    allowed-emails:
-      - example@example.com
-    # 認証コードの有効期限(秒)
-    otp-expiry-seconds: 300

@@ -23,6 +23,7 @@
 | ドキュメント | 内容 | いつ読むか |
 |---|---|---|
 | `docs/SECURITY_CHECKLIST.md` | セキュリティ対策の実施状況と「命綱」の保管先チェックリスト | **セットアップ完了後に必ず** |
+| `docs/PASSWORD_POLICY.md` | 秘密の値の作り方・置き場所・変更手順 | **手順4の前に** |
 | `docs/INCIDENT_RESPONSE.md` | 乗っ取り・情報漏えいが疑われる時の対応手順 | **印刷して保管**。事故発生時 |
 | `docs/NETWORK_RESTRICTION.md` | DBへのアクセスを社内ネットワークに絞る設定 | セットアップ完了後 |
 | `docs/SQL_INJECTION_AUDIT.md` | SQLインジェクション監査の結果と再発防止項目 | コード変更時 |
