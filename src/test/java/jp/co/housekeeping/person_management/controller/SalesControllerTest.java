@@ -40,7 +40,7 @@ class SalesControllerTest {
 
     @Test
     void 未ログインで売上印刷すると401になる() throws Exception {
-        mockMvc.perform(post("/person/sales/print").param("personId", "1"))
+        mockMvc.perform(post("/person/sales/print").header("Origin", "http://localhost").param("personId", "1"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -48,7 +48,7 @@ class SalesControllerTest {
     void ログイン済みでも存在しないpersonIdなら404になる() throws Exception {
         when(personRepository.findById(999L)).thenReturn(Optional.empty());
 
-        mockMvc.perform(post("/person/sales/print")
+        mockMvc.perform(post("/person/sales/print").header("Origin", "http://localhost")
                         .sessionAttr("authenticated", true)
                         .param("personId", "999"))
                 .andExpect(status().isNotFound());
@@ -60,7 +60,7 @@ class SalesControllerTest {
         person.setId(1L);
         when(personRepository.findById(1L)).thenReturn(Optional.of(person));
 
-        mockMvc.perform(post("/person/sales/print")
+        mockMvc.perform(post("/person/sales/print").header("Origin", "http://localhost")
                         .sessionAttr("authenticated", true)
                         .param("personId", "1"))
                 .andExpect(status().isOk());

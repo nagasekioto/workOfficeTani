@@ -65,7 +65,7 @@ class AuthSetupControllerTest {
     void loopback以外のIPからのPOST_auth_setupも拒否される() throws Exception {
         when(authUserService.hasNoActiveUser()).thenReturn(true);
 
-        mockMvc.perform(post("/auth/setup")
+        mockMvc.perform(post("/auth/setup").header("Origin", "http://localhost")
                         .param("username", "tani")
                         .param("displayName", "谷")
                         .with(request -> { request.setRemoteAddr("192.168.1.50"); return request; }))
@@ -92,7 +92,7 @@ class AuthSetupControllerTest {
 
     @Test
     void 登録手続きを開始していない相手のPOST_enroll_confirmは拒否される() throws Exception {
-        mockMvc.perform(post("/auth/enroll/confirm").param("code", "123456"))
+        mockMvc.perform(post("/auth/enroll/confirm").header("Origin", "http://localhost").param("code", "123456"))
                 .andExpect(redirectedUrl("/login"));
 
         // completeEnrollmentが一度も呼ばれていない = 登録処理が走っていないこと
@@ -105,7 +105,7 @@ class AuthSetupControllerTest {
     void セッションに他人のuserIdをフォームで送っても登録は完了しない() throws Exception {
         // 攻撃者が他人のuserIdをパラメータに付けて直接POSTしても、
         // サーバーはフォームのuserIdを一切見ないため登録は進まない
-        mockMvc.perform(post("/auth/enroll/confirm")
+        mockMvc.perform(post("/auth/enroll/confirm").header("Origin", "http://localhost")
                         .param("code", "123456")
                         .param("userId", "1"))
                 .andExpect(redirectedUrl("/login"));
@@ -128,7 +128,7 @@ class AuthSetupControllerTest {
         session.setAttribute("pendingEnrollment", info);
         session.setAttribute("pendingEnrollmentAttempts", 5); // 上限に到達済み
 
-        mockMvc.perform(post("/auth/enroll/confirm").param("code", "123456").session(session))
+        mockMvc.perform(post("/auth/enroll/confirm").header("Origin", "http://localhost").param("code", "123456").session(session))
                 .andExpect(redirectedUrl("/login?error"));
 
         org.mockito.Mockito.verify(authUserService, org.mockito.Mockito.never())

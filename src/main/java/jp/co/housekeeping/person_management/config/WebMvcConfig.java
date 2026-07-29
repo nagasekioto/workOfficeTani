@@ -36,6 +36,14 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .excludePathPatterns("/css/**", "/js/**", "/images/**", "/webjars/**",
                                       "/favicon.ico", "/error");
 
+        // CSRF対策。認証チェックより先に置く。
+        // ログイン処理(/login/totp)自体もPOSTであり、外部サイトから発火させられる
+        // 対象なので、認証の要否にかかわらず全パスで検証する。
+        registry.addInterceptor(new CsrfInterceptor())
+                .addPathPatterns("/**")
+                .excludePathPatterns("/css/**", "/js/**", "/images/**", "/webjars/**",
+                                      "/favicon.ico", "/error");
+
         // 認証チェック。「既定で全部を守り、通してよい経路だけを除外する」方式。
         // 各コントローラに手書きするとチェック漏れがそのまま情報漏えいになるため
         // (詳細は AuthenticationInterceptor のJavadoc参照)。

@@ -57,15 +57,15 @@ class LoginControllerTest {
     void 共通パスワード方式のPOST_loginは存在しない() throws Exception {
         // /login は表示(GET)のみ。POSTの受け口を削除したため405が返る
         // （認証されず、/menu へも進まないことが要点）
-        mockMvc.perform(post("/login").param("password", "tani"))
+        mockMvc.perform(post("/login").header("Origin", "http://localhost").param("password", "tani"))
                 .andExpect(status().isMethodNotAllowed());
     }
 
     @Test
     void メール認証のエンドポイントは存在しない() throws Exception {
-        mockMvc.perform(post("/login/email/request").param("email", "a@example.com"))
+        mockMvc.perform(post("/login/email/request").header("Origin", "http://localhost").param("email", "a@example.com"))
                 .andExpect(status().isNotFound());
-        mockMvc.perform(post("/login/email/verify").param("code", "123456"))
+        mockMvc.perform(post("/login/email/verify").header("Origin", "http://localhost").param("code", "123456"))
                 .andExpect(status().isNotFound());
     }
 
@@ -106,7 +106,7 @@ class LoginControllerTest {
         when(authUserService.findByUsername("tani")).thenReturn(Optional.of(user));
         when(authUserService.verifyTotp(any(), anyString())).thenReturn(true);
 
-        mockMvc.perform(post("/login/totp").param("username", "tani").param("code", "123456"))
+        mockMvc.perform(post("/login/totp").header("Origin", "http://localhost").param("username", "tani").param("code", "123456"))
                 .andExpect(redirectedUrl("/menu"));
     }
 
@@ -117,7 +117,7 @@ class LoginControllerTest {
         when(authUserService.verifyTotp(any(), anyString())).thenReturn(false);
         when(authUserService.verifyBackupCode(any(), anyString())).thenReturn(false);
 
-        mockMvc.perform(post("/login/totp").param("username", "tani").param("code", "000000"))
+        mockMvc.perform(post("/login/totp").header("Origin", "http://localhost").param("username", "tani").param("code", "000000"))
                 .andExpect(redirectedUrl("/login?error"));
     }
 
@@ -125,7 +125,7 @@ class LoginControllerTest {
     void 存在しない利用者名でも誤コードと同じ応答になる() throws Exception {
         when(authUserService.findByUsername("nobody")).thenReturn(Optional.empty());
 
-        mockMvc.perform(post("/login/totp").param("username", "nobody").param("code", "123456"))
+        mockMvc.perform(post("/login/totp").header("Origin", "http://localhost").param("username", "nobody").param("code", "123456"))
                 .andExpect(redirectedUrl("/login?error"));
 
         // 存在しない利用者に対して照合処理を走らせない（応答時間の差から存在を推測されないため）
@@ -140,7 +140,7 @@ class LoginControllerTest {
         when(authUserService.verifyBackupCode(any(), anyString())).thenReturn(true);
         when(authUserService.countUnusedBackupCodes(1L)).thenReturn(9);
 
-        mockMvc.perform(post("/login/totp").param("username", "tani").param("code", "ABCD-EFGH"))
+        mockMvc.perform(post("/login/totp").header("Origin", "http://localhost").param("username", "tani").param("code", "ABCD-EFGH"))
                 .andExpect(redirectedUrl("/menu"));
     }
 
