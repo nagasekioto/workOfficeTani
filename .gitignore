@@ -2,6 +2,12 @@ HELP.md
 target/
 system-log.txt
 .mvn/wrapper/maven-wrapper.jar
+
+### 監査ログ（IPアドレス・アクセス履歴を含むためGit管理対象外） ###
+logs/
+
+### 環境変数ファイル（パスワードを含むためGit管理対象外） ###
+.env
 !**/src/main/**/target/
 !**/src/test/**/target/
 

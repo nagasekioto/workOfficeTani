@@ -250,3 +250,22 @@ CREATE TABLE IF NOT EXISTS membership_confirmations (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (person_id, work_month)
 );
+
+-- 監査ログ（誰が・いつ・何を見たか）1-7-7で閲覧する
+-- 侵入時にこのテーブルを消されても追跡できるよう、同じ内容を
+-- logs/audit/audit-YYYY-MM-DD.log にも追記している（AuditLogService参照）
+CREATE TABLE IF NOT EXISTS access_logs (
+    id BIGSERIAL PRIMARY KEY,
+    occurred_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    event_type VARCHAR(30) NOT NULL,  -- ACCESS / LOGIN_SUCCESS / LOGIN_FAILURE / LOGIN_LOCKED / LOGOUT
+    session_key VARCHAR(16),          -- セッションIDのハッシュ先頭16文字（生IDは保存しない）
+    client_ip VARCHAR(45),
+    http_method VARCHAR(10),
+    uri VARCHAR(500),
+    query_masked VARCHAR(500),        -- 許可リスト外のパラメータ値は***に伏せた状態で保存
+    status_code INTEGER,
+    duration_ms INTEGER,
+    authenticated BOOLEAN,
+    user_agent VARCHAR(300)
+);
+CREATE INDEX IF NOT EXISTS idx_access_logs_occurred_at ON access_logs (occurred_at DESC);

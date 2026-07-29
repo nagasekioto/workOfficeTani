@@ -64,6 +64,8 @@
     /system-qa                        1-7-3 システム診断（データ整合性チェック）
     /data-flow-guide                    1-7-4 データフロー・計算式ガイド
     /backup-guide                        1-7-5 バックアップ手順
+    /permanent-delete                     1-7-6 完全削除（退職・取引終了済みの人物を記録ごと削除）
+    /audit-log                             1-7-7 監査ログ（誰が・いつ・どの画面を見たか）
 ```
 
 金額の流れ・各画面の計算式の詳細は `/data-flow-guide`（1-7-4）を参照。
@@ -183,3 +185,14 @@ id, person_id, work_month, confirmed（UNIQUE(person_id, work_month)）
 
 ### customer_requests（求人受付表 1-2-1）/ customer_ledgers（求人管理簿 1-2-2）/ receipts_issued（領収書発行記録）
 いずれも詳細は schema-all.sql 参照。
+
+### access_logs（監査ログ 1-7-7）
+id, occurred_at, event_type（ACCESS / LOGIN_SUCCESS / LOGIN_FAILURE / LOGIN_LOCKED / LOGOUT）,
+session_key（セッションIDのSHA-256先頭16文字。生IDは保存しない）, client_ip, http_method, uri,
+query_masked（許可リスト外のパラメータ値は`***`に伏せる）, status_code, duration_ms, authenticated, user_agent
+
+`AuditLogInterceptor` が全リクエストを1箇所で捕捉して記録する（各コントローラは変更不要）。
+**同じ内容を `logs/audit/audit-YYYY-MM-DD.log` にも追記している。**
+このテーブルを消されても追跡できるようにするためで、片方だけの実装にしてはならない。
+記録処理は絶対に例外を投げない（監査ログの不具合で業務画面を落とさないため）。
+保持期間は `app.audit.retention-days`（既定365日）。

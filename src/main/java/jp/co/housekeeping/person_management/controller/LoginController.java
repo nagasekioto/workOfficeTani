@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import jp.co.housekeeping.person_management.service.AuditLogService;
 import jp.co.housekeeping.person_management.service.EmailAuthService;
 
 @Controller
@@ -38,10 +39,43 @@ public class LoginController {
     // LoginController自体の生成には失敗しないようにしている。
     private final ObjectProvider<EmailAuthService> emailAuthServiceProvider;
 
+    // 監査ログ。Beanが無い環境でも動くようObjectProviderで受ける（上と同じ理由）。
+    private final ObjectProvider<AuditLogService> auditLogServiceProvider;
+
     private static final String SESSION_PENDING_EMAIL = "pendingEmail";
 
-    public LoginController(ObjectProvider<EmailAuthService> emailAuthServiceProvider) {
+    public LoginController(ObjectProvider<EmailAuthService> emailAuthServiceProvider,
+                            ObjectProvider<AuditLogService> auditLogServiceProvider) {
         this.emailAuthServiceProvider = emailAuthServiceProvider;
+        this.auditLogServiceProvider = auditLogServiceProvider;
+    }
+
+    /**
+     * ログインの成否を監査ログに記録する。
+     * アクセスログだけでは「ログイン画面にPOSTした」ことしか分からず、
+     * 不正ログインの試行が成功したのか失敗したのかを判別できないため個別に記録する。
+     */
+    private void recordLoginEvent(String eventType, HttpServletRequest request, HttpSession session) {
+        try {
+            AuditLogService service = auditLogServiceProvider.getIfAvailable();
+            if (service == null) {
+                return;
+            }
+            AuditLogService.AuditEvent event = new AuditLogService.AuditEvent();
+            event.eventType    = eventType;
+            event.clientIp     = request.getRemoteAddr();
+            event.httpMethod   = request.getMethod();
+            event.uri          = request.getRequestURI();
+            event.userAgent    = request.getHeader("User-Agent");
+            event.authenticated = AuditLogService.EVENT_LOGIN_SUCCESS.equals(eventType);
+            if (session != null) {
+                event.sessionKey = AuditLogService.toSessionKey(session.getId());
+            }
+            service.record(event);
+        } catch (Exception e) {
+            // 監査ログの失敗でログインを止めない
+            System.err.println("[AuditLog] ログインイベントの記録に失敗: " + e.getMessage());
+        }
     }
 
     private static class AttemptInfo {
@@ -70,6 +104,7 @@ public class LoginController {
         long now = System.currentTimeMillis();
         if (info.lockedUntil > now) {
             long remainingSec = (info.lockedUntil - now) / 1000 + 1;
+            recordLoginEvent(AuditLogService.EVENT_LOGIN_LOCKED, request, session);
             return "redirect:/login?locked=" + remainingSec;
         }
 
@@ -77,6 +112,7 @@ public class LoginController {
             info.failCount = 0;
             info.lockedUntil = 0L;
             session.setAttribute("authenticated", true);
+            recordLoginEvent(AuditLogService.EVENT_LOGIN_SUCCESS, request, session);
             return "redirect:/menu";
         }
 
@@ -84,8 +120,10 @@ public class LoginController {
         if (info.failCount >= MAX_ATTEMPTS) {
             info.lockedUntil = now + LOCK_MILLIS;
             info.failCount = 0;
+            recordLoginEvent(AuditLogService.EVENT_LOGIN_LOCKED, request, session);
             return "redirect:/login?locked=" + (LOCK_MILLIS / 1000);
         }
+        recordLoginEvent(AuditLogService.EVENT_LOGIN_FAILURE, request, session);
         return "redirect:/login?error";
     }
 
@@ -151,6 +189,7 @@ public class LoginController {
             info.lockedUntil = 0L;
             session.removeAttribute(SESSION_PENDING_EMAIL);
             session.setAttribute("authenticated", true);
+            recordLoginEvent(AuditLogService.EVENT_LOGIN_SUCCESS, request, session);
             return "redirect:/menu";
         }
 
@@ -159,8 +198,10 @@ public class LoginController {
             info.lockedUntil = now + LOCK_MILLIS;
             info.failCount = 0;
             session.removeAttribute(SESSION_PENDING_EMAIL);
+            recordLoginEvent(AuditLogService.EVENT_LOGIN_LOCKED, request, session);
             return "redirect:/login?locked=" + (LOCK_MILLIS / 1000);
         }
+        recordLoginEvent(AuditLogService.EVENT_LOGIN_FAILURE, request, session);
         return "redirect:/login?error";
     }
 
@@ -173,7 +214,9 @@ public class LoginController {
     }
 
     @GetMapping("/logout")
-    public String logout(HttpSession session) {
+    public String logout(HttpSession session, HttpServletRequest request) {
+        // invalidate前に記録する（後だとセッションIDが取得できないため）
+        recordLoginEvent(AuditLogService.EVENT_LOGOUT, request, session);
         session.invalidate();
         return "redirect:/login";
     }
