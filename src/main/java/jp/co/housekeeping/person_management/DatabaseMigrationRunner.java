@@ -119,6 +119,38 @@ public class DatabaseMigrationRunner implements ApplicationRunner {
                 ")");
             stmt.execute(
                 "CREATE INDEX IF NOT EXISTS idx_access_logs_occurred_at ON access_logs (occurred_at DESC)");
+            // 利用者ごとのTOTP認証(対策4)を入れたことで「誰が」を記録できるようになった
+            stmt.execute("ALTER TABLE access_logs ADD COLUMN IF NOT EXISTS username VARCHAR(50)");
+
+            // ─── TOTP認証（Google Authenticator）の利用者 ──────────
+            // totp_secret_enc は AES-GCM で暗号化して保存する。
+            // 暗号化キーは環境変数 TOTP_ENCRYPTION_KEY（DBの外）に置いているため、
+            // DBのダンプだけを手に入れてもTOTPコードは生成できない。
+            stmt.execute(
+                "CREATE TABLE IF NOT EXISTS auth_users (" +
+                "  id BIGSERIAL PRIMARY KEY," +
+                "  username VARCHAR(50) NOT NULL UNIQUE," +
+                "  display_name VARCHAR(100)," +
+                "  totp_secret_enc TEXT NOT NULL," +
+                "  last_totp_step BIGINT," +          // 同じコードの使い回しを防ぐため最後に使った時間枠を記録
+                "  enrolled_at TIMESTAMP," +           // 初回のコード確認が通った日時。nullなら登録途中
+                "  disabled_at TIMESTAMP," +           // 値が入っていれば無効（退職者など）
+                "  last_login_at TIMESTAMP," +
+                "  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP" +
+                ")");
+
+            // ─── バックアップコード（認証アプリを入れた端末の紛失に備える） ──
+            // 平文は発行直後に1度だけ画面表示し、DBにはSHA-256のハッシュのみ保存する。
+            stmt.execute(
+                "CREATE TABLE IF NOT EXISTS auth_backup_codes (" +
+                "  id BIGSERIAL PRIMARY KEY," +
+                "  user_id BIGINT NOT NULL," +
+                "  code_hash VARCHAR(64) NOT NULL," +
+                "  used_at TIMESTAMP," +               // 1回使ったら日時が入り、以降は使えない
+                "  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP" +
+                ")");
+            stmt.execute(
+                "CREATE INDEX IF NOT EXISTS idx_auth_backup_codes_user ON auth_backup_codes (user_id)");
 
             System.out.println("[Migration] persons テーブルのカラム追加完了（IF NOT EXISTS）");
 

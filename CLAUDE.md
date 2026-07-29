@@ -6,7 +6,8 @@
 - **技術スタック**: Java 17 / Spring Boot 3.5 / Spring Data JDBC / Thymeleaf / PostgreSQL / iTextPDF
 - **ビルドツール**: Maven
 - **DB**: kaseihu (PostgreSQL, localhost:5432)
-- **認証**: セッションベース（パスワード: 7136）
+- **認証**: セッションベース + **TOTP（Google Authenticator）**。共通パスワード方式は廃止
+  （`app.auth.mode=password` で退避可能だが非推奨）
 
 ## 用語定義
 
@@ -66,6 +67,7 @@
     /backup-guide                        1-7-5 バックアップ手順
     /permanent-delete                     1-7-6 完全削除（退職・取引終了済みの人物を記録ごと削除）
     /audit-log                             1-7-7 監査ログ（誰が・いつ・どの画面を見たか）
+    /auth/users                             1-7-8 ログイン利用者管理（TOTP登録・バックアップコード再発行）
 ```
 
 金額の流れ・各画面の計算式の詳細は `/data-flow-guide`（1-7-4）を参照。
@@ -196,3 +198,19 @@ query_masked（許可リスト外のパラメータ値は`***`に伏せる）, s
 このテーブルを消されても追跡できるようにするためで、片方だけの実装にしてはならない。
 記録処理は絶対に例外を投げない（監査ログの不具合で業務画面を落とさないため）。
 保持期間は `app.audit.retention-days`（既定365日）。
+
+### auth_users / auth_backup_codes（TOTP認証 1-7-8）
+auth_users: id, username, display_name, **totp_secret_enc**, last_totp_step, enrolled_at, disabled_at, last_login_at, created_at
+auth_backup_codes: id, user_id, **code_hash**, used_at, created_at
+
+**設計上、絶対に崩してはならない点:**
+- `totp_secret_enc` は AES-GCM で暗号化して保存する。鍵は環境変数 `TOTP_ENCRYPTION_KEY`（**DBの外**）。
+  DBを丸ごと盗まれても第2要素を奪えないようにするため。平文で保存するフォールバックは意図的に作っていない
+- `code_hash` は SHA-256。バックアップコードの平文は発行直後に1度だけ画面表示し、DBには残さない
+- `last_totp_step` により、同じ6桁コードの使い回し（再生攻撃）を拒否する
+- `completeEnrollment` は登録済みの利用者に対して実行してはならない。実行できるとバックアップコードを
+  奪われる。対象利用者はセッションに記録した登録手続きからのみ決定する（フォームのuserIdは信用しない）
+- 有効な利用者が0人のときのみ、かつ localhost からのみ初回セットアップ画面を開く（ロックアウト防止）
+- 最後の1人は無効化できない（全員が締め出されるのを防ぐため）
+
+TOTPは RFC 6238 の自前実装（`TotpService`）。正しさは RFC 6238 Appendix B の公式テストベクタで検証済み。

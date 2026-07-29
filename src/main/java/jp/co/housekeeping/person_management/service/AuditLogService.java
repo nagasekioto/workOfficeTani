@@ -42,6 +42,10 @@ public class AuditLogService {
     public static final String EVENT_LOGIN_FAILURE = "LOGIN_FAILURE";
     public static final String EVENT_LOGIN_LOCKED  = "LOGIN_LOCKED";
     public static final String EVENT_LOGOUT        = "LOGOUT";
+    /** バックアップコードでのログイン。認証アプリが使えない状況を意味するため個別に記録する */
+    public static final String EVENT_LOGIN_BACKUP  = "LOGIN_BACKUP_CODE";
+    /** TOTP利用者の新規登録・無効化など、認証設定そのものの変更 */
+    public static final String EVENT_AUTH_CHANGE   = "AUTH_CHANGE";
 
     /**
      * クエリ文字列のうち、値をそのまま記録してよいパラメータ名。
@@ -132,6 +136,7 @@ public class AuditLogService {
             e.statusCode == null ? "" : String.valueOf(e.statusCode),
             e.durationMs == null ? "" : String.valueOf(e.durationMs),
             String.valueOf(e.authenticated),
+            safe(e.username),
             safe(e.userAgent)
         ) + System.lineSeparator();
 
@@ -148,8 +153,8 @@ public class AuditLogService {
         }
         jdbc.update(
             "INSERT INTO access_logs (occurred_at, event_type, session_key, client_ip, "
-            + "http_method, uri, query_masked, status_code, duration_ms, authenticated, user_agent) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            + "http_method, uri, query_masked, status_code, duration_ms, authenticated, user_agent, username) "
+            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             java.sql.Timestamp.valueOf(e.occurredAt),
             trim(e.eventType, 30),
             trim(e.sessionKey, 16),
@@ -160,7 +165,8 @@ public class AuditLogService {
             e.statusCode,
             e.durationMs,
             e.authenticated,
-            trim(e.userAgent, 300));
+            trim(e.userAgent, 300),
+            trim(e.username, 50));
     }
 
     // ─── 保持期間を超えたログの整理（1日1回） ────────────────────
@@ -291,5 +297,10 @@ public class AuditLogService {
         public Integer durationMs;
         public boolean authenticated;
         public String  userAgent;
+        /** 誰が。TOTP認証(対策4)でログインした利用者名。未ログイン時はnull */
+        public String  username;
     }
+
+    /** ログイン中の利用者名を保持するセッション属性名 */
+    public static final String SESSION_USERNAME = "authUsername";
 }

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>初回セットアップ - ワークオフィス谷</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Meiryo, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 400px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        p.desc {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .warn-box {
+            background: #FFF8E1;
+            border: 1px solid #FFB74D;
+            color: #E65100;
+            padding: 14px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>&#128273; 初回セットアップ</h1>
+        <p class="desc">最初の利用者を登録します。<br>登録後は Google Authenticator アプリでログインできるようになります。</p>
+
+        <div class="error" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+        <!-- 暗号化キー未設定の場合は登録フォームを出さない -->
+        <div class="warn-box" th:if="${keyMissing}">
+            &#9888; TOTPの暗号化キーが設定されていません。<br>
+            環境変数 <strong>TOTP_ENCRYPTION_KEY</strong> を設定してから、システムを再起動してください。
+        </div>
+
+        <form th:unless="${keyMissing}" method="post" action="/auth/setup">
+            <div class="form-group">
+                <label for="username">利用者名（ログイン時に入力）</label>
+                <input type="text" id="username" name="username" placeholder="例: tani" required autofocus>
+            </div>
+            <div class="form-group">
+                <label for="displayName">表示名</label>
+                <input type="text" id="displayName" name="displayName" placeholder="例: 谷 太郎">
+            </div>
+            <button type="submit">登録してQRコードを表示</button>
+        </form>
+    </div>
+</body>
+</html>

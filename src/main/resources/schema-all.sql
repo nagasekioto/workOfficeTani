@@ -266,6 +266,34 @@ CREATE TABLE IF NOT EXISTS access_logs (
     status_code INTEGER,
     duration_ms INTEGER,
     authenticated BOOLEAN,
-    user_agent VARCHAR(300)
+    user_agent VARCHAR(300),
+    username VARCHAR(50)              -- 誰が。TOTP認証(対策4)でログインした利用者名
 );
 CREATE INDEX IF NOT EXISTS idx_access_logs_occurred_at ON access_logs (occurred_at DESC);
+
+-- TOTP認証（Google Authenticator）の利用者
+-- totp_secret_enc は AES-GCM で暗号化して保存する。暗号化キーは環境変数
+-- TOTP_ENCRYPTION_KEY（DBの外）に置いているため、DBのダンプだけを手に入れても
+-- TOTPコードは生成できない。キーの保管場所は docs/INCIDENT_RESPONSE.md を参照。
+CREATE TABLE IF NOT EXISTS auth_users (
+    id BIGSERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    display_name VARCHAR(100),
+    totp_secret_enc TEXT NOT NULL,
+    last_totp_step BIGINT,          -- 同じコードの使い回しを防ぐため最後に使った時間枠を記録
+    enrolled_at TIMESTAMP,          -- 初回のコード確認が通った日時。nullなら登録途中
+    disabled_at TIMESTAMP,          -- 値が入っていれば無効（退職者など）
+    last_login_at TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- バックアップコード（認証アプリを入れた端末の紛失に備える）
+-- 平文は発行直後に1度だけ画面表示し、DBにはSHA-256ハッシュのみ保存する
+CREATE TABLE IF NOT EXISTS auth_backup_codes (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    code_hash VARCHAR(64) NOT NULL,
+    used_at TIMESTAMP,              -- 1回使ったら日時が入り、以降は使えない
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_auth_backup_codes_user ON auth_backup_codes (user_id);

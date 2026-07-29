@@ -13,11 +13,21 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import jp.co.housekeeping.person_management.model.AuthUser;
 import jp.co.housekeeping.person_management.service.AuditLogService;
+import jp.co.housekeeping.person_management.service.AuthUserService;
 import jp.co.housekeeping.person_management.service.EmailAuthService;
 
 @Controller
 public class LoginController {
+
+    /** ログイン方式: totp = Google Authenticator / password = 従来の共通パスワード */
+    @Value("${app.auth.mode:totp}")
+    private String authMode;
+
+    private boolean isTotpMode() {
+        return "totp".equalsIgnoreCase(authMode);
+    }
 
     private static final boolean SKIP_PASSWORD_CHECK = false;
 
@@ -42,12 +52,17 @@ public class LoginController {
     // 監査ログ。Beanが無い環境でも動くようObjectProviderで受ける（上と同じ理由）。
     private final ObjectProvider<AuditLogService> auditLogServiceProvider;
 
+    // TOTP認証。同上。
+    private final ObjectProvider<AuthUserService> authUserServiceProvider;
+
     private static final String SESSION_PENDING_EMAIL = "pendingEmail";
 
     public LoginController(ObjectProvider<EmailAuthService> emailAuthServiceProvider,
-                            ObjectProvider<AuditLogService> auditLogServiceProvider) {
+                            ObjectProvider<AuditLogService> auditLogServiceProvider,
+                            ObjectProvider<AuthUserService> authUserServiceProvider) {
         this.emailAuthServiceProvider = emailAuthServiceProvider;
         this.auditLogServiceProvider = auditLogServiceProvider;
+        this.authUserServiceProvider = authUserServiceProvider;
     }
 
     /**
@@ -56,12 +71,18 @@ public class LoginController {
      * 不正ログインの試行が成功したのか失敗したのかを判別できないため個別に記録する。
      */
     private void recordLoginEvent(String eventType, HttpServletRequest request, HttpSession session) {
+        recordLoginEvent(eventType, request, session, null);
+    }
+
+    private void recordLoginEvent(String eventType, HttpServletRequest request,
+                                   HttpSession session, String username) {
         try {
             AuditLogService service = auditLogServiceProvider.getIfAvailable();
             if (service == null) {
                 return;
             }
             AuditLogService.AuditEvent event = new AuditLogService.AuditEvent();
+            event.username     = username;
             event.eventType    = eventType;
             event.clientIp     = request.getRemoteAddr();
             event.httpMethod   = request.getMethod();
@@ -86,18 +107,109 @@ public class LoginController {
     private static final ConcurrentHashMap<String, AttemptInfo> attempts = new ConcurrentHashMap<>();
 
     @GetMapping("/login")
-    public String loginPage(HttpSession session, Model model) {
+    public String loginPage(HttpSession session, HttpServletRequest request, Model model) {
+        model.addAttribute("totpMode", isTotpMode());
         model.addAttribute("emailAuthEnabled", emailAuthEnabled);
         if (emailAuthEnabled) {
             boolean codeSent = session.getAttribute(SESSION_PENDING_EMAIL) != null;
             model.addAttribute("codeSent", codeSent);
         }
+
+        // TOTP方式なのに利用者が1人も登録されていない場合、
+        // 誰もログインできず締め出されてしまう。このPC上からのアクセスに限り、
+        // 初回セットアップ画面へ誘導する（ロックアウト防止）。
+        if (isTotpMode()) {
+            AuthUserService svc = authUserServiceProvider.getIfAvailable();
+            if (svc != null && svc.hasNoActiveUser() && isLoopback(request)) {
+                return "redirect:/auth/setup";
+            }
+        }
         return "login";
+    }
+
+    /** リクエスト元がこのPC自身か（初回セットアップを外部から実行させないための判定） */
+    static boolean isLoopback(HttpServletRequest request) {
+        String ip = request.getRemoteAddr();
+        return "127.0.0.1".equals(ip) || "0:0:0:0:0:0:0:1".equals(ip) || "::1".equals(ip);
+    }
+
+    // ============================================================
+    // TOTP方式（Google Authenticator）のログイン
+    // ============================================================
+
+    @PostMapping("/login/totp")
+    public String loginTotp(@RequestParam String username, @RequestParam String code,
+                             HttpSession session, HttpServletRequest request) {
+        if (!isTotpMode()) {
+            return "redirect:/login";
+        }
+        AuthUserService svc = authUserServiceProvider.getIfAvailable();
+        if (svc == null) {
+            return "redirect:/login?error";
+        }
+
+        String ip = request.getRemoteAddr();
+        AttemptInfo info = attempts.computeIfAbsent(ip, k -> new AttemptInfo());
+        long now = System.currentTimeMillis();
+        if (info.lockedUntil > now) {
+            long remainingSec = (info.lockedUntil - now) / 1000 + 1;
+            recordLoginEvent(AuditLogService.EVENT_LOGIN_LOCKED, request, session, username);
+            return "redirect:/login?locked=" + remainingSec;
+        }
+
+        AuthUser user = svc.findByUsername(username).orElse(null);
+
+        // 利用者名が存在しない場合も、コードが違う場合と同じ結果を返す。
+        // 区別できると「どの利用者名が登録済みか」を外部から探れてしまうため。
+        boolean totpOk = user != null && svc.verifyTotp(user, code);
+        boolean backupOk = !totpOk && user != null && svc.verifyBackupCode(user, code);
+
+        if (totpOk || backupOk) {
+            info.failCount = 0;
+            info.lockedUntil = 0L;
+
+            // セッション固定化攻撃対策：ログイン成功のタイミングでセッションIDを変える。
+            // 攻撃者が事前に用意したセッションIDのまま認証状態になるのを防ぐ。
+            try {
+                request.changeSessionId();
+            } catch (IllegalStateException ignored) {
+                // セッションが無い場合は何もしない
+            }
+
+            session.setAttribute("authenticated", true);
+            session.setAttribute(AuditLogService.SESSION_USERNAME, user.getUsername());
+
+            recordLoginEvent(
+                backupOk ? AuditLogService.EVENT_LOGIN_BACKUP : AuditLogService.EVENT_LOGIN_SUCCESS,
+                request, session, user.getUsername());
+
+            // バックアップコードを使った＝認証アプリが使えない状況なので、
+            // 残数を確認して再登録を促すため画面側にフラグを渡す
+            if (backupOk) {
+                session.setAttribute("backupCodeUsed", svc.countUnusedBackupCodes(user.getId()));
+            }
+            return "redirect:/menu";
+        }
+
+        info.failCount++;
+        if (info.failCount >= MAX_ATTEMPTS) {
+            info.lockedUntil = now + LOCK_MILLIS;
+            info.failCount = 0;
+            recordLoginEvent(AuditLogService.EVENT_LOGIN_LOCKED, request, session, username);
+            return "redirect:/login?locked=" + (LOCK_MILLIS / 1000);
+        }
+        recordLoginEvent(AuditLogService.EVENT_LOGIN_FAILURE, request, session, username);
+        return "redirect:/login?error";
     }
 
     @PostMapping("/login")
     public String login(@RequestParam String password, HttpSession session,
                          HttpServletRequest request, Model model) {
+        // TOTP方式のときは共通パスワードでのログインを一切受け付けない。
+        // 方式を切り替えた後も旧経路が生き残っていると、そこが抜け道になるため。
+        if (isTotpMode()) {
+            return "redirect:/login";
+        }
         String ip = request.getRemoteAddr();
         AttemptInfo info = attempts.computeIfAbsent(ip, k -> new AttemptInfo());
 

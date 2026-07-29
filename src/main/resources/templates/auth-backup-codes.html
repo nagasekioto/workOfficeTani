@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>バックアップコード - ワークオフィス谷</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Meiryo, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 460px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .warn-box {
+            background: #FFEBEE;
+            border: 2px solid #F44336;
+            color: #B71C1C;
+            padding: 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 15px;
+            text-align: center;
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+        .code-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px 16px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        .code-item {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+        .note-box {
+            background: #FFF8E1;
+            border: 1px solid #FFB74D;
+            border-radius: 6px;
+            padding: 14px 16px;
+            font-size: 13px;
+            color: #E65100;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+        .note-box ul {
+            margin: 6px 0 0 0;
+            padding-left: 18px;
+        }
+        .btn-row {
+            display: flex;
+            gap: 10px;
+        }
+        button, .btn-link {
+            flex: 1;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: background 0.3s;
+            text-align: center;
+            text-decoration: none;
+            box-sizing: border-box;
+        }
+        button:hover, .btn-link:hover {
+            background: #5568d3;
+        }
+        .btn-secondary {
+            background: #90a4ae;
+        }
+        .btn-secondary:hover {
+            background: #78909c;
+        }
+        @media print {
+            body { background: white; }
+            .login-container { box-shadow: none; width: auto; }
+            .btn-row { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>&#128273; バックアップコード</h1>
+
+        <div class="warn-box">
+            &#9888; この画面は二度と表示されません。<br>
+            今すぐ印刷するか、紙に書き写してください。
+        </div>
+
+        <div class="code-list">
+            <div class="code-item" th:each="c : ${backupCodes}" th:text="${c}">XXXX-XXXX</div>
+        </div>
+
+        <div class="note-box">
+            &#128161; 保管方法のご注意
+            <ul>
+                <li>このパソコンの中には保存しないでください（認証アプリが使えない時の唯一の手段が、守る対象と同じ場所にあっては意味がありません）</li>
+                <li>紙に印刷して、鍵のかかる引き出しに保管してください</li>
+                <li>1つのコードは1回しか使えません</li>
+            </ul>
+        </div>
+
+        <div class="btn-row">
+            <button type="button" onclick="window.print()">&#128424; 印刷する</button>
+            <a href="/auth/users" class="btn-link btn-secondary">利用者管理へ</a>
+            <a href="/menu" class="btn-link btn-secondary">メニューへ</a>
+        </div>
+    </div>
+</body>
+</html>

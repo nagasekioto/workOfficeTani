@@ -74,6 +74,14 @@
 			<version>5.2.5</version>
 		</dependency>
 
+		<!-- QRコード生成（TOTP初回登録時にGoogle Authenticatorで読み取るQRを表示するため）
+		     画像化(javase)は使わずSVGを自前で組み立てるため core のみ -->
+		<dependency>
+			<groupId>com.google.zxing</groupId>
+			<artifactId>core</artifactId>
+			<version>3.5.3</version>
+		</dependency>
+
 		<!-- PDF生成ライブラリ（iText） -->
 <dependency>
     <groupId>com.itextpdf</groupId>

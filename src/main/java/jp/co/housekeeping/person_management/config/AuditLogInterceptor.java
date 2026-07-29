@@ -64,6 +64,8 @@ public class AuditLogInterceptor implements HandlerInterceptor {
             if (session != null) {
                 event.sessionKey    = AuditLogService.toSessionKey(session.getId());
                 event.authenticated = session.getAttribute("authenticated") != null;
+                Object username = session.getAttribute(AuditLogService.SESSION_USERNAME);
+                event.username = username != null ? username.toString() : null;
             }
 
             Object start = request.getAttribute(ATTR_START);
