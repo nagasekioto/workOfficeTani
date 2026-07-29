@@ -402,7 +402,17 @@ public class RegisterController {
                               HttpServletResponse response) throws IOException, DocumentException {
         if (!checkAuth(session)) { response.sendError(401); return; }
 
-        List<RegisterRecord> raw = registerRecordRepository.findByWorkMonth(month);
+        // monthはヘッダー出力に使うため、ヘッダーインジェクション対策として形式検証を行う
+        java.time.YearMonth ym;
+        try {
+            ym = java.time.YearMonth.parse(month);
+        } catch (java.time.format.DateTimeParseException e) {
+            response.sendError(400);
+            return;
+        }
+        String normalizedMonth = ym.toString();
+
+        List<RegisterRecord> raw = registerRecordRepository.findByWorkMonth(normalizedMonth);
 
         // 求人者名マップを構築：customer_id → 氏名
         Map<Long, String> customerMap = new HashMap<>();
@@ -410,13 +420,13 @@ public class RegisterController {
             customerMap.put(c.getId(), c.getLastNameKanji() + " " + c.getFirstNameKanji()));
 
         // person_id → 求人者名リスト（求職者1人が複数の求人者で働いた場合に対応）
-        Map<Long, List<String>> personToCustomerNames = buildPersonToCustomerListMap(month, customerMap);
+        Map<Long, List<String>> personToCustomerNames = buildPersonToCustomerListMap(normalizedMonth, customerMap);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        createFeeLedgerPdf(month, raw, personToCustomerNames, baos);
+        createFeeLedgerPdf(normalizedMonth, raw, personToCustomerNames, baos);
 
         response.setContentType("application/pdf");
-        response.setHeader("Content-Disposition", "inline; filename=fee-ledger-" + month + ".pdf");
+        response.setHeader("Content-Disposition", "inline; filename=fee-ledger-" + normalizedMonth + ".pdf");
         response.setContentLength(baos.size());
         response.getOutputStream().write(baos.toByteArray());
         response.getOutputStream().flush();
