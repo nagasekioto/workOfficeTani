@@ -14,9 +14,18 @@
 3. データベースを準備する
 4. 設定ファイルを確認する
 5. システムを起動する
-6. 動作確認・ログイン
+6. 動作確認・ログイン（**Google Authenticator の初回登録**）
 7. バックアップを設定する
 8. うまくいかないときのチェックリスト
+
+このほか、セキュリティ関連の設定と手順は `docs/` フォルダにまとめてあります。
+
+| ドキュメント | 内容 | いつ読むか |
+|---|---|---|
+| `docs/SECURITY_CHECKLIST.md` | セキュリティ対策の実施状況と「命綱」の保管先チェックリスト | **セットアップ完了後に必ず** |
+| `docs/INCIDENT_RESPONSE.md` | 乗っ取り・情報漏えいが疑われる時の対応手順 | **印刷して保管**。事故発生時 |
+| `docs/NETWORK_RESTRICTION.md` | DBへのアクセスを社内ネットワークに絞る設定 | セットアップ完了後 |
+| `docs/SQL_INJECTION_AUDIT.md` | SQLインジェクション監査の結果と再発防止項目 | コード変更時 |
 
 ---
 
@@ -79,12 +88,21 @@ git clone https://github.com/nagasekioto/workOfficeTani.git
 cd workOfficeTani
 ```
 
-このリポジトリが非公開（プライベート）の場合は、GitHubのアクセストークンが必要になることがあります。
-その場合は以下のようにトークン付きのURLでcloneしてください（`<トークン>`は実際のトークンに置き換え）。
+このリポジトリが非公開（プライベート）の場合は、GitHubのアクセストークンが必要になります。
+
+> ⚠️ **トークンをURLに埋め込む方法（`https://<トークン>@github.com/...`）は使わないでください。**
+> トークンが `.git\config` に平文で残り続けます。このパソコンを触れる人・
+> バックアップを取得できる人が、そのままリポジトリを書き換えられる状態になります。
+
+代わりに、Windowsの資格情報マネージャーに預ける方法を使ってください。
+`git clone` の実行時にGitHubのログイン画面が出るので、そこで認証します。
 
 ```powershell
-git clone https://<トークン>@github.com/nagasekioto/workOfficeTani.git
+git config --global credential.helper manager
+git clone https://github.com/nagasekioto/workOfficeTani.git
 ```
+
+以降、パスワードの入力は不要になります。トークンはWindowsが暗号化して保管します。
 
 ---
 
@@ -96,7 +114,7 @@ PowerShellで、PostgreSQLに付属する`psql`コマンドを使います（パ
 見つからない場合は下記「8. チェックリスト」の方法で探してください）。
 
 ```powershell
-$env:PGPASSWORD = "（1-4で設定したPostgreSQLのパスワード）"
+$env:PGPASSWORD = Read-Host "PostgreSQLのパスワードを入力" -AsSecureString | ConvertFrom-SecureString -AsPlainText
 & "C:\Program Files\PostgreSQL\17\bin\psql.exe" -U postgres -h localhost -c "CREATE DATABASE kaseihu;"
 ```
 
@@ -120,21 +138,37 @@ $env:PGPASSWORD = "（1-4で設定したPostgreSQLのパスワード）"
 
 ---
 
-## 4. 設定ファイルを確認する
+## 4. 設定を行う
 
-`C:\workofficetani\src\main\resources\application.yml` をVSCodeで開き、
-PostgreSQLのパスワードが実際の環境と合っているか確認します。
+このシステムは、パスワードなどの秘密の値を**設定ファイルに書かず、環境変数から読む**作りになっています。
+設定ファイルはGitHubで共有されるため、そこに実際のパスワードを書くと、
+リポジトリを見られる人全員に知られてしまうからです。
 
-```yaml
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/kaseihu
-    username: postgres
-    password: （1-4で設定した実際のパスワード）
-    driver-class-name: org.postgresql.Driver
+管理者権限のPowerShellで、以下を設定してください。
+
+```powershell
+[Environment]::SetEnvironmentVariable("DB_PASSWORD", "（1-4で設定したPostgreSQLのパスワード）", "Machine")
+[Environment]::SetEnvironmentVariable("TOTP_ENCRYPTION_KEY", "（30文字以上のランダムな文字列）", "Machine")
 ```
 
-パスワードが違う場合は書き換えて保存してください。
+設定後、**PowerShellを開き直してください**（新しく開いたウィンドウから有効になります）。
+
+反映されたか確認します。
+
+```powershell
+[Environment]::GetEnvironmentVariable("DB_PASSWORD", "Machine")
+[Environment]::GetEnvironmentVariable("TOTP_ENCRYPTION_KEY", "Machine")
+```
+
+設定できる項目の一覧と説明は `.env.example` にあります。
+
+> ⚠️ **`TOTP_ENCRYPTION_KEY` は、必ずこのパソコンとは別の場所にも控えてください。**
+> 紙に書いて鍵のかかる引き出しへ、かつ**DBのバックアップとは別の**クラウドへ。
+> この鍵とDBバックアップを同じ場所に置くと、そこを1つ破られただけで暗号化した意味が消えます。
+> 詳しくは `docs/SECURITY_CHECKLIST.md` を参照してください。
+
+> 📌 `Machine`（システム環境変数）にしているのは、バックアップの自動実行が
+> `SYSTEM` アカウントで動くためです。ユーザー環境変数にすると自動バックアップから読めません。
 
 ---
 

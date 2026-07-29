@@ -44,6 +44,18 @@
                 その後、<b>毎月15日 23:30に実行する方式</b>に変更（保存先も
                 <code>C:\workOfficeTani\backup</code> に変更）。
             </div>
+            <div class="warn">
+                ⚠️ <b>2026年7月29日更新</b>：ログイン方式がGoogle Authenticator（TOTP）に変わったこと、
+                監査ログ（1-7-7）が追加されたことに伴い、本手順を更新しました。
+                <b>既にバックアップを設定済みの方も、①手順4のスクリプトを作り直してください。</b>
+                主な変更点は次の3つです。
+                <ul style="margin:8px 0 0 0; padding-left:20px; line-height:1.9;">
+                    <li>DBパスワードをスクリプトに直接書かず、環境変数から読むようにした</li>
+                    <li>監査ログのファイルもバックアップ対象に追加した</li>
+                    <li>復元後の確認に、ログイン利用者とバックアップコードの確認を追加した（③-2）</li>
+                </ul>
+                あわせて、新設した<b>⑦「命綱」をどこに置くか</b>を必ずお読みください。
+            </div>
         </div>
     </div>
 
@@ -95,15 +107,36 @@ Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value 'New-Item -ItemType
 Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value '$pgBin = "（手順3で確認したフォルダのパス）"'
 Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value '$dbName = "kaseihu"'
 Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value '$dbUser = "postgres"'
-Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value '$env:PGPASSWORD = "7136"'
+Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value '$env:PGPASSWORD = $env:DB_PASSWORD'
 Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value '$dateStr = Get-Date -Format "yyyyMMdd_HHmmss"'
 Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value '$backupFile = "$backupDir\kaseihu_$dateStr.backup"'
 Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value '& "$pgBin\pg_dump.exe" -U $dbUser -h localhost -d $dbName -F c -f $backupFile'
-Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value 'if ($LASTEXITCODE -eq 0) { Write-Output "Backup OK: $backupFile" } else { Write-Output "Backup FAILED, exit code: $LASTEXITCODE" }'
-Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value 'Get-ChildItem -Path $backupDir -Filter "kaseihu_*.backup" | Sort-Object LastWriteTime -Descending | Select-Object -Skip 12 | Remove-Item -Force'</pre>
+Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value 'if ($LASTEXITCODE -ne 0) { Write-Output "Backup FAILED, exit code: $LASTEXITCODE"; exit 1 }'
+Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value 'Write-Output "Backup OK: $backupFile"'
+Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value '$auditSrc = "C:\workOfficeTani\logs\audit"'
+Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value 'if (Test-Path $auditSrc) { $auditDst = "$backupDir\audit_$dateStr"; New-Item -ItemType Directory -Path $auditDst -Force | Out-Null; Copy-Item "$auditSrc\*.log" $auditDst -Force; Write-Output "Audit log copied: $auditDst" }'
+Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value 'Get-ChildItem -Path $backupDir -Filter "kaseihu_*.backup" | Sort-Object LastWriteTime -Descending | Select-Object -Skip 12 | Remove-Item -Force'
+Add-Content -Path C:\workOfficeTani\backup\backup.ps1 -Value 'Get-ChildItem -Path $backupDir -Directory -Filter "audit_*" | Sort-Object LastWriteTime -Descending | Select-Object -Skip 12 | Remove-Item -Recurse -Force'</pre>
             <code>$pgBin</code>の行だけ、実際に確認したパスに書き換えてから実行してください。
             実行後、中身が文字化けせず正しく書き込まれたか確認します。
             <pre>Get-Content C:\workOfficeTani\backup\backup.ps1</pre>
+            <div class="warn">
+                ⚠️ <b>DBパスワードをスクリプトに直接書かないでください。</b>
+                上記は環境変数 <code>DB_PASSWORD</code> から読む形にしています。
+                スクリプトに直接書くと、このパソコンを触れる人・バックアップフォルダを見られる人が
+                そのままDBの中身（顧客の氏名・住所・電話番号）を取り出せてしまいます。<br><br>
+                タスクスケジューラは <code>SYSTEM</code> アカウントで実行されるため、
+                <b>ユーザー環境変数ではなくシステム環境変数として</b>設定してください
+                （管理者権限のPowerShellで実行）。
+                <pre>[Environment]::SetEnvironmentVariable("DB_PASSWORD", "（実際のDBパスワード）", "Machine")</pre>
+                設定後、PowerShellを開き直してから手順6の動作確認を行ってください。
+            </div>
+            <div class="note">
+                💡 <b>監査ログ（1-7-7）もバックアップ対象に含めています。</b>
+                侵入された場合、DB内の <code>access_logs</code> テーブルは消される可能性がありますが、
+                <code>logs\audit\</code> のファイルをここへ退避しておけば、
+                「いつから・どの画面が見られたか」を後から追えます。
+            </div>
             <div class="note">
                 最後の1行は保持ロジックです。毎月15日に1回だけ実行する運用のため、日数ではなく
                 <b>「直近12個（約1年分）を残し、それより古いものだけ削除」</b>という件数ベースの方式に
@@ -191,10 +224,21 @@ Get-ChildItem C:\workOfficeTani\backup</pre>
                 <li>C:\workOfficeTani\backup フォルダの中から、復元したいバックアップファイル（例：kaseihu_20260709_215908.backup）を確認する</li>
                 <li>PowerShellで以下を実行する（ファイル名・pgBinのパスは実際のものに置き換える）</li>
             </ol>
-            <pre>$env:PGPASSWORD = "7136"
+            <pre>$env:PGPASSWORD = Read-Host "DBパスワードを入力" -AsSecureString | ConvertFrom-SecureString -AsPlainText
 & "C:\workofficetani\bin\pg_restore.exe" -U postgres -h localhost -d kaseihu --clean "C:\workOfficeTani\backup\kaseihu_20260709_215908.backup"</pre>
             <div class="note">
-                <code>--clean</code> を付けると、既存のテーブルを消してからバックアップ内容で復元し直してくれます。
+                <code>--clean</code> を付けると、既存のテーブルを消してからバックアップ内容で復元し直してくれます。<br>
+                1行目は、パスワードを画面に表示せずその場で入力する書き方です。
+                この手順書にパスワードそのものを書かないのは、
+                <b>ログインできる人が誰でもDBパスワードを読めてしまうのを避けるため</b>です。
+            </div>
+            <div class="warn">
+                ⚠️ <b>復元しただけではログインできません。</b>
+                ログイン情報（Google Authenticatorの登録）は暗号化されており、
+                その鍵は環境変数 <code>TOTP_ENCRYPTION_KEY</code> にあります。
+                パソコンを新しくした場合は、この鍵も設定し直してください（→ ⑦）。
+                鍵が分からない場合は、印刷しておいたバックアップコードでログインし、
+                「1-7-8 ログイン利用者管理」から登録し直してください。
             </div>
         </div>
     </div>
@@ -204,7 +248,7 @@ Get-ChildItem C:\workOfficeTani\backup</pre>
         <div class="section-body">
             「本当にこのバックアップから復元できるか」を、実際の <code>kaseihu</code> データベースに触れずに確認する方法です。
             <div class="subsection-title">1. 試験用の空のデータベースを作る</div>
-            <pre>$env:PGPASSWORD = "7136"
+            <pre>$env:PGPASSWORD = Read-Host "DBパスワードを入力" -AsSecureString | ConvertFrom-SecureString -AsPlainText
 & "C:\workofficetani\bin\createdb.exe" -U postgres -h localhost kaseihu_test</pre>
             <div class="subsection-title">2. バックアップファイルを試験用DBに復元する</div>
             <pre>& "C:\workofficetani\bin\pg_restore.exe" -U postgres -h localhost -d kaseihu_test "C:\workOfficeTani\backup\（確認したいファイル名）"</pre>
@@ -213,6 +257,15 @@ Get-ChildItem C:\workOfficeTani\backup</pre>
 & "C:\workofficetani\bin\psql.exe" -U postgres -h localhost -d kaseihu_test -c "SELECT count(*) FROM persons;"
 & "C:\workofficetani\bin\psql.exe" -U postgres -h localhost -d kaseihu_test -c "SELECT last_name_kanji, first_name_kanji, mobile_phone FROM persons LIMIT 3;"</pre>
             件数が一致し、氏名・電話番号などの中身も正しく表示されればOKです。
+            <div class="subsection-title">3-2. ログイン情報と監査ログも入っているか確認する</div>
+            顧客データだけ戻ってもログインできなければ業務は再開できません。以下も必ず確認してください。
+            <pre>& "C:\workofficetani\bin\psql.exe" -U postgres -h localhost -d kaseihu_test -c "SELECT username, enrolled_at IS NOT NULL AS 登録済み, disabled_at IS NULL AS 有効 FROM auth_users;"
+& "C:\workofficetani\bin\psql.exe" -U postgres -h localhost -d kaseihu_test -c "SELECT count(*) AS 未使用バックアップコード FROM auth_backup_codes WHERE used_at IS NULL;"
+& "C:\workofficetani\bin\psql.exe" -U postgres -h localhost -d kaseihu_test -c "SELECT count(*) AS 監査ログ件数 FROM access_logs;"</pre>
+            <div class="note">
+                利用者が「登録済み・有効」で表示され、未使用のバックアップコードが残っていればOKです。
+                バックアップコードが0個の場合は、復元後すぐに「1-7-8 ログイン利用者管理」から再発行してください。
+            </div>
             <div class="subsection-title">4. 試験用データベースを削除する（後片付け）</div>
             <pre>& "C:\workofficetani\bin\dropdb.exe" -U postgres -h localhost kaseihu_test</pre>
         </div>
@@ -223,7 +276,8 @@ Get-ChildItem C:\workOfficeTani\backup</pre>
         <div class="section-body">
             <table>
                 <tr><th>項目</th><th>内容</th></tr>
-                <tr><td>バックアップ対象</td><td>データベース <code>kaseihu</code>（求職者・求人者・売上・紹介状など全データ）</td></tr>
+                <tr><td>バックアップ対象</td><td>データベース <code>kaseihu</code>（求職者・求人者・売上・紹介状、ログイン利用者、監査ログ）<br>および <code>logs\audit\</code> の監査ログファイル</td></tr>
+                <tr><td>バックアップに<b>含まれない</b>もの</td><td><b>環境変数 <code>TOTP_ENCRYPTION_KEY</code>（ログイン情報の暗号化キー）</b><br><b>印刷したバックアップコード</b><br>→ どちらも意図的に含めていません。理由は⑦を参照</td></tr>
                 <tr><td>バックアップスクリプト</td><td>C:\workOfficeTani\backup\backup.ps1</td></tr>
                 <tr><td>実行タイミング</td><td>毎月15日 23:30（タスクスケジューラ「kaseihu-DB-Backup」）</td></tr>
                 <tr><td>実行アカウント</td><td>SYSTEM（ログオンしていなくても実行される。パスワード不要）</td></tr>
@@ -233,10 +287,11 @@ Get-ChildItem C:\workOfficeTani\backup</pre>
                 <tr><td>保持期間</td><td>直近12個（約1年分）。それより古いものは自動削除</td></tr>
                 <tr><td>PostgreSQLツールの場所（開発機の例）</td><td>C:\workofficetani\bin（本番機では①手順3で確認し直すこと）</td></tr>
             </table>
-            <div class="note">
-                ⚠️ バックアップ先を同じパソコンの中だけにしていると、パソコンの故障・盗難・火災等が起きた場合は
-                元データもバックアップも同時に失われます。①手順1で触れた通り、クラウド同期フォルダの中に
-                保存先を作ることを検討してください。
+            <div class="warn">
+                ⚠️ バックアップ先を同じパソコンの中だけにしていると、パソコンの故障・盗難・火災・
+                ランサムウェア等が起きた場合、<b>元データもバックアップも同時に失われます</b>。
+                クラウド同期フォルダや外付けHDDにも保存先を作ってください。
+                詳しくは<b>⑦「命綱」をどこに置くか</b>を必ずお読みください。
             </div>
         </div>
     </div>
@@ -255,6 +310,80 @@ Get-ChildItem C:\workOfficeTani\backup</pre>
                 <code>/d 15</code>（実行日）や <code>/st "23:30"</code>（実行時刻）の部分を変えて、
                 同じコマンドをもう一度実行してください（<code>/f</code>により上書き登録されるため、
                 事前にタスクを削除する必要はありません。管理者権限のPowerShellが必要です）。
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="section-header">⑦ 「命綱」をどこに置くか（最重要）</div>
+        <div class="section-body">
+            <div class="warn">
+                ⚠️ <b>いざという時に頼る唯一の手段を、守りたいもの本体と同じ場所に置いてはいけません。</b><br>
+                同じ場所にあるということは、<b>本体が失われる時に一緒に失われる</b>ということです。
+                火事・盗難・ランサムウェア・パソコンの故障は、その場所ごとまとめて奪っていきます。
+            </div>
+
+            <div class="subsection-title">守るものと、その命綱の置き場所</div>
+            <table>
+                <tr><th>守るもの</th><th>いざという時の命綱</th><th>❌ やってはいけない置き方</th><th>✅ 正しい置き方</th></tr>
+                <tr>
+                    <td>顧客の個人情報（DB）</td>
+                    <td>DBバックアップ</td>
+                    <td>このパソコンの <code>C:\workOfficeTani\backup</code> だけ</td>
+                    <td>同フォルダ ＋ <b>クラウド（別アカウント）</b>または外付けHDD</td>
+                </tr>
+                <tr>
+                    <td>ログインする手段</td>
+                    <td>バックアップコード（10個）</td>
+                    <td>このパソコンの中にテキストで保存</td>
+                    <td><b>紙に印刷して鍵のかかる引き出し</b>のみ</td>
+                </tr>
+                <tr>
+                    <td>ログイン情報の復号</td>
+                    <td>環境変数 <code>TOTP_ENCRYPTION_KEY</code></td>
+                    <td>DBバックアップと同じフォルダ・同じクラウドに保存</td>
+                    <td>紙 ＋ <b>DBバックアップとは別の</b>クラウドアカウント</td>
+                </tr>
+                <tr>
+                    <td>DBへの接続</td>
+                    <td>DBパスワード</td>
+                    <td>バックアップスクリプトや手順書に直接書く</td>
+                    <td>システム環境変数 ＋ 紙（鍵のかかる引き出し）</td>
+                </tr>
+                <tr>
+                    <td>侵入の証跡</td>
+                    <td>監査ログ（1-7-7）</td>
+                    <td>DBの中だけ（侵入者に消される）</td>
+                    <td>DB ＋ <code>logs\audit\</code> ＋ バックアップ先へ退避（①手順4で自動化済み）</td>
+                </tr>
+                <tr>
+                    <td>復旧のやり方</td>
+                    <td>この手順書・インシデント対応手順書</td>
+                    <td>このパソコンの中だけ</td>
+                    <td><b>紙に印刷</b>して保管（パソコンが起動しない時こそ必要になるため）</td>
+                </tr>
+            </table>
+
+            <div class="warn">
+                ⚠️ <b>特に注意：暗号化キーとDBバックアップを同じ場所に置かないでください。</b>
+                ログイン情報は「DBの中で暗号化し、鍵はDBの外に置く」という作りにしています。
+                両方を同じクラウドフォルダに入れてしまうと、そこを1つ破られただけで
+                <b>暗号化した意味が完全に消えます</b>。
+            </div>
+
+            <div class="subsection-title">確認チェックリスト（年1回・担当者が代わった時）</div>
+            <ol class="step-list">
+                <li>☐ DBバックアップが、このパソコン以外の場所にもあるか</li>
+                <li>☐ バックアップコードの紙が、鍵のかかる場所にあり、内容が最新か</li>
+                <li>☐ <code>TOTP_ENCRYPTION_KEY</code> の控えが、DBバックアップとは<b>別の場所</b>にあるか</li>
+                <li>☐ この手順書とインシデント対応手順書を印刷したものがあるか</li>
+                <li>☐ ④の試験復元を実際に行い、復元できることを確認したか</li>
+                <li>☐ 復元後に、ログイン利用者と未使用バックアップコードが残っているか確認したか（③-2）</li>
+            </ol>
+            <div class="note">
+                インシデント（乗っ取り・情報漏えいの疑い）が起きた場合の対応手順は、
+                システムのフォルダ内 <code>docs\INCIDENT_RESPONSE.md</code> にまとめてあります。
+                <b>こちらも必ず印刷して保管してください。</b>
             </div>
         </div>
     </div>
