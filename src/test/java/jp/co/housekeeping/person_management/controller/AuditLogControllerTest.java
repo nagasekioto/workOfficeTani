@@ -31,7 +31,9 @@ class AuditLogControllerTest {
 
     @Test
     void 未認証でアクセスするとログイン画面にリダイレクトされる() throws Exception {
-        mockMvc.perform(get("/audit-log"))
+        // ブラウザで画面を開く場合を再現するため Accept を明示する
+        // （理由は AuthenticationInterceptor のJavadoc参照）
+        mockMvc.perform(get("/audit-log").header("Accept", "text/html"))
                 .andExpect(redirectedUrl("/login"));
     }
 

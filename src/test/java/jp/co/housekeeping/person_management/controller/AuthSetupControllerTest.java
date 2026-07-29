@@ -80,7 +80,9 @@ class AuthSetupControllerTest {
 
     @Test
     void 未ログイン状態でGET_auth_usersはloginにリダイレクトされる() throws Exception {
-        mockMvc.perform(get("/auth/users"))
+        // ブラウザで画面を開く場合を再現するため Accept を明示する
+        // （理由は AuthenticationInterceptor のJavadoc参照）
+        mockMvc.perform(get("/auth/users").header("Accept", "text/html"))
                 .andExpect(redirectedUrl("/login"));
     }
 

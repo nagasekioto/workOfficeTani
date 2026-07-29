@@ -148,7 +148,11 @@ class LoginControllerTest {
 
     @Test
     void 未ログインでメニューを開くとログイン画面に戻される() throws Exception {
-        mockMvc.perform(get("/menu"))
+        // ブラウザで画面を開く場合を再現するため Accept を明示する。
+        // MockMvcは既定でAcceptを送らないが、実際のブラウザは text/html を送る。
+        // AuthenticationInterceptor は画面遷移かどうかでログイン画面へのリダイレクトと
+        // 401を出し分けるため、ヘッダが無いと401になりリダイレクトを検証できない。
+        mockMvc.perform(get("/menu").header("Accept", "text/html"))
                 .andExpect(redirectedUrl("/login"));
     }
 
