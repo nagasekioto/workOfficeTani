@@ -1,0 +1,215 @@
+/* ============================================================
+   メニュー画面（初期画面 1-7 と各サブメニュー）の共通スタイル
+
+   【なぜ共通ファイルにしたか】
+   以前は8つのテンプレートが同じCSSを17行ずつ各自に持っていた。
+   1箇所直すと8箇所直す必要があり、片方だけ直して見た目が食い違う状態になりやすい。
+
+   【アイコンについて】
+   絵文字（&#128084; 等）をやめ、インラインSVGに統一した。
+   絵文字はWindowsのバージョンやフォント設定で形・色・太さが変わり、
+   並べたときに揃わない。SVGなら環境によらず同じ見た目になる。
+   CDNのアイコンフォントを使わないのは、インターネットが無い環境でも
+   崩れないようにするため（このシステムは1台のPCで動かす想定）。
+
+   【配色】
+   画面ごとに1色を割り当て、body に色クラス（menu-purple 等）を付ける。
+   サブメニューには親カテゴリと同じ色を付けているので、
+   今どの分類の中に居るのかが色で分かる。
+   ============================================================ */
+
+html, body { height: 100%; }
+
+body {
+    font-family: 'Segoe UI', Meiryo, sans-serif;
+    background: #f4f4f6;
+    margin: 0;
+    padding: 2vh 2vw;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* ─── ヘッダー ───────────────────────────── */
+
+.header {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2vh;
+    padding: 0 0.5vw;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: clamp(17px, 2.8vh, 26px);
+    font-weight: 500;
+    color: #2c2c2a;
+    display: flex;
+    align-items: center;
+    gap: 0.8vw;
+}
+
+/* ヘッダーのアイコンは、その画面の色で塗る */
+.header h1 svg {
+    width: clamp(20px, 3.2vh, 30px);
+    height: clamp(20px, 3.2vh, 30px);
+    color: var(--accent-strong);
+}
+
+/* 影を使わず細い罫線にしている。影を多用すると画面が濁って見えるため */
+.nav-btn {
+    font-size: clamp(12px, 1.9vh, 15px);
+    color: #5f5e5a;
+    background: #ffffff;
+    border: 1px solid #d3d1c7;
+    border-radius: 8px;
+    padding: 1vh 1.4vw;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.nav-btn:hover { background: #f1efe8; border-color: #b4b2a9; }
+
+/* ログアウトだけは色を分ける（押し間違えると作業が中断するため） */
+.nav-btn.logout { color: #a32d2d; border-color: #f09595; }
+.nav-btn.logout:hover { background: #fcebeb; border-color: #e24b4a; }
+
+/* ─── タイル ─────────────────────────────── */
+
+/* 3列。項目数が変わっても行は自動で増える。
+   画面内に収める（overflow:hidden）ため、行の高さは均等に伸縮させる */
+.menu-grid {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-rows: 1fr;
+    gap: 1.8vh 1.8vw;
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.menu-item {
+    background: var(--accent-bg);
+    border: 1px solid var(--accent-border);
+    border-radius: 14px;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1vh;
+    padding: 1.5vh 1vw;
+    transition: background 0.15s, transform 0.15s;
+}
+
+.menu-item:hover {
+    background: var(--accent-bg-hover);
+    transform: translateY(-2px);
+}
+
+.menu-item:focus-visible {
+    outline: 3px solid var(--accent-strong);
+    outline-offset: 2px;
+}
+
+.menu-item svg {
+    width: clamp(28px, 6.5vh, 64px);
+    height: clamp(28px, 6.5vh, 64px);
+    color: var(--accent-icon);
+    flex-shrink: 0;
+}
+
+.menu-title {
+    font-size: clamp(15px, 2.7vh, 26px);
+    font-weight: 500;
+    color: var(--accent-text);
+    text-align: center;
+    line-height: 1.3;
+}
+
+.menu-no {
+    font-size: clamp(11px, 1.7vh, 15px);
+    color: var(--accent-icon);
+}
+
+/* 項目の用途を1行で添える説明文。
+   「どの画面に何があるか」を覚えていなくても選べるようにするためのもので、
+   消すと利用者が画面を開いて確かめる手間が増える。減らさないこと。
+   面の色と同系の濃い色を使う（灰色にすると面の上で濁って読みにくくなる） */
+/* 下限を12pxにしているのは、画面の縦が短いノートPCでも読める大きさを保つため。
+   実測で、縦720pxのとき 1.55vh だと11pxまで縮んで読みにくかった */
+.menu-sub {
+    font-size: clamp(12px, 1.7vh, 15px);
+    color: var(--accent-icon);
+    text-align: center;
+    line-height: 1.45;
+    max-width: 92%;
+}
+
+/* ─── 取り返しのつかない操作のタイル ─────────────────
+   押し間違いが致命的になる項目（領収書削除など）は、
+   他と同じ見た目にしてはいけない。
+   色だけに頼らず破線の枠でも区別する（色の判別が難しい人にも伝わるように）
+   ─────────────────────────────────────── */
+
+.menu-item.danger {
+    background: #fcebeb;
+    border: 2px dashed #e24b4a;
+}
+
+.menu-item.danger svg    { color: #a32d2d; }
+.menu-item.danger .menu-title { color: #501313; }
+.menu-item.danger .menu-sub,
+.menu-item.danger .menu-no    { color: #a32d2d; }
+.menu-item.danger:hover  { background: #f7c1c1; }
+
+/* 押せない項目（未実装など） */
+.menu-item.disabled { opacity: 0.4; pointer-events: none; }
+
+/* 幅いっぱいに広げたいタイル（余りが1つ出るときに使う） */
+.menu-item.wide { grid-column: 1 / -1; flex-direction: row; gap: 1.5vw; }
+
+/* ─── 配色 ───────────────────────────────
+   各色は「淡い面 + 同系の濃い文字」で組む。
+   面に黒文字を載せると濁るため、文字も必ず同系色の濃い方を使う。
+   ─────────────────────────────────────── */
+
+.menu-purple { --accent-bg:#eeedfe; --accent-bg-hover:#cecbf6; --accent-border:#cecbf6;
+               --accent-icon:#534ab7; --accent-text:#26215c; --accent-strong:#7f77dd; }
+
+.menu-teal   { --accent-bg:#e1f5ee; --accent-bg-hover:#9fe1cb; --accent-border:#9fe1cb;
+               --accent-icon:#0f6e56; --accent-text:#04342c; --accent-strong:#1d9e75; }
+
+.menu-amber  { --accent-bg:#faeeda; --accent-bg-hover:#fac775; --accent-border:#fac775;
+               --accent-icon:#854f0b; --accent-text:#412402; --accent-strong:#ba7517; }
+
+.menu-blue   { --accent-bg:#e6f1fb; --accent-bg-hover:#b5d4f4; --accent-border:#b5d4f4;
+               --accent-icon:#185fa5; --accent-text:#042c53; --accent-strong:#378add; }
+
+.menu-pink   { --accent-bg:#fbeaf0; --accent-bg-hover:#f4c0d1; --accent-border:#f4c0d1;
+               --accent-icon:#993556; --accent-text:#4b1528; --accent-strong:#d4537e; }
+
+.menu-coral  { --accent-bg:#faece7; --accent-bg-hover:#f5c4b3; --accent-border:#f5c4b3;
+               --accent-icon:#993c1d; --accent-text:#4a1b0c; --accent-strong:#d85a30; }
+
+.menu-gray   { --accent-bg:#f1efe8; --accent-bg-hover:#d3d1c7; --accent-border:#d3d1c7;
+               --accent-icon:#5f5e5a; --accent-text:#2c2c2a; --accent-strong:#888780; }
+
+/* 初期画面はタイルごとに色を変えるため、タイル側で色クラスを上書きする */
+.menu-grid .t-purple { --accent-bg:#eeedfe; --accent-bg-hover:#cecbf6; --accent-border:#cecbf6; --accent-icon:#534ab7; --accent-text:#26215c; }
+.menu-grid .t-teal   { --accent-bg:#e1f5ee; --accent-bg-hover:#9fe1cb; --accent-border:#9fe1cb; --accent-icon:#0f6e56; --accent-text:#04342c; }
+.menu-grid .t-amber  { --accent-bg:#faeeda; --accent-bg-hover:#fac775; --accent-border:#fac775; --accent-icon:#854f0b; --accent-text:#412402; }
+.menu-grid .t-blue   { --accent-bg:#e6f1fb; --accent-bg-hover:#b5d4f4; --accent-border:#b5d4f4; --accent-icon:#185fa5; --accent-text:#042c53; }
+.menu-grid .t-pink   { --accent-bg:#fbeaf0; --accent-bg-hover:#f4c0d1; --accent-border:#f4c0d1; --accent-icon:#993556; --accent-text:#4b1528; }
+.menu-grid .t-coral  { --accent-bg:#faece7; --accent-bg-hover:#f5c4b3; --accent-border:#f5c4b3; --accent-icon:#993c1d; --accent-text:#4a1b0c; }
+.menu-grid .t-gray   { --accent-bg:#f1efe8; --accent-bg-hover:#d3d1c7; --accent-border:#d3d1c7; --accent-icon:#5f5e5a; --accent-text:#2c2c2a; }
+
+/* 画面が狭いときは2列に落とす（タイルが潰れて文字が読めなくなるのを防ぐ） */
+@media (max-width: 900px) {
+    .menu-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

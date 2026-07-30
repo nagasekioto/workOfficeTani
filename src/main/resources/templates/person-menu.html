@@ -3,56 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <title>求職者管理 - 家政婦紹介事務所</title>
-    <style>
-        html, body { height: 100%; }
-        body { font-family: 'Segoe UI', Meiryo, sans-serif; background: #f5f5f5; margin: 0; padding: 2vh 2vw; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; }
-        .header { flex-shrink: 0; background: white; padding: 1.5vh 2vw; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 2vh; display: flex; justify-content: space-between; align-items: center; }
-        h1 { margin: 0; color: #333; font-size: clamp(18px, 3vh, 28px); }
-        .back-btn { background: #2196F3; color: white; padding: 1vh 1.5vw; border: none; border-radius: 5px; text-decoration: none; }
-        .menu-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr); gap: 2vh 2vw; max-width: 1600px; width: 100%; margin: 0 auto; }
-        .menu-item { background: white; padding: 1vh 1vw; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; transition: transform 0.2s, box-shadow 0.2s; text-decoration: none; color: inherit; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .menu-item:hover { transform: translateY(-4px); box-shadow: 0 5px 15px rgba(0,0,0,0.15); }
-        .menu-icon { font-size: clamp(28px, 9vh, 100px); margin-bottom: 1.5vh; }
-        .menu-title { font-size: clamp(16px, 3.2vh, 30px); font-weight: bold; color: #333; }
-    </style>
+    <link rel="stylesheet" th:href="@{/css/menu.css}">
 </head>
-<body>
+<body class="menu-purple">
 <div class="header">
-    <h1>&#128084; 求職者管理（1-1）</h1>
-    <a href="/menu" class="back-btn">&#8592; 初期画面に戻る</a>
+    <h1><span th:replace="~{fragments/icons :: users}"></span>求職者管理（1-1）</h1>
+    <a href="/menu" class="nav-btn"><span th:replace="~{fragments/icons :: arrowleft}"></span>初期画面に戻る</a>
 </div>
 <div class="menu-grid">
     <a href="/person/register" class="menu-item">
-        <div class="menu-icon">&#128221;</div>
-        <div class="menu-title">1-1-1 名簿入力</div>
+        <span th:replace="~{fragments/icons :: note}"></span>
+        <div class="menu-title">名簿入力</div>
+        <div class="menu-no">1-1-1</div>
     </a>
     <a href="/person/schedule" class="menu-item">
-        <div class="menu-icon">&#128197;</div>
-        <div class="menu-title">1-1-2 スケジュール</div>
+        <span th:replace="~{fragments/icons :: calendar}"></span>
+        <div class="menu-title">スケジュール</div>
+        <div class="menu-no">1-1-2</div>
     </a>
     <a href="/person/sales" class="menu-item">
-        <div class="menu-icon">&#128176;</div>
-        <div class="menu-title">1-1-3 売上入力</div>
+        <span th:replace="~{fragments/icons :: trend}"></span>
+        <div class="menu-title">売上入力</div>
+        <div class="menu-no">1-1-3</div>
     </a>
     <a href="/person/shokuji-ledger" class="menu-item">
-        <div class="menu-icon">&#128203;</div>
-        <div class="menu-title">1-1-4 管理簿入力</div>
+        <span th:replace="~{fragments/icons :: ledger}"></span>
+        <div class="menu-title">管理簿入力</div>
+        <div class="menu-no">1-1-4</div>
     </a>
     <a href="/person/working-ledger" class="menu-item">
-        <div class="menu-icon">&#128202;</div>
-        <div class="menu-title">1-1-5 稼働管理簿</div>
+        <span th:replace="~{fragments/icons :: chart}"></span>
+        <div class="menu-title">稼働管理簿</div>
+        <div class="menu-no">1-1-5</div>
     </a>
     <a href="/person/list" class="menu-item">
-        <div class="menu-icon">&#128101;</div>
-        <div class="menu-title">1-1-6 求職者情報</div>
+        <span th:replace="~{fragments/icons :: userlist}"></span>
+        <div class="menu-title">求職者情報</div>
+        <div class="menu-no">1-1-6</div>
     </a>
     <a href="/person/membership" class="menu-item">
-        <div class="menu-icon">&#128179;</div>
-        <div class="menu-title">1-1-7 会費</div>
+        <span th:replace="~{fragments/icons :: card}"></span>
+        <div class="menu-title">会費</div>
+        <div class="menu-no">1-1-7</div>
     </a>
     <a href="/person/retired-list" class="menu-item">
-        <div class="menu-icon">&#128100;</div>
-        <div class="menu-title">1-1-8 退職者リスト</div>
+        <span th:replace="~{fragments/icons :: userout}"></span>
+        <div class="menu-title">退職者リスト</div>
+        <div class="menu-no">1-1-8</div>
     </a>
 </div>
 </body>
