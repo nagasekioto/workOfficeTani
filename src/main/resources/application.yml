@@ -63,6 +63,21 @@ spring:
       mode: never   # 既存DBを使うので自動DDLはしない
 
 app:
+  # --- DBロール分離（対策1: 最小権限の原則）---
+  db:
+    migration:
+      # 起動時のマイグレーション(ALTER TABLE / CREATE TABLE)専用の接続情報。
+      #
+      # アプリの通常動作は権限を絞ったロール(kaseihu_app)で接続させたいが、
+      # DDLにはテーブルの所有者権限が必要なため、そこだけ別のロールを使う。
+      #
+      # **未設定の場合は通常の接続をそのまま使う（従来と完全に同じ動作）。**
+      # 既存の起動方法を壊さないため、あえてフォールバックを残している。
+      #
+      # ロールの作り方は scripts\create-db-roles.sql を参照。
+      username: ${DB_MIGRATION_USER:}
+      password: ${DB_MIGRATION_PASSWORD:}
+
   # --- 監査ログ（誰が・いつ・何を見たか）1-7-7で閲覧 ---
   audit:
     # false にすると記録を停止する。通常は true のままにすること。

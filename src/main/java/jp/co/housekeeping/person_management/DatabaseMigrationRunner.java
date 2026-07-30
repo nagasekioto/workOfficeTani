@@ -1,12 +1,14 @@
 package jp.co.housekeeping.person_management;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
 import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
@@ -14,6 +16,20 @@ import org.springframework.stereotype.Component;
 /**
  * アプリ起動時にDBマイグレーションを自動実行する。
  * IF NOT EXISTS を使うため冪等（何度実行しても安全）。
+ *
+ * 【接続について】
+ * ここは ALTER TABLE / CREATE TABLE を実行するため、
+ * テーブルの所有者権限が必要になる。
+ *
+ * 一方でアプリの通常動作は、権限を絞ったロール（kaseihu_app）で
+ * 接続させたい（対策1: 最小権限の原則）。
+ * そのため、マイグレーション専用の接続情報が設定されていればそれを使い、
+ * 設定されていなければ従来どおり通常の接続を使う。
+ *
+ * **設定していない場合の動作は従来と完全に同じ**。
+ * 既存の起動方法を壊さないため、あえてフォールバックを残している。
+ *
+ * ロールの作り方は scripts\create-db-roles.sql を参照。
  */
 @Component
 public class DatabaseMigrationRunner implements ApplicationRunner {
@@ -21,9 +37,35 @@ public class DatabaseMigrationRunner implements ApplicationRunner {
     @Autowired
     private DataSource dataSource;
 
+    // マイグレーション専用の接続情報。未設定なら通常の接続を使う。
+    @Value("${app.db.migration.username:}")
+    private String migrationUsername;
+
+    @Value("${app.db.migration.password:}")
+    private String migrationPassword;
+
+    @Value("${spring.datasource.url}")
+    private String jdbcUrl;
+
+    /**
+     * DDLを実行するための接続を取り出す。
+     *
+     * 専用の接続情報があるときは、コネクションプールを介さず
+     * DriverManager で直接つなぐ。起動時に一度だけ使う接続なので、
+     * プールを1つ増やして常駐させる必要が無いため。
+     */
+    private Connection openConnection() throws SQLException {
+        if (migrationUsername == null || migrationUsername.isBlank()) {
+            return dataSource.getConnection();
+        }
+        System.out.println("[Migration] マイグレーション専用の接続を使用します（利用者: "
+            + migrationUsername + "）");
+        return DriverManager.getConnection(jdbcUrl, migrationUsername, migrationPassword);
+    }
+
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = openConnection();
              Statement stmt = conn.createStatement()) {
 
             // ─── schema-update-6: persons テーブル拡張（就職希望条件） ───
@@ -156,7 +198,48 @@ public class DatabaseMigrationRunner implements ApplicationRunner {
 
         } catch (SQLException e) {
             System.err.println("[Migration] エラー: " + e.getMessage());
+
+            // 権限不足はこの処理で最も起こりやすい失敗であり、
+            // かつメッセージを読んでも原因が分かりにくい。
+            // 「アプリが起動しない」だけで放り出さず、直し方まで示す。
+            if (isPermissionError(e)) {
+                printPermissionHelp();
+            }
             throw e;
         }
+    }
+
+    private boolean isPermissionError(SQLException e) {
+        // PostgreSQLの権限不足は SQLState 42501 (insufficient_privilege)
+        String state = e.getSQLState();
+        if ("42501".equals(state)) {
+            return true;
+        }
+        String msg = e.getMessage();
+        return msg != null
+            && (msg.contains("permission denied") || msg.contains("must be owner"));
+    }
+
+    private void printPermissionHelp() {
+        String bar = "=".repeat(78);
+        System.err.println();
+        System.err.println(bar);
+        System.err.println("  【権限不足】DBのスキーマを変更する権限がありません");
+        System.err.println(bar);
+        System.err.println("  起動時のマイグレーション(ALTER TABLE / CREATE TABLE)には、");
+        System.err.println("  テーブルの所有者権限が必要です。");
+        System.err.println("  権限を絞ったロールで接続している場合、ここで必ず失敗します。");
+        System.err.println();
+        System.err.println("  マイグレーション専用の接続情報を設定してください。");
+        System.err.println("    [Environment]::SetEnvironmentVariable(\"DB_MIGRATION_USER\", \"kaseihu_owner\", \"User\")");
+        System.err.println("    [Environment]::SetEnvironmentVariable(\"DB_MIGRATION_PASSWORD\", \"(所有者のパスワード)\", \"User\")");
+        System.err.println();
+        System.err.println("  設定後、PowerShellを開き直してから起動し直してください。");
+        System.err.println();
+        System.err.println("  すぐに元に戻したい場合は、DB_USER と DB_PASSWORD を");
+        System.err.println("  postgres のものに戻すか、以下でロール分離自体を取り消せます。");
+        System.err.println("    psql -U postgres -h localhost -d kaseihu -f scripts\\rollback-db-roles.sql");
+        System.err.println(bar);
+        System.err.println();
     }
 }

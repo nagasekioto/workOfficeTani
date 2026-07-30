@@ -214,27 +214,88 @@ ZIPの仕様上の区切りは `/` だけですが、**Windowsの展開ソフト
 
 ## 2. 未実装
 
-### 2-1. 対策1: 最小権限の原則（DBロール分離）— **未着手**
+### 2-1. 対策1: 最小権限の原則（DBロール分離）— **DB側は適用済み。切り替えは未実施**
 
-**現状のリスク**: アプリがPostgreSQLの**スーパーユーザー `postgres`** で接続している。
-SQLインジェクションが1つ通る、あるいはアプリが乗っ取られた瞬間に
-`DROP DATABASE` も他DBの閲覧も自由にできる。権限の壁がゼロ。
+#### 状況（2026-07-30）
 
-**検討済みの実装方針**（未実装）
+| 段階 | 内容 | 状態 |
+|---|---|---|
+| Stage 1 | DBロールの作成と所有権の移管 | ✅ **適用済み** |
+| Stage 2 | アプリ側のマイグレーション専用接続の実装 | ✅ **実装済み**（既定は従来動作） |
+| Stage 3 | 環境変数を設定して実際に制限ロールへ切り替える | ⬜ **未実施**（利用者の操作） |
 
-- DBロールを4分割: `kaseihu_owner`（DDL専用）/ `kaseihu_app`（通常業務）/
-  `kaseihu_ro`（参照とpg_dump）/ `kaseihu_admin`（削除可）。`postgres` は緊急用に温存
-- アプリ側を2 DataSource化。既定は `kaseihu_app`、
-  `DatabaseMigrationRunner` と `PermanentDeleteController` のみ `kaseihu_admin`
-- 環境変数未設定なら従来どおり単一接続にフォールバック（既存の起動方法を壊さない）
-- 緊急アカウント手順書 `docs/EMERGENCY_ACCESS.md` を新規作成
+**現在アプリは従来どおり `postgres` で接続しています。** 環境変数を設定するまで動作は変わりません。
 
-> ⚠️ **最大の落とし穴**: `DatabaseMigrationRunner` が起動のたびに `ALTER TABLE` を実行する。
-> アプリの接続ロールを非所有者に降格すると、**次回起動時に権限エラーで落ちて
-> システムが起動しなくなる**（`run()` が例外を再スローするため）。
-> ここを踏まない設計が対策1の肝。
+#### ロール構成（3つ。当初案の4分割から減らした）
 
-**この項目は本システムで最も起動不能リスクが高い。** 段階を分けて進めること。
+| ロール | 権限 | 誰が使うか |
+|---|---|---|
+| `kaseihu_owner` | テーブル所有者。DDL | `DatabaseMigrationRunner`（起動時のみ） |
+| `kaseihu_app` | SELECT/INSERT/UPDATE/DELETE | アプリの通常動作 |
+| `kaseihu_ro` | SELECT のみ | バックアップ（pg_dump）・調査 |
+| `postgres` | スーパーユーザー | **緊急用に温存**（`docs/EMERGENCY_ACCESS.md`） |
+
+**当初案の `kaseihu_admin`（削除専用）は作りませんでした。**
+アプリは領収書削除・売上明細削除など各画面で正常に `DELETE` するため、
+DELETEだけを別ロールに分けると業務が動かなくなります。
+致命的な被害はスーパーユーザー権限にあるので、そこを外すことを優先しました。
+
+実測で確認した、スーパーユーザーを外すことの効果:
+
+| `kaseihu_app` での操作 | 結果 |
+|---|---|
+| `SELECT` / `INSERT` / `DELETE` | ✅ 通る（業務は動く） |
+| `ALTER TABLE persons ADD COLUMN` | ❌ 所有者である必要があります |
+| `DROP TABLE access_logs` | ❌ 所有者である必要があります |
+| `CREATE TABLE` | ❌ スキーマ public へのアクセスが拒否されました |
+| **`COPY (SELECT 1) TO PROGRAM 'cmd'`** | ❌ 拒否（**スーパーユーザー専用の任意コマンド実行。ここが最大の収穫**） |
+
+拒否後にスキーマ・データへ副作用が無いことも確認済み（18テーブル・件数すべて不変）。
+
+#### 落とし穴への対処（2つ）
+
+> ⚠️ **落とし穴1**: `DatabaseMigrationRunner` が起動のたびに `ALTER TABLE` を実行する。
+> 接続ロールを非所有者に降格すると、**次回起動時に権限エラーで落ちて起動しなくなる**。
+
+対処: `DatabaseMigrationRunner` に**マイグレーション専用の接続**を追加しました。
+`DB_MIGRATION_USER` が設定されていればそれで接続し、**未設定なら従来どおり通常の接続を使います**。
+さらに権限エラーを検出したときは、直し方（`DB_MIGRATION_USER` の設定とロールバック手順）を
+日本語で表示します。**この落とし穴を実際に踏んで、案内が出ることを確認済み。**
+
+> ⚠️ **落とし穴2**: 今後テーブルを追加したとき、`kaseihu_app` に権限が付かず
+> **その画面だけが実行時に権限エラーで落ちる**。しかも `postgres` でテストしていると再現しない。
+
+対処: `ALTER DEFAULT PRIVILEGES **FOR ROLE kaseihu_owner**` を設定済み。
+`FOR ROLE` を付けるのが要点で、これが無いと「スクリプト実行者(`postgres`)が作った
+テーブル」にしか効かず、実際に作るのは `kaseihu_owner` なので無意味になります。
+**新しいテーブルは必ず `DatabaseMigrationRunner` 経由で作ること**（手で作らない）。
+
+#### Stage 3: 切り替え方（利用者の操作）
+
+パスワードは `C:\Users\hyudo\pg-config-backup\db-role-passwords.txt` にあります。
+**紙に控えたら、このファイルは削除するか鍵のかかる場所へ移してください。**
+
+```powershell
+[Environment]::SetEnvironmentVariable("DB_USER", "kaseihu_app", "User")
+[Environment]::SetEnvironmentVariable("DB_PASSWORD", "（kaseihu_app のパスワード）", "User")
+[Environment]::SetEnvironmentVariable("DB_MIGRATION_USER", "kaseihu_owner", "User")
+[Environment]::SetEnvironmentVariable("DB_MIGRATION_PASSWORD", "（kaseihu_owner のパスワード）", "User")
+```
+
+**この4つはセットで設定すること。** `DB_USER` だけ変えると落とし穴1を踏みます。
+
+**実機で検証済み**: この設定で起動し、`kaseihu_app` で10接続、
+マイグレーションは `kaseihu_owner` で実行、画面表示と監査ログのINSERTが動作、
+18テーブルすべて読み取り可能であることを確認しました。
+
+#### 元に戻す
+
+```powershell
+psql -U postgres -h localhost -d kaseihu -f scripts\rollback-db-roles.sql
+```
+
+業務データは一切消えません。所有者と権限だけを戻します。
+詳細と症状別の対処は **`docs/EMERGENCY_ACCESS.md`**（印刷して保管すること）。
 
 ### 2-2. CSRF対策・認証チェックの集約 — **認証集約はPhase A完了、CSRFは未対応**
 
@@ -516,3 +577,4 @@ PostgreSQLのサービスは自動起動なので、**このコマンドを実�
 | 2026-07-30 | CSRF対策(2-2)をOriginヘッダ検証で実装。テスト109→116件 |
 | 2026-07-30 | HTTPS対応(2-4)を既定OFFの追加設定として実装。証明書作成スクリプトを追加。テスト116→119件 |
 | 2026-07-30 | ネットワーク制限のPostgreSQL側(2-3)を適用。`log_connections='all'`は反映済み、`listen_addresses='localhost'`は再起動待ち。復旧材料を `C:\Users\hyudo\pg-config-backup\` に保管 |
+| 2026-07-30 | 対策1 DBロール分離(2-1)のStage1(DB側)とStage2(アプリ側)を実施。3ロール作成・所有権移管・マイグレーション専用接続を追加。切り替え(Stage3)は利用者操作。`docs/EMERGENCY_ACCESS.md` を新規作成 |
