@@ -18,7 +18,7 @@
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         label { display: block; margin-bottom: 3px; font-weight: bold; color: #555; font-size: 13px; }
         label .req { color: #f44336; }
-        input[type=text], input[type=date], input[type=time], input[type=number], select, textarea {
+        input[type=text], input[type=date], input[type=time], input[type=number], input[type=tel], select, textarea {
             width: 100%; padding: 7px 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 13px; font-family: inherit;
         }
         textarea { min-height: 60px; resize: vertical; }
@@ -98,7 +98,7 @@
             <div class="form-group">
                 <label>郵便番号（ハイフンなし7桁）</label>
                 <div class="postal-row">
-                    <input type="text" th:field="*{postalCode}" id="postalCode" placeholder="例：1040051" maxlength="7">
+                    <input type="tel" th:field="*{postalCode}" id="postalCode" inputmode="numeric" data-hankaku="tel" placeholder="例：1040051" maxlength="7">
                     <button type="button" class="postal-btn" onclick="searchAddress()">住所を自動入力</button>
                 </div>
             </div>
@@ -108,11 +108,11 @@
             </div>
             <div class="form-group">
                 <label>番地</label>
-                <input type="text" th:field="*{address2}" id="address2" placeholder="例：2-2-11">
+                <input type="text" th:field="*{address2}" id="address2" data-hankaku="tel" placeholder="例：2-2-11">
             </div>
             <div class="form-group">
                 <label>部屋番号・マンション名</label>
-                <input type="text" id="address3Display" placeholder="例：3101　または　月島マンション3101"
+                <input type="text" id="address3Display" data-hankaku="digits" placeholder="例：3101　または　月島マンション3101"
                        th:value="${customer.address3}">
                 <input type="hidden" th:field="*{address3}" id="address3Hidden">
                 <div class="addr-note">※数字のみ入力すると番地と自動結合（例：2-2-11 と 3101 → 2-2-11-3101）</div>
@@ -138,15 +138,15 @@
             <!-- ─── 電話番号 ──────────────────────────────── -->
             <div class="form-group">
                 <label>自宅電話番号</label>
-                <input type="text" th:field="*{homePhone}" placeholder="例：03-1234-5678" onblur="formatPhone(this)">
+                <input type="tel" th:field="*{homePhone}" inputmode="tel" data-hankaku="tel" placeholder="例：03-1234-5678" onblur="formatPhone(this)">
             </div>
             <div class="form-group">
                 <label>携帯電話番号</label>
-                <input type="text" th:field="*{mobilePhone}" placeholder="例：090-1234-5678" onblur="formatPhone(this)">
+                <input type="tel" th:field="*{mobilePhone}" inputmode="tel" data-hankaku="tel" placeholder="例：090-1234-5678" onblur="formatPhone(this)">
             </div>
             <div class="form-group">
                 <label>FAX番号</label>
-                <input type="text" th:field="*{faxPhone}" placeholder="例：03-1234-5679" onblur="formatPhone(this)">
+                <input type="tel" th:field="*{faxPhone}" inputmode="tel" data-hankaku="tel" placeholder="例：03-1234-5679" onblur="formatPhone(this)">
             </div>
 
             <!-- ─── 担当者 ──────────────────────────────────── -->
@@ -158,7 +158,7 @@
                 </div>
                 <div class="form-group">
                     <label>担当者電話番号</label>
-                    <input type="text" th:field="*{staffPhone}" placeholder="例：03-1234-5678" onblur="formatPhone(this)">
+                    <input type="tel" th:field="*{staffPhone}" inputmode="tel" data-hankaku="tel" placeholder="例：03-1234-5678" onblur="formatPhone(this)">
                 </div>
                 <div class="form-group">
                     <label>担当者備考</label>
@@ -258,9 +258,9 @@
                                 <span class="freq-day-label">月</span>
                                 <input type="checkbox" class="freq-day-cb" id="fw月" value="月" onchange="toggleFreqDay(this)">
                                 <div class="freq-day-time" id="fwt月">
-                                    <input type="time" id="fwfrom月" step="900" onchange="collectFreqWeeklyDays()">
+                                    <input type="time" id="fwfrom月" step="300" onchange="collectFreqWeeklyDays()">
                                     <span>〜</span>
-                                    <input type="time" id="fwto月" step="900" onchange="collectFreqWeeklyDays()">
+                                    <input type="time" id="fwto月" step="300" onchange="collectFreqWeeklyDays()">
                                 </div>
                             </div>
                             <!-- 火 -->
@@ -268,9 +268,9 @@
                                 <span class="freq-day-label">火</span>
                                 <input type="checkbox" class="freq-day-cb" id="fw火" value="火" onchange="toggleFreqDay(this)">
                                 <div class="freq-day-time" id="fwt火">
-                                    <input type="time" id="fwfrom火" step="900" onchange="collectFreqWeeklyDays()">
+                                    <input type="time" id="fwfrom火" step="300" onchange="collectFreqWeeklyDays()">
                                     <span>〜</span>
-                                    <input type="time" id="fwto火" step="900" onchange="collectFreqWeeklyDays()">
+                                    <input type="time" id="fwto火" step="300" onchange="collectFreqWeeklyDays()">
                                 </div>
                             </div>
                             <!-- 水 -->
@@ -278,9 +278,9 @@
                                 <span class="freq-day-label">水</span>
                                 <input type="checkbox" class="freq-day-cb" id="fw水" value="水" onchange="toggleFreqDay(this)">
                                 <div class="freq-day-time" id="fwt水">
-                                    <input type="time" id="fwfrom水" step="900" onchange="collectFreqWeeklyDays()">
+                                    <input type="time" id="fwfrom水" step="300" onchange="collectFreqWeeklyDays()">
                                     <span>〜</span>
-                                    <input type="time" id="fwto水" step="900" onchange="collectFreqWeeklyDays()">
+                                    <input type="time" id="fwto水" step="300" onchange="collectFreqWeeklyDays()">
                                 </div>
                             </div>
                             <!-- 木 -->
@@ -288,9 +288,9 @@
                                 <span class="freq-day-label">木</span>
                                 <input type="checkbox" class="freq-day-cb" id="fw木" value="木" onchange="toggleFreqDay(this)">
                                 <div class="freq-day-time" id="fwt木">
-                                    <input type="time" id="fwfrom木" step="900" onchange="collectFreqWeeklyDays()">
+                                    <input type="time" id="fwfrom木" step="300" onchange="collectFreqWeeklyDays()">
                                     <span>〜</span>
-                                    <input type="time" id="fwto木" step="900" onchange="collectFreqWeeklyDays()">
+                                    <input type="time" id="fwto木" step="300" onchange="collectFreqWeeklyDays()">
                                 </div>
                             </div>
                             <!-- 金 -->
@@ -298,9 +298,9 @@
                                 <span class="freq-day-label">金</span>
                                 <input type="checkbox" class="freq-day-cb" id="fw金" value="金" onchange="toggleFreqDay(this)">
                                 <div class="freq-day-time" id="fwt金">
-                                    <input type="time" id="fwfrom金" step="900" onchange="collectFreqWeeklyDays()">
+                                    <input type="time" id="fwfrom金" step="300" onchange="collectFreqWeeklyDays()">
                                     <span>〜</span>
-                                    <input type="time" id="fwto金" step="900" onchange="collectFreqWeeklyDays()">
+                                    <input type="time" id="fwto金" step="300" onchange="collectFreqWeeklyDays()">
                                 </div>
                             </div>
                             <!-- 土 -->
@@ -308,9 +308,9 @@
                                 <span class="freq-day-label">土</span>
                                 <input type="checkbox" class="freq-day-cb" id="fw土" value="土" onchange="toggleFreqDay(this)">
                                 <div class="freq-day-time" id="fwt土">
-                                    <input type="time" id="fwfrom土" step="900" onchange="collectFreqWeeklyDays()">
+                                    <input type="time" id="fwfrom土" step="300" onchange="collectFreqWeeklyDays()">
                                     <span>〜</span>
-                                    <input type="time" id="fwto土" step="900" onchange="collectFreqWeeklyDays()">
+                                    <input type="time" id="fwto土" step="300" onchange="collectFreqWeeklyDays()">
                                 </div>
                             </div>
                             <!-- 日 -->
@@ -318,9 +318,9 @@
                                 <span class="freq-day-label">日</span>
                                 <input type="checkbox" class="freq-day-cb" id="fw日" value="日" onchange="toggleFreqDay(this)">
                                 <div class="freq-day-time" id="fwt日">
-                                    <input type="time" id="fwfrom日" step="900" onchange="collectFreqWeeklyDays()">
+                                    <input type="time" id="fwfrom日" step="300" onchange="collectFreqWeeklyDays()">
                                     <span>〜</span>
-                                    <input type="time" id="fwto日" step="900" onchange="collectFreqWeeklyDays()">
+                                    <input type="time" id="fwto日" step="300" onchange="collectFreqWeeklyDays()">
                                 </div>
                             </div>
                         </div>
@@ -498,6 +498,7 @@
     </div>
 </div>
 
+<script th:src="@{/js/station-lines.js}"></script>
 <script>
 (function() {
     // Enterキー無効
@@ -583,14 +584,32 @@ function toggleFreqDay(cb) {
     collectFreqWeeklyDays();
 }
 
+// キーボード直接入力（例：10:07）も5分単位に丸める。
+// 四捨五入で最も近い5分へ。繰り上がりで日付を跨がないよう上限は23:55に丸める
+// （23:58のような値が00:00になったり、5の倍数でない23:59になったりしないようにする）。
+function roundToFiveMinutes(hhmm) {
+    var m = /^(\d{2}):(\d{2})$/.exec(hhmm || '');
+    if (!m) return hhmm;
+    var totalMinutes = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+    var rounded = Math.round(totalMinutes / 5) * 5;
+    if (rounded >= 24 * 60) rounded = 23 * 60 + 55;
+    var rh = Math.floor(rounded / 60);
+    var rm = rounded % 60;
+    return String(rh).padStart(2, '0') + ':' + String(rm).padStart(2, '0');
+}
+
 // JSON形式で保存: {"月":"09:00-17:00","火":"10:00-15:00",...}
 function collectFreqWeeklyDays() {
     var result = {};
     FREQ_DAYS.forEach(function(day) {
         var cb = document.getElementById('fw' + day);
         if (cb && cb.checked) {
-            var from = document.getElementById('fwfrom' + day).value;
-            var to   = document.getElementById('fwto' + day).value;
+            var fromEl = document.getElementById('fwfrom' + day);
+            var toEl   = document.getElementById('fwto' + day);
+            var from = roundToFiveMinutes(fromEl.value);
+            var to   = roundToFiveMinutes(toEl.value);
+            if (from !== fromEl.value) fromEl.value = from;
+            if (to !== toEl.value) toEl.value = to;
             result[day] = (from || '') + '-' + (to || '');
         }
     });
@@ -672,6 +691,9 @@ function syncIntroRoute() {
 
 // 電話番号ハイフン
 function formatPhone(input) {
+    input.value = input.value.replace(/[０-９]/g, function (c) {
+        return String.fromCharCode(c.charCodeAt(0) - 0xFEE0);
+    });
     var raw = input.value.replace(/[^\d]/g, '');
     if (!raw) return;
     var f = '';
@@ -700,17 +722,14 @@ function searchAddress() {
 }
 
 // 駅名→路線
-var STATION_LINES = {"東京":["JR山手線","JR東海道新幹線","JR中央本線","東京メトロ丸ノ内線"],"品川":["JR山手線","JR東海道新幹線","京急本線"],"新橋":["JR山手線","東京メトロ銀座線","都営浅草線","ゆりかもめ"],"新宿":["JR山手線","JR中央本線","小田急小田原線","京王線","東京メトロ丸ノ内線","都営大江戸線","都営新宿線"],"渋谷":["JR山手線","東急東横線","東京メトロ銀座線","東急田園都市線"],"池袋":["JR山手線","西武池袋線","東武東上線","東京メトロ有楽町線","東京メトロ副都心線"],"上野":["JR山手線","JR京浜東北線","東京メトロ銀座線","東京メトロ日比谷線"],"秋葉原":["JR山手線","JR総武線各停","東京メトロ日比谷線"],"銀座":["東京メトロ丸ノ内線","東京メトロ銀座線","東京メトロ日比谷線"],"表参道":["東京メトロ銀座線","東京メトロ千代田線","東京メトロ半蔵門線"],"六本木":["東京メトロ日比谷線","都営大江戸線"],"麻布十番":["東京メトロ南北線","都営大江戸線"],"月島":["東京メトロ有楽町線","都営大江戸線"],"豊洲":["東京メトロ有楽町線","ゆりかもめ"],"大手町":["東京メトロ丸ノ内線","東京メトロ千代田線","東京メトロ東西線","東京メトロ半蔵門線","都営三田線"],"浅草":["東京メトロ銀座線","都営浅草線","東武伊勢崎線"],"北千住":["JR常磐線","東京メトロ千代田線","東京メトロ日比谷線","東武伊勢崎線"],"横浜":["JR東海道本線","JR横須賀線","JR京浜東北線","京急本線","東急東横線"],"立川":["JR中央本線","JR青梅線","JR南武線"],"吉祥寺":["JR中央本線","京王井の頭線"],"下北沢":["小田急小田原線","京王井の頭線"],"調布":["京王線","京王相模原線"],"町田":["JR横浜線","小田急小田原線"],"大宮":["JR宇都宮線","JR東北新幹線","JR埼京線"]};
-
 function lookupLines(stationName) {
     var hint = document.getElementById('stationHint');
     var lineInput = document.getElementById('nearestLine');
     var name = stationName.trim().replace(/駅$/, '');
     if (!name) { lineInput.value = ''; hint.textContent = ''; return; }
-    var data = STATION_LINES[name] ||
-        STATION_LINES[Object.keys(STATION_LINES).find(k => k.includes(name) || name.includes(k))];
-    if (data) {
-        lineInput.value = data.join('・');
+    var res = findStationLines(name);
+    if (res) {
+        lineInput.value = res.lines.join('・');
         hint.textContent = '✓ 路線を自動入力しました'; hint.style.color = '#4CAF50';
     } else {
         lineInput.value = '';
@@ -747,5 +766,6 @@ window.addEventListener('pageshow', function(event) {
     }
 });
 </script>
+<script th:src="@{/js/numeric-input.js}"></script>
 </body>
 </html>
