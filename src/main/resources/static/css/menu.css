@@ -31,6 +31,20 @@ body {
     overflow: hidden;
 }
 
+/* ─── アイコンの既定サイズ（保険） ─────────────────
+   SVGは width/height の指定が無いと既定サイズ（300x150相当）まで広がり、
+   アイコンが巨大化して周りの文字を枠外へ押し出す。
+   実際に戻るボタンでこの不具合を出したため、
+   **どこに置いてもまず文字と同じ大きさに収まる**ようにしておく。
+   下の個別指定（見出し・タイル）がこれを上書きして大きくする。
+   ─────────────────────────────────────── */
+
+svg {
+    width: 1.2em;
+    height: 1.2em;
+    flex-shrink: 0;
+}
+
 /* ─── ヘッダー ───────────────────────────── */
 
 .header {
@@ -69,6 +83,21 @@ body {
     padding: 1vh 1.4vw;
     text-decoration: none;
     white-space: nowrap;
+    /* アイコンと文字を横に並べる。指定しないとSVGが独立したブロックになり
+       文字が下へ押し出される */
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45em;
+}
+
+/* 【重要】ボタン内のSVGにも必ずサイズを指定すること。
+   SVGは width/height の指定が無いと既定サイズ(300x150相当)まで広がり、
+   矢印が巨大化して文字が枠外へ押し出される。実際にこの不具合を出した。
+   em で指定しているので、ボタンの文字サイズに追従する */
+.nav-btn svg {
+    width: 1.15em;
+    height: 1.15em;
+    flex-shrink: 0;
 }
 
 .nav-btn:hover { background: #f1efe8; border-color: #b4b2a9; }
