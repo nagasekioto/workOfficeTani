@@ -24,7 +24,12 @@ $ErrorActionPreference = "Stop"
 $appDir = Split-Path -Parent $PSScriptRoot
 $logFile = Join-Path $appDir "system-log.txt"
 $launcherLog = Join-Path $appDir "launcher-log.txt"
-$url = "http://localhost:8080/login"
+
+# HTTPS_ENABLED / SERVER_PORT からURLを組み立てる。
+# 既定(HTTPS_ENABLED未設定)ではこれまでどおり http://localhost:8080 になる。
+$scheme = if ($env:HTTPS_ENABLED -eq "true") { "https" } else { "http" }
+$port = if ([string]::IsNullOrWhiteSpace($env:SERVER_PORT)) { "8080" } else { $env:SERVER_PORT }
+$url = "${scheme}://localhost:${port}/login"
 
 # 進行状況は画面とファイルの両方に出す。
 # Write-Host は画面にしか出ないため、自動起動（画面なし）で失敗したとき
@@ -71,7 +76,26 @@ if (-not $Hidden) {
 }
 Write-Log "===== 起動処理を開始しました (Hidden=$Hidden) ====="
 Write-Log "場所: $appDir"
+Write-Log "接続方式: $scheme  ポート: $port"
 if (-not $Hidden) { Write-Host "" }
+
+# ------------------------------------------------------------
+# HTTPSとCookieのsecure設定の組み合わせを確認する。
+# 片方だけ設定すると、実害が出る（片方はブラウザ警告、もう片方は
+# ログイン不能）ため、起動前に気付けるようここで警告しておく。
+# ------------------------------------------------------------
+$cookieSecure = $env:COOKIE_SECURE -eq "true"
+$httpsEnabled = $env:HTTPS_ENABLED -eq "true"
+
+if ($httpsEnabled -and -not $cookieSecure) {
+    Write-Log "[注意] HTTPS_ENABLED=true なのに COOKIE_SECURE が true ではありません。" "Yellow"
+    Write-Log "       COOKIE_SECURE=true も設定することを推奨します。" "Yellow"
+}
+if (-not $httpsEnabled -and $cookieSecure) {
+    Write-Log "[注意] COOKIE_SECURE=true なのに HTTPS_ENABLED が true ではありません。" "Yellow"
+    Write-Log "       この組み合わせではHTTP接続時にCookieが送られず、ログインできません。" "Yellow"
+    Write-Log "       COOKIE_SECURE を false にするか、HTTPS_ENABLED を true にしてください。" "Yellow"
+}
 
 # ------------------------------------------------------------
 # 1. 必要な設定があるか確認する
@@ -115,14 +139,14 @@ if ($null -eq $java) {
 # 3. 既に起動していないか確認する
 #    二重に起動するとポートが衝突し、後から起動したほうが黙って死ぬ
 # ------------------------------------------------------------
-$listening = Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue
+$listening = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
 if ($null -ne $listening) {
     Write-Log "システムは既に起動しています。ブラウザを開きます。" "Green"
     Start-Process $url
     Start-Sleep -Seconds 2
     exit 0
 }
-Write-Log "ポート8080は空いています"
+Write-Log "ポート$port は空いています"
 
 # ------------------------------------------------------------
 # 4. 実行ファイル(jar)を用意する
@@ -201,6 +225,13 @@ $cmdLine = 'java -jar "' + $jar.FullName + '" > "' + $logFile + '" 2>&1'
 $proc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", $cmdLine `
                       -WorkingDirectory $appDir -WindowStyle Hidden -PassThru
 Write-Log "起動プロセスID: $($proc.Id)"
+
+if ($scheme -eq "https") {
+    # 自己署名証明書だと検証に失敗し、起動完了を検知できない。
+    # ここは「自分自身のポートが応答するか」を見るだけの確認なので、検証を無効化する。
+    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+}
 
 # ------------------------------------------------------------
 # 6. 起動が終わるまで待つ（固定秒数ではなく実際に応答するまで）

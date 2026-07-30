@@ -1,4 +1,21 @@
 server:
+  # ポート。HTTPSにする場合は 8443 など別のポートにするのが慣例。
+  port: ${SERVER_PORT:8080}
+
+  # HTTPS（既定は無効）。
+  # 127.0.0.1 だけで待ち受ける運用では通信がこのPCの外に出ないため、
+  # HTTPSにしなくても盗聴の危険は無い。自己署名証明書の警告が毎回出る
+  # 手間のほうが大きいので、既定は無効にしている。
+  # 社内の他PCからも画面を使う運用に変える場合は有効にすること
+  # （その場合は COOKIE_SECURE=true も併せて設定する）。
+  # 証明書の作り方は scripts\create-https-certificate.ps1 を参照。
+  ssl:
+    enabled: ${HTTPS_ENABLED:false}
+    key-store: ${HTTPS_KEYSTORE:}
+    key-store-password: ${HTTPS_KEYSTORE_PASSWORD:}
+    key-store-type: PKCS12
+    key-alias: ${HTTPS_KEY_ALIAS:kaseihu}
+
   servlet:
     session:
       # セッションIDをURL(;jsessionid=...)に載せない。
@@ -11,8 +28,9 @@ server:
       cookie:
         http-only: true
         # 他サイトから当システムへのリクエストにはCookieを付けない。
-        # 本システムにはCSRFトークンが無いため、細工したページを踏まされると
-        # /permanent-delete などのPOSTが外部から発火しうる。それを防ぐ。
+        # 細工したページを踏まされたときに /permanent-delete などのPOSTが
+        # 外部から発火するのを防ぐ。CsrfInterceptor のOrigin検証と合わせて
+        # 二重の防御にしている（どちらか片方だけにしないこと）。
         same-site: strict
         # HTTPS化したときに true にする。
         # 現在はHTTP(localhost)で動いているため true にするとCookieが一切

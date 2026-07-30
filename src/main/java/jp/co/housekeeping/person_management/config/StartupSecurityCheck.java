@@ -1,5 +1,6 @@
 package jp.co.housekeeping.person_management.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
@@ -21,10 +22,19 @@ public class StartupSecurityCheck implements ApplicationRunner {
 
     private final SecretCipher secretCipher;
     private final AuthUserService authUserService;
+    private final boolean httpsEnabled;
+    private final boolean cookieSecure;
+    private final int serverPort;
 
-    public StartupSecurityCheck(SecretCipher secretCipher, AuthUserService authUserService) {
+    public StartupSecurityCheck(SecretCipher secretCipher, AuthUserService authUserService,
+            @Value("${server.ssl.enabled:false}") boolean httpsEnabled,
+            @Value("${server.servlet.session.cookie.secure:false}") boolean cookieSecure,
+            @Value("${server.port:8080}") int serverPort) {
         this.secretCipher = secretCipher;
         this.authUserService = authUserService;
+        this.httpsEnabled = httpsEnabled;
+        this.cookieSecure = cookieSecure;
+        this.serverPort = serverPort;
     }
 
     @Override
@@ -44,12 +54,32 @@ public class StartupSecurityCheck implements ApplicationRunner {
                 "詳細は SETUP_NEW_PC.md の手順4を参照してください。");
         }
 
+        // HTTPSとCookieのsecure設定が食い違っていないか確認する。
+        // ここで止めると初回セットアップ画面すら開けなくなるため、警告のみで起動は続ける。
+        String scheme = httpsEnabled ? "https" : "http";
+        String loginUrl = scheme + "://localhost:" + serverPort + "/login";
+
+        if (httpsEnabled && !cookieSecure) {
+            printBox(
+                "【設定の不整合】HTTPSが有効なのにCookieにsecureが付いていません",
+                "server.ssl.enabled=true なのに、Cookieのsecureがfalseのままです。",
+                "HTTPSなのにCookieに secure が付いていない状態です。",
+                "COOKIE_SECURE=true を設定してください。");
+        }
+        if (!httpsEnabled && cookieSecure) {
+            printBox(
+                "【設定の不整合】ログインできません",
+                "HTTPS_ENABLEDが無効なのに、CookieのsecureがTrueになっています。",
+                "HTTPでは secure 付きCookieがブラウザから送られないため、ログインできません。",
+                "COOKIE_SECURE を false にするか、HTTPSを有効にしてください。");
+        }
+
         // 利用者が1人もいない場合の案内
         try {
             if (authUserService.hasNoActiveUser()) {
                 printBox(
                     "【初回セットアップが必要です】ログイン利用者が登録されていません",
-                    "ブラウザで http://localhost:8080/login を開くと、",
+                    "ブラウザで " + loginUrl + " を開くと、",
                     "初回セットアップ画面が自動的に表示されます。",
                     "",
                     "画面の案内に従って Google Authenticator を登録し、",

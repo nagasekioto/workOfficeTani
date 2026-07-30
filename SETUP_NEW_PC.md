@@ -408,7 +408,66 @@ git pull
 
 ---
 
-## 10. 【新方式・オプション】PostgreSQL同梱・exe化した自己完結型パッケージ
+## 10. HTTPS対応（社内の他PCからも使う場合・オプション）
+
+**通常は設定不要です。** このパソコン1台だけで使う運用（`http://localhost:8080`）
+であれば、通信はこのパソコンの外に出ないため、HTTPSにしなくても盗聴の危険は
+ありません。今までどおり何もしなくて大丈夫です。
+
+この章の設定が必要になるのは、**社内の他のパソコンからもこのシステムの画面を
+使いたい場合**です（`SERVER_ADDRESS=0.0.0.0` にして他PCからアクセスできるように
+する運用。詳細は `docs/NETWORK_RESTRICTION.md` 第4章・第5章を参照）。この場合、
+通信が社内ネットワークを通るため、HTTPSで暗号化しておくことを推奨します。
+
+### 10-1. 証明書を作成する
+
+管理者権限のPowerShellで、以下を実行してください。
+
+```powershell
+cd C:\workOfficeTani
+.\scripts\create-https-certificate.ps1
+```
+
+途中でキーストアのパスワードの入力を求められます。忘れないよう記録してください
+（このパスワードは環境変数 `HTTPS_KEYSTORE_PASSWORD` にも設定します）。
+
+実行が終わると、`config\https-keystore.p12` が作成され、画面に次の手順
+（設定すべき環境変数）が表示されます。
+
+### 10-2. 環境変数を設定する
+
+管理者権限のPowerShellで、以下の環境変数を設定してください。
+**`HTTPS_ENABLED=true` と `COOKIE_SECURE=true` は必ずセットで設定すること。**
+片方だけ設定すると、ログインできなくなります。
+
+```powershell
+[Environment]::SetEnvironmentVariable("HTTPS_ENABLED", "true", "Machine")
+[Environment]::SetEnvironmentVariable("HTTPS_KEYSTORE", "C:\workOfficeTani\config\https-keystore.p12", "Machine")
+[Environment]::SetEnvironmentVariable("HTTPS_KEYSTORE_PASSWORD", "(10-1で入力したパスワード)", "Machine")
+[Environment]::SetEnvironmentVariable("COOKIE_SECURE", "true", "Machine")
+[Environment]::SetEnvironmentVariable("SERVER_PORT", "8443", "Machine")
+```
+
+`SERVER_PORT=8443` はHTTPSにする場合の慣例上のポート番号です（必須ではありません）。
+
+設定後、パソコンを再起動するか、サインアウトしてからシステムを起動し直してください。
+起動スクリプト（`scripts\launch.ps1`）は環境変数から自動的にURLを
+`https://localhost:8443/login` に切り替えます。
+
+### 10-3. ブラウザの警告について
+
+この証明書は自己署名証明書のため、ブラウザで開くと
+「この接続ではプライバシーが保護されません」等の警告が**毎回**表示されます。
+これは異常ではありません。
+
+警告を消したい場合は、この証明書をWindowsの「信頼されたルート証明機関」に
+登録する必要がありますが、これはシステム設定の変更にあたるため、
+本手順書およびスクリプトでは行いません。必要であれば、利用者の判断で
+Windowsの証明書管理（`certmgr.msc`）から手動で登録してください。
+
+---
+
+## 11. 【新方式・オプション】PostgreSQL同梱・exe化した自己完結型パッケージ
 
 上記1〜9はVSCode・Java・PostgreSQLなどを個別にインストールする従来方式です。
 別の方法として、**PostgreSQLも含めて1つのフォルダにまとめ、exeをダブル

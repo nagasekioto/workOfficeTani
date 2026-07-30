@@ -8,6 +8,14 @@ logs/
 
 ### 環境変数ファイル（パスワードを含むためGit管理対象外） ###
 .env
+
+### HTTPSのキーストア（秘密鍵が入っているためGit管理対象外） ###
+# ここに載せ忘れてコミットすると、秘密鍵がGitHubに公開され、
+# 通信の暗号化が意味を失う。拡張子で広く弾いておく。
+*.p12
+*.jks
+*.keystore
+config/https-keystore.p12
 !**/src/main/**/target/
 !**/src/test/**/target/
 
