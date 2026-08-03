@@ -45,7 +45,7 @@
 <div class="container">
     <div class="toolbar">
         <input type="text" id="searchName" placeholder="&#128269; 氏名で検索" oninput="filterTable()">
-        <input type="text" id="searchPhone" placeholder="&#128269; 電話番号で検索" oninput="filterTable()">
+        <input type="text" id="searchPhone" data-numeric="tel" inputmode="tel" placeholder="&#128269; 電話番号で検索" oninput="filterTable()">
         <button onclick="clearSearch()">クリア</button>
         <span class="count-label" id="countLabel"></span>
         <div class="sort-area">
@@ -179,5 +179,6 @@ window.addEventListener('load', function() {
     document.getElementById('countLabel').textContent = document.querySelectorAll('#tableBody tr').length + '件';
 });
 </script>
+<script th:src="@{/js/numeric-input.js}"></script>
 </body>
 </html>
