@@ -19,6 +19,7 @@ import jp.co.housekeeping.person_management.repository.PersonRepository;
 import jp.co.housekeeping.person_management.repository.SalesDetailRepository;
 import jp.co.housekeeping.person_management.repository.SalesRepository;
 import jp.co.housekeeping.person_management.model.Person;
+import jp.co.housekeeping.person_management.service.BackupStatusService;
 
 @Controller
 public class OtherMenuController {
@@ -27,6 +28,11 @@ public class OtherMenuController {
     @Autowired private SalesDetailRepository salesDetailRepository;
     @Autowired private CustomerRepository    customerRepository;
     @Autowired private PersonRepository      personRepository;
+    private final BackupStatusService backupStatusService;
+
+    public OtherMenuController(BackupStatusService backupStatusService) {
+        this.backupStatusService = backupStatusService;
+    }
 
     // ─── 1-5 サブメニュー ────────────────────────────────────────
     @GetMapping("/other-menu")
@@ -47,7 +53,8 @@ public class OtherMenuController {
 
     // ─── 1-7-5 バックアップ手順 ───────────────────────
     @GetMapping("/backup-guide")
-    public String backupGuide() {
+    public String backupGuide(Model model) {
+        model.addAttribute("backupStatus", backupStatusService.getStatus());
         return "backup-guide";
     }
 

@@ -88,6 +88,11 @@ app:
     # 保持期間（日）。この日数を過ぎたDBレコードとログファイルは自動削除される。
     retention-days: ${AUDIT_RETENTION_DAYS:365}
 
+  # --- バックアップ状態表示（1-7-5画面の先頭）---
+  backup:
+    # backup.ps1 の保存先と同じフォルダを見る。kaseihu_*.backup と last-backup.txt を読む。
+    dir: ${BACKUP_DIR:C:/workOfficeTani/backup}
+
   auth:
     # ============================================================
     # 認証は Google Authenticator（TOTP）の一本のみ。
